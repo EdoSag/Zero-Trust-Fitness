@@ -1,4 +1,4 @@
-package com.example.zerotrust_fitness
+package dev.sagron.zerotrustfitness
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -2,7 +2,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     
     <application
-        android:label="zerotrust_fitness"
+        android:label="Zero-Trust Fitness"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         

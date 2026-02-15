@@ -1,10 +1,18 @@
 {
     "version": "3.5.1",
     "app": {
-        "name": "zerotrust_fitness",
-        "package_name": "com.example.zerotrustfitness"
+        "name": "Zero-Trust Fitness",
+        "bundleId": "dev.sagron.zerotrustfitness"
     },
-    "main": {},
+    "main": [
+        {
+            "key": "supabase",
+            "statement": "await SupabaseService().initialize();",
+            "imports": [
+                "package:zerotrust_fitness/integrations/supabase_service.dart"
+            ]
+        }
+    ],
     "experimental": {
         "load_packages": true
     }

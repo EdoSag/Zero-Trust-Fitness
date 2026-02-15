@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:zerotrust_fitness/globals/themes.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:provider/provider.dart';
-import 'package:zerotrust_fitness/globals/themes.dart';
 
 @NowaGenerated()
 class AppState extends ChangeNotifier {
@@ -13,7 +13,9 @@ class AppState extends ChangeNotifier {
 
   ThemeData _theme = lightTheme;
 
-  ThemeData get theme => _theme;
+  ThemeData get theme {
+    return _theme;
+  }
 
   void changeTheme(ThemeData theme) {
     _theme = theme;
