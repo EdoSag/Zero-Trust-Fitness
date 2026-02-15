@@ -1,16 +1,78 @@
-# zerotrust_fitness
+# 🛡️ Zero-Trust Fitness
 
-A new Flutter project.
+**Your health data is human rights data. Own it. Encrypt it. Protect it.**
 
-## Getting Started
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)]()
 
-This project is a starting point for a Flutter application.
+Zero-Trust Fitness is a privacy-first, open-source alternative to mainstream fitness platforms. Built on the principle of **Zero-Knowledge**, this app ensures that your heart rate, GPS coordinates, and biometric telemetry are encrypted on your device before they ever touch a server. 
 
-A few resources to get you started if this is your first Flutter project:
+Neither the developers nor the hosting providers can see your data. **You hold the keys.**
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## ✨ Core Pillars
+
+* **🔒 Zero-Trust Architecture:** No unencrypted data ever leaves your device.
+* **🔑 User-Managed Keys:** Encryption keys are derived from your master passphrase via PBKDF2.
+* **📱 Local-First:** Full functionality offline. Syncing to the cloud is an optional, encrypted backup.
+* **🤝 Open Ecosystem:** Standardized JSON/GPX exports so you are never locked into the platform.
+
+---
+
+## 🛠️ Technical Specification
+
+### The "Security Enclave" Stack
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Mobile Framework** | Flutter | Cross-platform access to HealthKit (iOS) & Health Connect (Android). |
+| **Local Database** | SQLCipher | AES-256 encrypted SQLite database for on-device storage. |
+| **Encryption Engine** | Rust (via Bridge) | High-performance, memory-safe cryptographic operations. |
+| **Sync Backend** | Go / Supabase | A "dumb" storage vault for encrypted blobs. |
+
+### Data Security Model
+All sensitive records (Workouts, Vitals, GPS) follow this flow:
+1.  **Capture:** Data pulled from device sensors.
+2.  **Encrypt:** Client-side encryption using **AES-256-GCM**.
+3.  **Store:** Saved to encrypted local DB.
+4.  **Sync (Optional):** Encrypted blob sent to the server. The server sees only metadata (timestamp, user_id, encrypted_blob).
+
+---
+
+## 📈 Roadmap
+
+### Phase 1: The Foundation (Current)
+- [ ] Initialize Repository and Project Structure.
+- [ ] Implement Secure Key Storage (Keychain/Keystore).
+- [ ] Build basic UI for manual activity logging.
+
+### Phase 2: The Integration
+- [ ] Connect to **Apple HealthKit** and **Android Health Connect**.
+- [ ] Real-time GPS tracking for runs and cycles.
+- [ ] Privacy-focused data visualizations (Charts/Graphs).
+
+### Phase 3: The Ghost Sync
+- [ ] Implement End-to-End Encrypted (E2EE) cloud backup.
+- [ ] Multi-device sync using the user's private key.
+- [ ] Self-hosting guide for Docker/Nextcloud.
+
+---
+
+## 🤝 Contributing
+
+We are actively looking for contributors! Whether you are a security researcher, a mobile dev, or a UI designer, we need your help to build the future of private fitness.
+
+1.  Check the [Issues](https://github.com/) tab for "Good First Issues."
+2.  Join the discussion in our community Discord (as seen in the Dev Diary!).
+3.  Read our `CONTRIBUTING.md` (Coming soon).
+
+---
+
+## 📜 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+> *"The only person who should know your resting heart rate is you and your doctor—not an advertising algorithm."*
