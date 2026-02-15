@@ -1,0 +1,19 @@
+{
+    "android": {
+        "androidManifest": {
+            "permissionSection": {},
+            "inApplicationSection": {},
+            "inActivitySection": {}
+        },
+        "rootBuildGradle": {},
+        "appBuildGradle": {},
+        "settingsGradle": {}
+    },
+    "iOS": {
+        "infoPlist": {
+            "inDictSection": {}
+        },
+        "podFile": {},
+        "appDelegateSwift": {}
+    }
+}

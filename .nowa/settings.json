@@ -1,0 +1,11 @@
+{
+    "version": "3.5.1",
+    "app": {
+        "name": "zerotrust_fitness",
+        "package_name": "com.example.zerotrustfitness"
+    },
+    "main": {},
+    "experimental": {
+        "load_packages": true
+    }
+}
