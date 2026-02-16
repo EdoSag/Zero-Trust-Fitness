@@ -26,6 +26,7 @@ dependencies:
   home_widget: latest
   fl_chart: latest
   shimmer: latest
+  flutter_riverpod: latest
 dev_dependencies:
   flutter_test:
     sdk: flutter

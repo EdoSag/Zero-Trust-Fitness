@@ -5,6 +5,7 @@ import 'package:zerotrust_fitness/health_service.dart';
 import 'package:zerotrust_fitness/encryption_service.dart';
 import 'package:zerotrust_fitness/local_vault.dart';
 import 'package:zerotrust_fitness/integrations/supabase_service.dart';
+import 'package:zerotrust_fitness/widget_service.dart';
 
 @NowaGenerated()
 class IntegrationService {
@@ -20,21 +21,34 @@ class IntegrationService {
     final masterKeyBase64 = await SecurityRepository().getOrCreateMasterKey();
     final secretKey = SecretKey(base64Url.decode(masterKeyBase64));
     final healthData = await HealthService().fetchLatestData();
-    if (healthData.isEmpty) {
-      return;
+    int totalSteps = 0;
+    int totalPoints = 0;
+    if (healthData.isNotEmpty) {
+      for (var point in healthData) {
+        final jsonString = jsonEncode({
+          'type': point.type.toString(),
+          'value': point.value.toString(),
+          'date': point.dateFrom.toIso8601String(),
+        });
+        final encryptedBlob = await EncryptionService().encryptString(
+          jsonString,
+          secretKey,
+        );
+        await LocalVault().saveWorkout(encryptedBlob);
+        await SupabaseService().syncLocalToSupabase(encryptedBlob);
+        if (point.type == HealthDataType.STEPS) {
+          if (point.value is NumericHealthValue) {
+            totalSteps += (point.value as NumericHealthValue).numericValue
+                .toInt();
+          }
+        }
+      }
+      totalPoints = (totalSteps / 1000).floor();
     }
-    for (var point in healthData) {
-      final jsonString = jsonEncode({
-        'type': point.type.toString(),
-        'value': point.value.toString(),
-        'date': point.dateFrom.toIso8601String(),
-      });
-      final encryptedBlob = await EncryptionService().encryptString(
-        jsonString,
-        secretKey,
-      );
-      await LocalVault().saveWorkout(encryptedBlob);
-      await SupabaseService().syncLocalToSupabase(encryptedBlob);
-    }
+    await WidgetService.updateWidgetData(
+      steps: totalSteps,
+      heartPoints: totalPoints,
+      isLocked: false,
+    );
   }
 }

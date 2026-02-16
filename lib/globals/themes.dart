@@ -24,4 +24,9 @@ final ThemeData darkTheme = ThemeData(
     surface: const Color(0xFF121212),
   ),
   scaffoldBackgroundColor: const Color(0xFF000000),
+  cardTheme: CardThemeData(
+    color: const Color(0xFF1E1E1E),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    elevation: 0,
+  ),
 );

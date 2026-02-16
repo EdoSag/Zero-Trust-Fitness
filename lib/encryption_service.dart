@@ -9,7 +9,7 @@ class EncryptionService {
     return _instance;
   }
 
-  final AesGcm _algorithm = AesGcm.with256bits();
+  final _algorithm = AesGcm.with256bits();
 
   static final EncryptionService _instance = EncryptionService._();
 
