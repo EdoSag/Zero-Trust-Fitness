@@ -3,15 +3,16 @@ import 'package:nowa_runtime/nowa_runtime.dart';
 import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'dart:convert';
-import 'package:zerotrust_fitness/security_repository.dart';
-import 'package:zerotrust_fitness/encryption_service.dart';
-import 'package:zerotrust_fitness/local_vault.dart';
-import 'package:zerotrust_fitness/integrations/supabase_service.dart';
+import 'package:zerotrust_fitness/core/security/encryption_service.dart';
+import 'package:zerotrust_fitness/core/services/supabase_service.dart';
+import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 
 @NowaGenerated()
 class ManualIngestionBottomSheet extends StatefulWidget {
   @NowaGenerated({'loader': 'auto-constructor'})
-  const ManualIngestionBottomSheet({super.key});
+  const ManualIngestionBottomSheet({super.key, required this.secretKey});
+
+  final SecretKey? secretKey;
 
   @override
   State<ManualIngestionBottomSheet> createState() {
@@ -173,13 +174,15 @@ class _ManualIngestionBottomSheetState
         'timestamp': DateTime.now().toIso8601String(),
       };
       final jsonString = jsonEncode(data);
-      final masterKeyBase64 = await SecurityRepository().getOrCreateMasterKey();
-      final secretKey = SecretKey(base64Url.decode(masterKeyBase64));
+      final secretKey = widget.secretKey;
+      if (secretKey == null) {
+        throw StateError('Vault is locked. Unlock before saving data.');
+      }
       final encryptedBlob = await EncryptionService().encryptString(
         jsonString,
         secretKey,
       );
-      await LocalVault().saveWorkout(encryptedBlob);
+      await LocalVault().saveWorkout(encryptedBlob, secretKey);
       await SupabaseService().syncLocalToSupabase(encryptedBlob);
       if (mounted) {
         Navigator.pop(context);
