@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
-import 'package:zerotrust_fitness/health_service.dart';
+import 'package:zerotrust_fitness/features/health/data/health_service.dart';
 import 'package:zerotrust_fitness/components/manual_ingestion_bottom_sheet.dart';
-import 'package:provider/provider.dart';
-import 'package:zerotrust_fitness/misc.dart';
+import 'package:zerotrust_fitness/features/app/providers.dart';
 import 'package:zerotrust_fitness/components/security_barrier.dart';
 import 'package:flutter/services.dart';
 import 'package:zerotrust_fitness/components/shimmer_loader.dart';
 import 'package:zerotrust_fitness/components/hero_ring.dart';
+import 'package:zerotrust_fitness/globals/app_state.dart';
+import 'package:zerotrust_fitness/main.dart';
 
 @NowaGenerated()
 class DashboardPage extends StatefulWidget {
@@ -79,13 +80,64 @@ class _DashboardPageState extends State<DashboardPage> {
     return (value / goal).clamp(0, 1);
   }
 
-  void _showManualIngestion(BuildContext context) {
+  void _showManualIngestion(BuildContext context, SecretKey? secretKey) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const ManualIngestionBottomSheet(),
+      builder: (context) => ManualIngestionBottomSheet(secretKey: secretKey),
     );
+  }
+
+
+  Future<void> _unlockVault(dynamic ref) async {
+    final passphraseController = TextEditingController();
+    final passphrase = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unlock Vault'),
+        content: TextField(
+          controller: passphraseController,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'Passphrase'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(passphraseController.text),
+            child: const Text('Unlock'),
+          ),
+        ],
+      ),
+    );
+
+    if (passphrase == null || passphrase.isEmpty) {
+      return;
+    }
+
+    final unlocked = await ref
+        .read(securityEnclaveProvider.notifier)
+        .initialize(passphrase);
+
+    if (!unlocked) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Authentication failed.')),
+        );
+      }
+      return;
+    }
+
+    final tasksInitialized = sharedPrefs.getBool('bg_tasks_initialized') ?? false;
+    if (!tasksInitialized) {
+      await AppState.of(context, listen: false).initializeBackgroundTasks();
+      await sharedPrefs.setBool('bg_tasks_initialized', true);
+    }
+
+    HapticFeedback.mediumImpact();
   }
 
   @override
@@ -97,10 +149,7 @@ class _DashboardPageState extends State<DashboardPage> {
         final isLocked = secretKey == null;
         return SecurityBarrier(
           isLocked: isLocked,
-          onUnlock: () async {
-            await ref.read(securityEnclaveProvider.notifier).initialize();
-            HapticFeedback.mediumImpact();
-          },
+          onUnlock: () => _unlockVault(ref),
           child: Scaffold(
             appBar: AppBar(
               title: const Text('Zero-Trust Health'),
@@ -109,7 +158,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   icon: const Icon(Icons.lock_outline_rounded),
                   onPressed: () {
                     HapticFeedback.heavyImpact();
-                    ref.read(securityEnclaveProvider.notifier).build();
+                    ref.read(securityEnclaveProvider.notifier).lock();
                   },
                 ),
               ],
@@ -164,7 +213,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
             floatingActionButton: FloatingActionButton(
-              onPressed: () => _showManualIngestion(context),
+              onPressed: () => _showManualIngestion(context, secretKey),
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: Colors.white,
               child: const Icon(Icons.add),

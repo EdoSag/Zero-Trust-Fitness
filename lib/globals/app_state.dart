@@ -1,12 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:zerotrust_fitness/globals/themes.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
-import 'package:zerotrust_fitness/functions/callback_dispatcher.dart';
-import 'package:flutter/rendering.dart';
-import 'package:zerotrust_fitness/misc.dart';
-import 'package:zerotrust_fitness/widget_service.dart';
-import 'package:zerotrust_fitness/integration_service.dart';
 import 'package:provider/provider.dart';
+import 'package:zerotrust_fitness/features/app/providers.dart';
+import 'package:zerotrust_fitness/features/health/domain/integration_service.dart';
+import 'package:zerotrust_fitness/functions/callback_dispatcher.dart';
+import 'package:zerotrust_fitness/globals/themes.dart';
+import 'package:zerotrust_fitness/widget_service.dart';
 
 @NowaGenerated()
 class AppState extends ChangeNotifier {
@@ -18,9 +18,7 @@ class AppState extends ChangeNotifier {
 
   ThemeData _theme = lightTheme;
 
-  ThemeData get theme {
-    return _theme;
-  }
+  ThemeData get theme => _theme;
 
   void changeTheme(ThemeData theme) {
     _theme = theme;
@@ -28,7 +26,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> initializeBackgroundTasks() async {
-    await Workmanager().initialize(callbackDispatcher, isInDebugMode: true);
+    await Workmanager().initialize(callbackDispatcher, isInDebugMode: kDebugMode);
     await Workmanager().registerPeriodicTask(
       '1',
       syncTask,
@@ -39,7 +37,7 @@ class AppState extends ChangeNotifier {
 
   void callbackDispatcher() {
     Workmanager().executeTask((task, _) async {
-      if (task == 'syncTask') {
+      if (task == syncTask) {
         final container = ProviderContainer();
         try {
           final secretKey = container.read(securityEnclaveProvider);
@@ -47,7 +45,7 @@ class AppState extends ChangeNotifier {
             await WidgetService.redactWidget();
             return true;
           }
-          await IntegrationService().syncHealthToVault();
+          await IntegrationService().syncHealthToVault(secretKey);
         } finally {
           container.dispose();
         }
