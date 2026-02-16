@@ -18,7 +18,7 @@ dependencies:
   riverpod_annotation: 3.0.0
   cryptography_flutter: 2.3.2
   sqlcipher_flutter_libs: 0.6.4
-  drift: 2.18.0
+  drift: ^2.31.0
   health: 13.1.4
   cryptography: 2.7.0
   flutter_secure_storage: 9.2.2
