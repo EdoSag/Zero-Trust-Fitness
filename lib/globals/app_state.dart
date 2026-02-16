@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:zerotrust_fitness/globals/themes.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
+import 'package:zerotrust_fitness/functions/callback_dispatcher.dart';
+import 'package:flutter/rendering.dart';
+import 'package:zerotrust_fitness/misc.dart';
+import 'package:zerotrust_fitness/widget_service.dart';
+import 'package:zerotrust_fitness/integration_service.dart';
 import 'package:provider/provider.dart';
 
 @NowaGenerated()
@@ -20,5 +25,34 @@ class AppState extends ChangeNotifier {
   void changeTheme(ThemeData theme) {
     _theme = theme;
     notifyListeners();
+  }
+
+  Future<void> initializeBackgroundTasks() async {
+    await Workmanager().initialize(callbackDispatcher, isInDebugMode: true);
+    await Workmanager().registerPeriodicTask(
+      '1',
+      syncTask,
+      frequency: const Duration(hours: 6),
+      constraints: Constraints(networkType: NetworkType.connected),
+    );
+  }
+
+  void callbackDispatcher() {
+    Workmanager().executeTask((task, _) async {
+      if (task == 'syncTask') {
+        final container = ProviderContainer();
+        try {
+          final secretKey = container.read(securityEnclaveProvider);
+          if (secretKey == null) {
+            await WidgetService.redactWidget();
+            return true;
+          }
+          await IntegrationService().syncHealthToVault();
+        } finally {
+          container.dispose();
+        }
+      }
+      return true;
+    });
   }
 }

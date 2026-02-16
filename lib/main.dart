@@ -7,9 +7,6 @@ import 'package:zerotrust_fitness/globals/app_state.dart';
 import 'package:zerotrust_fitness/globals/router.dart';
 
 @NowaGenerated()
-late final SharedPreferences sharedPrefs;
-
-@NowaGenerated()
 main() async {
   WidgetsFlutterBinding.ensureInitialized();
   sharedPrefs = await SharedPreferences.getInstance();
@@ -35,3 +32,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+@NowaGenerated()
+late final SharedPreferences sharedPrefs;

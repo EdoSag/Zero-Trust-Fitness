@@ -6,6 +6,9 @@ import 'package:nowa_runtime/nowa_runtime.dart';
 final GoRouter appRouter = GoRouter(
   initialLocation: '/home-page',
   routes: [
-    GoRoute(path: '/home-page', builder: (context, state) => const HomePage()),
+    GoRoute(
+      path: '/DashboardPage',
+      builder: (context, state) => const HomePage(),
+    ),
   ],
 );

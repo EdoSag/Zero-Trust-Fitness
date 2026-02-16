@@ -3,19 +3,25 @@ import 'package:nowa_runtime/nowa_runtime.dart';
 
 @NowaGenerated()
 final ThemeData lightTheme = ThemeData(
-  colorScheme: const ColorScheme.light(
-    secondary: Color(0xFF000000),
-    tertiary: Color(0xFF9C57F9),
-    onPrimary: Color(0xFF000000),
-    onSecondary: Color(0xFF6200EE),
-    onTertiary: Color(0xFF000000),
-    primary: Color(0xFF6200EE),
+  useMaterial3: true,
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: const Color(0xFF6366F1),
+    primary: const Color(0xFF6366F1),
+    secondary: const Color(0xFFF43F5E),
+    brightness: Brightness.light,
   ),
   textTheme: const TextTheme(),
 );
 
 @NowaGenerated()
 final ThemeData darkTheme = ThemeData(
-  colorScheme: const ColorScheme.dark(),
-  textTheme: const TextTheme(),
+  useMaterial3: true,
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: const Color(0xFF6366F1),
+    primary: const Color(0xFF6366F1),
+    secondary: const Color(0xFFF43F5E),
+    brightness: Brightness.dark,
+    surface: const Color(0xFF121212),
+  ),
+  scaffoldBackgroundColor: const Color(0xFF000000),
 );
