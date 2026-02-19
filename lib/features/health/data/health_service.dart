@@ -1,3 +1,4 @@
+import 'package:health/health.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 
 @NowaGenerated()
