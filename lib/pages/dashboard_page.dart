@@ -1,7 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
+import 'package:provider/provider.dart' as legacy; // Prefix to avoid Riverpod collision
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
 import 'package:zerotrust_fitness/components/manual_ingestion_bottom_sheet.dart';
 import 'package:zerotrust_fitness/features/app/providers.dart';
@@ -13,20 +15,21 @@ import 'package:zerotrust_fitness/globals/app_state.dart';
 import 'package:zerotrust_fitness/main.dart';
 
 @NowaGenerated()
-class DashboardPage extends StatefulWidget {
+// Changed from StatefulWidget to ConsumerStatefulWidget
+class DashboardPage extends ConsumerStatefulWidget {
   @NowaGenerated({'loader': 'auto-constructor'})
   const DashboardPage({super.key});
 
   @override
-  State<DashboardPage> createState() {
+  ConsumerState<DashboardPage> createState() {
     return _DashboardPageState();
   }
 }
 
 @NowaGenerated()
-class _DashboardPageState extends State<DashboardPage> {
+// Changed from State to ConsumerState
+class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _isLoading = false;
-
   List<HealthDataPoint> _healthData = [];
 
   @override
@@ -36,22 +39,18 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _loadHealthData() async {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final healthService = HealthService();
       final hasPermission = await healthService.requestPermissions();
       if (hasPermission) {
         final data = await healthService.fetchLatestData();
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
         setState(() => _healthData = data);
       }
     } catch (e) {
-      debugPrint('Error loading health data: ${e}');
+      debugPrint('Error loading health data: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -61,18 +60,14 @@ class _DashboardPageState extends State<DashboardPage> {
 
   String _getMetricValue(HealthDataType type, {String unit = ''}) {
     final points = _healthData.where((p) => p.type == type).toList();
-    if (points.isEmpty) {
-      return '0';
-    }
+    if (points.isEmpty) return '0';
     double sum = 0;
     for (var p in points) {
       if (p.value is NumericHealthValue) {
         sum += (p.value as NumericHealthValue).numericValue;
       }
     }
-    if (type == HealthDataType.STEPS) {
-      return sum.toInt().toString();
-    }
+    if (type == HealthDataType.STEPS) return sum.toInt().toString();
     return sum.toStringAsFixed(0);
   }
 
@@ -91,8 +86,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-
-  Future<void> _unlockVault(dynamic ref) async {
+  // Changed dynamic ref to WidgetRef for type safety
+  Future<void> _unlockVault(WidgetRef ref) async {
     final passphraseController = TextEditingController();
     final passphrase = await showDialog<String>(
       context: context,
@@ -116,9 +111,7 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
 
-    if (passphrase == null || passphrase.isEmpty) {
-      return;
-    }
+    if (passphrase == null || passphrase.isEmpty) return;
 
     final unlocked = await ref
         .read(securityEnclaveProvider.notifier)
@@ -128,9 +121,7 @@ class _DashboardPageState extends State<DashboardPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'Unlock failed. Use biometrics and a passphrase with at least 12 characters.',
-            ),
+            content: Text('Unlock failed. Use biometrics and at least 12 characters.'),
           ),
         );
       }
@@ -139,6 +130,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     final tasksInitialized = sharedPrefs.getBool('bg_tasks_initialized') ?? false;
     if (!tasksInitialized) {
+      // Use the 'legacy' prefix to access Nowa's AppState provider
       await AppState.of(context, listen: false).initializeBackgroundTasks();
       await sharedPrefs.setBool('bg_tasks_initialized', true);
     }
@@ -149,84 +141,72 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Consumer(
-      builder: (context, ref, child) {
-        final secretKey = ref.watch(securityEnclaveProvider);
-        final isLocked = secretKey == null;
-        return SecurityBarrier(
-          isLocked: isLocked,
-          onUnlock: () => _unlockVault(ref),
-          child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Zero-Trust Health'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.lock_outline_rounded),
-                  onPressed: () {
-                    HapticFeedback.heavyImpact();
-                    ref.read(securityEnclaveProvider.notifier).lock();
-                  },
-                ),
-              ],
+    
+    // With ConsumerState, we watch providers directly without a 'Consumer' widget
+    final secretKey = ref.watch(securityEnclaveProvider);
+    final isLocked = secretKey == null;
+
+    return SecurityBarrier(
+      isLocked: isLocked,
+      onUnlock: () => _unlockVault(ref),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Zero-Trust Health'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.lock_outline_rounded),
+              onPressed: () {
+                HapticFeedback.heavyImpact();
+                ref.read(securityEnclaveProvider.notifier).lock();
+              },
             ),
-            body: _isLoading
-                ? const Center(child: ShimmerLoader())
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: ShimmerLoader())
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            HeroRing(
-                              label: 'Steps',
-                              progress: _getMetricProgress(
-                                HealthDataType.STEPS,
-                                10000,
-                              ),
-                              value: _getMetricValue(HealthDataType.STEPS),
-                              color: const Color(0xFF6366F1),
-                              icon: Icons.directions_walk,
-                            ),
-                            HeroRing(
-                              label: 'Heart Points',
-                              progress: _getMetricProgress(
-                                HealthDataType.EXERCISE_TIME,
-                                30,
-                              ),
-                              value: _getMetricValue(
-                                HealthDataType.EXERCISE_TIME,
-                                unit: 'pts',
-                              ),
-                              color: const Color(0xFFF43F5E),
-                              icon: Icons.favorite,
-                            ),
-                          ],
+                        HeroRing(
+                          label: 'Steps',
+                          progress: _getMetricProgress(HealthDataType.STEPS, 10000),
+                          value: _getMetricValue(HealthDataType.STEPS),
+                          color: const Color(0xFF6366F1),
+                          icon: Icons.directions_walk,
                         ),
-                        const SizedBox(height: 40),
-                        _buildAnalyticsSection(theme),
-                        const SizedBox(height: 32),
-                        Text(
-                          'Recent Activity',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        HeroRing(
+                          label: 'Heart Points',
+                          progress: _getMetricProgress(HealthDataType.EXERCISE_TIME, 30),
+                          value: _getMetricValue(HealthDataType.EXERCISE_TIME, unit: 'pts'),
+                          color: const Color(0xFFF43F5E),
+                          icon: Icons.favorite,
                         ),
-                        const SizedBox(height: 16),
-                        _buildActivityFeed(theme),
                       ],
                     ),
-                  ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () => _showManualIngestion(context, secretKey),
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-              child: const Icon(Icons.add),
-            ),
-          ),
-        );
-      },
+                    const SizedBox(height: 40),
+                    _buildAnalyticsSection(theme),
+                    const SizedBox(height: 32),
+                    Text(
+                      'Recent Activity',
+                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildActivityFeed(theme),
+                  ],
+                ),
+              ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showManualIngestion(context, secretKey),
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: Colors.white,
+          child: const Icon(Icons.add),
+        ),
+      ),
     );
   }
 
@@ -252,7 +232,7 @@ class _DashboardPageState extends State<DashboardPage> {
             height: 180,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: Colors.black.withOpacity(0.2),
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Center(
@@ -275,9 +255,7 @@ class _DashboardPageState extends State<DashboardPage> {
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: theme.colorScheme.secondary.withValues(
-                alpha: 0.1,
-              ),
+              backgroundColor: theme.colorScheme.secondary.withOpacity(0.1),
               child: Icon(Icons.bolt, color: theme.colorScheme.secondary),
             ),
             title: Text(index == 0 ? 'High Intensity Run' : 'Morning Walk'),
@@ -285,17 +263,13 @@ class _DashboardPageState extends State<DashboardPage> {
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.1),
+                color: Colors.green.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+                border: Border.all(color: Colors.green.withOpacity(0.5)),
               ),
               child: const Text(
                 'VAULTED',
-                style: TextStyle(
-                  color: Colors.green,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold),
               ),
             ),
           ),

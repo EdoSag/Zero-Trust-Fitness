@@ -28,6 +28,25 @@
     <string>LaunchScreen</string>
     <key>UIMainStoryboardFile</key>
     <string>Main</string>
+    
+    <key>NSHealthShareUsageDescription</key>
+    <string>We need access to your health data to encrypt and secure your fitness metrics in your private vault.</string>
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>We need permission to save workout data to your secure local vault.</string>
+    
+    <key>NSFaceIDUsageDescription</key>
+    <string>Use Face ID to unlock your encrypted fitness vault.</string>
+
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>processing</string>
+    </array>
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>syncTask</string>
+    </array>
+
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
@@ -45,8 +64,5 @@
     <true/>
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
-    <key>NSFaceIDUsageDescription</key>
-    <string>Use Face ID to unlock your encrypted fitness vault.</string>
-    
 </dict>
 </plist>

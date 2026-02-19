@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod tools
 import 'package:nowa_runtime/nowa_runtime.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as legacy; // Prefixing to avoid collision
 import 'package:workmanager/workmanager.dart';
 import 'package:zerotrust_fitness/features/app/providers.dart';
 import 'package:zerotrust_fitness/features/health/domain/integration_service.dart';
@@ -14,7 +15,8 @@ class AppState extends ChangeNotifier {
   AppState();
 
   factory AppState.of(BuildContext context, {bool listen = true}) {
-    return Provider.of<AppState>(context, listen: listen);
+    // Use the prefixed legacy provider for Nowa compatibility
+    return legacy.Provider.of<AppState>(context, listen: listen);
   }
 
   ThemeData _theme = lightTheme;
@@ -27,31 +29,17 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> initializeBackgroundTasks() async {
-    await Workmanager().initialize(callbackDispatcher, isInDebugMode: kDebugMode);
+    // Ensure you use the top-level callbackDispatcher imported from its own file
+    await Workmanager().initialize(
+      callbackDispatcher, // This must be the top-level function in callback_dispatcher.dart
+      isInDebugMode: kDebugMode,
+    );
+    
     await Workmanager().registerPeriodicTask(
       '1',
       syncTask,
       frequency: const Duration(hours: 6),
       constraints: Constraints(networkType: NetworkType.connected),
     );
-  }
-
-  void callbackDispatcher() {
-    Workmanager().executeTask((task, _) async {
-      if (task == syncTask) {
-        final container = ProviderContainer();
-        try {
-          final secretKey = container.read(securityEnclaveProvider);
-          if (secretKey == null) {
-            await WidgetService.redactWidget();
-            return true;
-          }
-          await IntegrationService().syncHealthToVault(secretKey);
-        } finally {
-          container.dispose();
-        }
-      }
-      return true;
-    });
   }
 }
