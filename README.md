@@ -43,17 +43,17 @@ All sensitive records (Workouts, Vitals, GPS) follow this flow:
 ## 📈 Roadmap
 
 ### Phase 1: The Foundation (Current)
-- [ ] Initialize Repository and Project Structure.
-- [ ] Implement Secure Key Storage (Keychain/Keystore).
-- [ ] Build basic UI for manual activity logging.
+- [x] Initialize Repository and Project Structure.
+- [x] Implement Secure Key Storage (Keychain/Keystore).
+- [x] Build basic UI for manual activity logging.
 
 ### Phase 2: The Integration
-- [ ] Connect to **Apple HealthKit** and **Android Health Connect**.
-- [ ] Real-time GPS tracking for runs and cycles.
-- [ ] Privacy-focused data visualizations (Charts/Graphs).
+- [x] Connect to **Apple HealthKit** and **Android Health Connect**.
+- [x] Real-time GPS tracking for runs and cycles.
+- [x] Privacy-focused data visualizations (Charts/Graphs).
 
 ### Phase 3: The Ghost Sync
-- [ ] Implement End-to-End Encrypted (E2EE) cloud backup.
+- [x] Implement End-to-End Encrypted (E2EE) cloud backup.
 - [ ] Multi-device sync using the user's private key.
 - [ ] Self-hosting guide for Docker/Nextcloud.
 
