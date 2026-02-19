@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Added this
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +11,8 @@ import 'package:zerotrust_fitness/globals/router.dart';
 main() async {
   WidgetsFlutterBinding.ensureInitialized();
   sharedPrefs = await SharedPreferences.getInstance();
+  
+  // Note: Ensure your .env file is in pubspec.yaml assets!
   await SupabaseService().initialize();
 
   final appState = AppState();
@@ -17,7 +20,12 @@ main() async {
     await appState.initializeBackgroundTasks();
   }
 
-  runApp(MyApp(appState: appState));
+  // Wrap the entire app in ProviderScope for Riverpod 3.0 support
+  runApp(
+    ProviderScope(
+      child: MyApp(appState: appState),
+    ),
+  );
 }
 
 @NowaGenerated({'visibleInNowa': false})
@@ -34,6 +42,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<AppState>.value(value: appState),
       ],
       builder: (context, child) => MaterialApp.router(
+        debugShowCheckedModeBanner: false, // Cleaner look
         theme: AppState.of(context).theme,
         routerConfig: appRouter,
       ),
