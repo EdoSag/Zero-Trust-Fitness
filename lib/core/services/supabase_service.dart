@@ -48,6 +48,11 @@ class SupabaseService {
       throw StateError('Missing SUPABASE_URL or SUPABASE_ANON_KEY in .env');
     }
 
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.scheme.toLowerCase() != 'https') {
+      throw StateError('SUPABASE_URL must be a valid HTTPS URL.');
+    }
+
     await Supabase.initialize(url: url, anonKey: anonKey);
   }
 }

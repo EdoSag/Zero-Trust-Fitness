@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:convert';
 
+import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
@@ -13,10 +15,22 @@ class LocalVault {
 
   static final LocalVault _instance = LocalVault._();
   QueryExecutor? _executor;
+  String? _activeKeyFingerprint;
+
+  Future<String> _buildKeyFingerprint(SecretKey secretKey) async {
+    final keyBytes = await secretKey.extractBytes();
+    final digest = await Sha256().hash(keyBytes);
+    return base64Url.encode(digest.bytes);
+  }
 
   Future<void> _openWithKey(SecretKey secretKey) async {
-    if (_executor != null) {
+    final keyFingerprint = await _buildKeyFingerprint(secretKey);
+    if (_executor != null && _activeKeyFingerprint == keyFingerprint) {
       return;
+    }
+
+    if (_executor != null && _activeKeyFingerprint != keyFingerprint) {
+      await close();
     }
 
     final keyBytes = await secretKey.extractBytes();
@@ -31,6 +45,13 @@ class LocalVault {
       file,
       setup: (database) {
         database.execute("PRAGMA key = \"x'$dbKeyHex'\";");
+        database.execute('PRAGMA cipher_memory_security = ON;');
+        final cipherVersion = database.select('PRAGMA cipher_version;');
+        if (cipherVersion.isEmpty || cipherVersion.first.values.isEmpty) {
+          throw StateError(
+            'SQLCipher is not active. Refusing to open local vault without encryption.',
+          );
+        }
         database.execute('PRAGMA foreign_keys = ON;');
         database.execute(
           'CREATE TABLE IF NOT EXISTS workouts ('
@@ -41,6 +62,7 @@ class LocalVault {
         );
       },
     );
+    _activeKeyFingerprint = keyFingerprint;
   }
 
   Future<void> saveWorkout(String encryptedData, SecretKey secretKey) async {
@@ -61,5 +83,11 @@ class LocalVault {
         .map((row) => row['encrypted_data'])
         .whereType<String>()
         .toList(growable: false);
+  }
+
+  Future<void> close() async {
+    await _executor?.close();
+    _executor = null;
+    _activeKeyFingerprint = null;
   }
 }

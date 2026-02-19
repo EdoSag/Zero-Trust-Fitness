@@ -2,6 +2,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:zerotrust_fitness/core/security/key_derivation_service.dart';
 import 'package:zerotrust_fitness/core/security/security_repository.dart';
+import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 
 @NowaGenerated()
 class SecurityEnclave extends Notifier<SecretKey?> {
@@ -9,10 +10,14 @@ class SecurityEnclave extends Notifier<SecretKey?> {
   final KeyDerivationService _keyDerivationService = KeyDerivationService();
 
   Future<bool> initialize(String passphrase) async {
+    if (passphrase.trim().length < 12) {
+      return false;
+    }
+
     final isAvailable = await _localAuth.canCheckBiometrics;
     final isDeviceSupported = await _localAuth.isDeviceSupported();
 
-    if (!isAvailable && !isDeviceSupported) {
+    if (!isAvailable || !isDeviceSupported) {
       return false;
     }
 
@@ -35,6 +40,7 @@ class SecurityEnclave extends Notifier<SecretKey?> {
   }
 
   void lock() {
+    LocalVault().close();
     state = null;
   }
 
