@@ -125,7 +125,11 @@ class _DashboardPageState extends State<DashboardPage> {
     if (!unlocked) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Authentication failed.')),
+          const SnackBar(
+            content: Text(
+              'Unlock failed. Use biometrics and a passphrase with at least 12 characters.',
+            ),
+          ),
         );
       }
       return;
