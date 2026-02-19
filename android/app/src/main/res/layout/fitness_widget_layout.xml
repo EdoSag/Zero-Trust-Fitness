@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="#1A1A1A">
+
+    <TextView
+        android:id="@+id/widget_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Vault Locked 🔒"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="14sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Steps"
+        android:textColor="#BFBFBF"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/widget_steps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="---"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Heart Points"
+        android:textColor="#BFBFBF"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/widget_points"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="---"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+</LinearLayout>
