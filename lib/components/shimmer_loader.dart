@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
+import 'package:shimmer/shimmer.dart';
 
 @NowaGenerated()
 class ShimmerLoader extends StatelessWidget {
@@ -9,8 +10,8 @@ class ShimmerLoader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: Colors.grey[900],
-      highlightColor: Colors.grey[800],
+      baseColor: Colors.grey[900]!,
+      highlightColor: Colors.grey[800]!,
       child: Column(
         children: List.generate(
           3,

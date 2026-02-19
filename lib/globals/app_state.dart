@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:provider/provider.dart';
+import 'package:workmanager/workmanager.dart';
 import 'package:zerotrust_fitness/features/app/providers.dart';
 import 'package:zerotrust_fitness/features/health/domain/integration_service.dart';
 import 'package:zerotrust_fitness/functions/callback_dispatcher.dart';

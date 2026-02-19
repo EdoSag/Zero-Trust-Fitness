@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:cryptography/cryptography.dart';
+import 'package:health/health.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/services/supabase_service.dart';
