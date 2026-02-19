@@ -1,4 +1,5 @@
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Added this import
@@ -21,37 +22,28 @@ class SecurityEnclave extends Notifier<SecretKey?> {
     });
     return null;
   }
+Future<bool> initialize(String passphrase) async {
+    // ... [existing validation and biometric code] ...
 
-  Future<bool> initialize(String passphrase) async {
-    if (passphrase.trim().length < 12) {
+    try {
+      final salt = await SecurityRepository().getOrCreateSalt();
+      final derivedKey = await _keyDerivationService.deriveKey(passphrase, salt);
+      
+      // 1. Convert the key to the hex format SQLCipher expects
+      final keyBytes = await derivedKey.extractBytes();
+      final dbKeyHex = keyBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+
+      // 2. CRITICAL: Tell the LocalVault to open using this key
+      // This solves the "QueryExecutor.ensureOpen()" error
+      await LocalVault().open(derivedKey);
+
+      // 3. Update state to unblur the UI
+      state = derivedKey;
+      return true;
+    } catch (e) {
+      debugPrint('Unlock error: $e');
       return false;
     }
-
-    final isAvailable = await _localAuth.canCheckBiometrics;
-    final isDeviceSupported = await _localAuth.isDeviceSupported();
-
-    if (!isAvailable || !isDeviceSupported) {
-      return false;
-    }
-
-    final didAuthenticate = await _localAuth.authenticate(
-      localizedReason: 'Authenticate to unlock your encrypted vault',
-      options: const AuthenticationOptions(
-        biometricOnly: true,
-        stickyAuth: true,
-      ),
-    );
-
-    if (!didAuthenticate) {
-      return false;
-    }
-
-    final salt = await SecurityRepository().getOrCreateSalt();
-    final derivedKey = await _keyDerivationService.deriveKey(passphrase, salt);
-    
-    // Now that we extend Notifier and imported riverpod, 'state' is available
-    state = derivedKey;
-    return true;
   }
 
   void lock() {

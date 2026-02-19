@@ -65,6 +65,12 @@ class LocalVault {
     _activeKeyFingerprint = keyFingerprint;
   }
 
+  Future<void> open(SecretKey secretKey) async {
+    // We simply call your existing robust private method
+    await _openWithKey(secretKey);
+    print("Zero-Trust Vault: Connection decrypted and open.");
+  }
+
   Future<void> saveWorkout(String encryptedData, SecretKey secretKey) async {
     await _openWithKey(secretKey);
     await _executor!.runInsert(

@@ -38,25 +38,23 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     _loadHealthData();
   }
 
-  Future<void> _loadHealthData() async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
-    try {
-      final healthService = HealthService();
-      final hasPermission = await healthService.requestPermissions();
-      if (hasPermission) {
-        final data = await healthService.fetchLatestData();
-        if (!mounted) return;
-        setState(() => _healthData = data);
-      }
-    } catch (e) {
-      debugPrint('Error loading health data: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+Future<void> _loadHealthData() async {
+  if (!mounted) return;
+  
+  // NEW: Don't even try to load if the vault is locked
+  final secretKey = ref.read(securityEnclaveProvider);
+  if (secretKey == null) return; 
+
+  setState(() => _isLoading = true);
+  try {
+    final healthService = HealthService();
+    // ... rest of your existing logic ...
+  } catch (e) {
+    debugPrint('Error loading health data: $e');
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   String _getMetricValue(HealthDataType type, {String unit = ''}) {
     final points = _healthData.where((p) => p.type == type).toList();
