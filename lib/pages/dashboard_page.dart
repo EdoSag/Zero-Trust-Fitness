@@ -13,6 +13,7 @@ import 'package:zerotrust_fitness/components/shimmer_loader.dart';
 import 'package:zerotrust_fitness/components/hero_ring.dart';
 import 'package:zerotrust_fitness/globals/app_state.dart';
 import 'package:zerotrust_fitness/main.dart';
+import 'package:zerotrust_fitness/widget_service.dart';
 
 @NowaGenerated()
 // Changed from StatefulWidget to ConsumerStatefulWidget
@@ -41,14 +42,40 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 Future<void> _loadHealthData() async {
   if (!mounted) return;
   
-  // NEW: Don't even try to load if the vault is locked
   final secretKey = ref.read(securityEnclaveProvider);
-  if (secretKey == null) return; 
+  if (secretKey == null) {
+    await WidgetService.redactWidget();
+    return;
+  }
 
   setState(() => _isLoading = true);
   try {
     final healthService = HealthService();
-    // ... rest of your existing logic ...
+    final hasPermissions = await healthService.requestPermissions();
+    if (!hasPermissions) {
+      debugPrint('Health permissions denied.');
+      return;
+    }
+
+    final healthData = await healthService.fetchLatestData();
+    final deduplicated = Health().removeDuplicates(healthData);
+
+    if (!mounted) return;
+    setState(() => _healthData = deduplicated);
+
+    final totalSteps = deduplicated
+        .where((p) => p.type == HealthDataType.STEPS)
+        .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
+
+    final heartPoints = deduplicated
+        .where((p) => p.type == HealthDataType.EXERCISE_TIME)
+        .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
+
+    await WidgetService.updateWidgetData(
+      steps: totalSteps,
+      heartPoints: heartPoints,
+      isLocked: false,
+    );
   } catch (e) {
     debugPrint('Error loading health data: $e');
   } finally {
@@ -56,14 +83,26 @@ Future<void> _loadHealthData() async {
   }
 }
 
+  double _extractNumericValue(HealthDataPoint point) {
+    final value = point.value;
+
+    if (value is NumericHealthValue) {
+      return value.numericValue;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value.toString()) ?? 0;
+  }
+
   String _getMetricValue(HealthDataType type, {String unit = ''}) {
     final points = _healthData.where((p) => p.type == type).toList();
     if (points.isEmpty) return '0';
     double sum = 0;
     for (var p in points) {
-      if (p.value is NumericHealthValue) {
-        sum += (p.value as NumericHealthValue).numericValue;
-      }
+      sum += _extractNumericValue(p);
     }
     if (type == HealthDataType.STEPS) return sum.toInt().toString();
     return sum.toStringAsFixed(0);
@@ -134,6 +173,7 @@ Future<void> _loadHealthData() async {
     }
 
     HapticFeedback.mediumImpact();
+    await _loadHealthData();
   }
 
   @override
