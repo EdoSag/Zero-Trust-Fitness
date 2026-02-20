@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -37,6 +39,64 @@ class SupabaseService {
       'data_blob': encryptedData,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     });
+  }
+
+  Future<List<int>> fetchSaltForCurrentUser() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user found.');
+    }
+
+    final dynamic row = await Supabase.instance.client
+        .from('profiles')
+        .select('salt')
+        .eq('id', user.id)
+        .single();
+
+    final saltValue = row['salt'];
+    if (saltValue is! String || saltValue.isEmpty) {
+      throw Exception('No valid salt found for this account.');
+    }
+
+    try {
+      return base64Url.decode(saltValue);
+    } catch (_) {
+      throw Exception('Stored salt is not a valid base64url string.');
+    }
+  }
+
+  Future<void> upsertSaltForCurrentUser(List<int> salt) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user found.');
+    }
+
+    await Supabase.instance.client.from('profiles').upsert({
+      'id': user.id,
+      'salt': base64Url.encode(salt),
+    });
+  }
+
+  Future<String?> fetchEncryptedVaultBlobForCurrentUser() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user found.');
+    }
+
+    final rows = await Supabase.instance.client
+        .from('encrypted_vault')
+        .select('data_blob, updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', ascending: false)
+        .limit(1);
+
+    if (rows.isEmpty) {
+      return null;
+    }
+
+    final latestRow = rows.first;
+    final blob = latestRow['data_blob'];
+    return blob is String ? blob : null;
   }
 
   Future<void> initialize() async {

@@ -15,6 +15,10 @@ class SecurityRepository {
 
   static const String _saltKey = 'vault_pbkdf2_salt';
 
+  Future<void> saveSalt(List<int> salt) async {
+    await _storage.write(key: _saltKey, value: base64Url.encode(salt));
+  }
+
   Future<List<int>> getOrCreateSalt() async {
     final existing = await _storage.read(key: _saltKey);
     if (existing != null && existing.isNotEmpty) {
