@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zerotrust_fitness/features/app/providers.dart';
 import 'package:zerotrust_fitness/features/app/onboarding_notifier.dart';
+import 'package:zerotrust_fitness/globals/app_state.dart';
+import 'package:zerotrust_fitness/main.dart';
 
 class FirstTimeOnboardingPage extends ConsumerStatefulWidget {
   const FirstTimeOnboardingPage({super.key});
@@ -24,23 +27,44 @@ class _OnboardingPageState extends ConsumerState<FirstTimeOnboardingPage> {
   }
 
   Future<void> _handleSignUp() async {
+    final masterPassword = _passwordController.text;
     await ref.read(onboardingProvider.notifier).createAccount(
           email: _emailController.text.trim(),
-          masterPassword: _passwordController.text,
+          masterPassword: masterPassword,
           enableBiometrics: _enableBiometrics,
         );
+
+    await _postAuthInitialization(masterPassword);
 
     _handlePostAuthFeedback(successMessage: 'Vault Initialized!');
   }
 
   Future<void> _handleSignIn() async {
+    final masterPassword = _passwordController.text;
     await ref.read(onboardingProvider.notifier).signIn(
           email: _emailController.text.trim(),
-          masterPassword: _passwordController.text,
+          masterPassword: masterPassword,
           enableBiometrics: _enableBiometrics,
         );
 
+    await _postAuthInitialization(masterPassword);
+
     _handlePostAuthFeedback(successMessage: 'Vault unlocked from cloud backup.');
+  }
+
+  Future<void> _postAuthInitialization(String masterPassword) async {
+    final state = ref.read(onboardingProvider);
+    if (state.hasError) {
+      return;
+    }
+
+    await ref.read(securityEnclaveProvider.notifier).initialize(masterPassword);
+
+    final tasksInitialized = sharedPrefs.getBool('bg_tasks_initialized') ?? false;
+    if (!tasksInitialized && mounted) {
+      await AppState.of(context, listen: false).initializeBackgroundTasks();
+      await sharedPrefs.setBool('bg_tasks_initialized', true);
+    }
   }
 
   void _handlePostAuthFeedback({required String successMessage}) {
