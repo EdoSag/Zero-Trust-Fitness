@@ -14,6 +14,8 @@ import 'package:zerotrust_fitness/components/hero_ring.dart';
 import 'package:zerotrust_fitness/globals/app_state.dart';
 import 'package:zerotrust_fitness/main.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 @NowaGenerated()
 // Changed from StatefulWidget to ConsumerStatefulWidget
@@ -32,6 +34,8 @@ class DashboardPage extends ConsumerStatefulWidget {
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _isLoading = false;
   List<HealthDataPoint> _healthData = [];
+final LocalAuthentication _auth = LocalAuthentication();
+final _storage = const FlutterSecureStorage();
 
   @override
   void initState() {
@@ -86,15 +90,18 @@ Future<void> _loadHealthData() async {
   double _extractNumericValue(HealthDataPoint point) {
     final value = point.value;
 
+    // 1. Handle NumericHealthValue (most common for steps/calories)
     if (value is NumericHealthValue) {
-      return value.numericValue;
+      return value.numericValue.toDouble(); // Added .toDouble()
     }
 
+    // 2. Handle cases where value might already be a num (int or double)
     if (value is num) {
-      return value.toDouble();
+      return (value as NumericHealthValue).numericValue.toDouble(); // Cast to NumericHealthValue to access numericValue
     }
 
-    return double.tryParse(value.toString()) ?? 0;
+    // 3. Fallback for unexpected types
+    return double.tryParse(value.toString()) ?? 0.0;
   }
 
   String _getMetricValue(HealthDataType type, {String unit = ''}) {
@@ -125,15 +132,46 @@ Future<void> _loadHealthData() async {
 
   // Changed dynamic ref to WidgetRef for type safety
   Future<void> _unlockVault(WidgetRef ref) async {
-    final passphraseController = TextEditingController();
-    final passphrase = await showDialog<String>(
+  final LocalAuthentication auth = LocalAuthentication();
+  const storage = FlutterSecureStorage();
+  String? finalPassphrase;
+
+  try {
+    // 1. Check if biometrics are available and configured
+    final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
+    final bool isDeviceSupported = await auth.isDeviceSupported();
+
+    if (canAuthenticateWithBiometrics && isDeviceSupported) {
+      // 2. Attempt biometric authentication
+      final bool didAuthenticate = await auth.authenticate(
+        localizedReason: 'Scan fingerprint to unlock your health dashboard',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: true, // Forces fingerprint/face specifically
+        ),
+      );
+
+      if (didAuthenticate) {
+        // 3. Retrieve the saved passphrase from the secure hardware enclave
+        finalPassphrase = await storage.read(key: 'vault_passphrase');
+      }
+    }
+  } catch (e) {
+    debugPrint('Biometric authentication error: $e');
+    // Fallback to manual if biometrics error out
+  }
+
+  // 4. Fallback: If biometrics failed or no passphrase was saved yet, show Dialog
+  if (finalPassphrase == null) {
+    final TextEditingController passphraseController = TextEditingController();
+    finalPassphrase = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Unlock Vault'),
         content: TextField(
           controller: passphraseController,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'Passphrase'),
+          decoration: const InputDecoration(labelText: 'Master Passphrase'),
         ),
         actions: [
           TextButton(
@@ -147,34 +185,38 @@ Future<void> _loadHealthData() async {
         ],
       ),
     );
-
-    if (passphrase == null || passphrase.isEmpty) return;
-
-    final unlocked = await ref
-        .read(securityEnclaveProvider.notifier)
-        .initialize(passphrase);
-
-    if (!unlocked) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unlock failed. Use biometrics and at least 12 characters.'),
-          ),
-        );
-      }
-      return;
-    }
-
-    final tasksInitialized = sharedPrefs.getBool('bg_tasks_initialized') ?? false;
-    if (!tasksInitialized) {
-      // Use the 'legacy' prefix to access Nowa's AppState provider
-      await AppState.of(context, listen: false).initializeBackgroundTasks();
-      await sharedPrefs.setBool('bg_tasks_initialized', true);
-    }
-
-    HapticFeedback.mediumImpact();
-    await _loadHealthData();
   }
+
+  // Exit if user cancelled manual dialog
+  if (finalPassphrase == null || finalPassphrase.isEmpty) return;
+
+  // 5. Try to initialize the Enclave with the passphrase
+  final unlocked = await ref
+      .read(securityEnclaveProvider.notifier)
+      .initialize(finalPassphrase);
+
+  if (!unlocked) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unlock failed. Invalid passphrase.')),
+      );
+    }
+    return;
+  }
+
+  // 6. Success! If this was a manual entry, save it for future biometric use
+  await storage.write(key: 'vault_passphrase', value: finalPassphrase);
+
+  // 7. Initialize background tasks if needed
+  final tasksInitialized = sharedPrefs.getBool('bg_tasks_initialized') ?? false;
+  if (!tasksInitialized) {
+    await AppState.of(context, listen: false).initializeBackgroundTasks();
+    await sharedPrefs.setBool('bg_tasks_initialized', true);
+  }
+
+  HapticFeedback.mediumImpact();
+  await _loadHealthData();
+}
 
   @override
   Widget build(BuildContext context) {

@@ -63,11 +63,11 @@ class IntegrationService {
     final value = point.value;
 
     if (value is NumericHealthValue) {
-      return value.numericValue;
+      return value.numericValue.toDouble();
     }
 
     if (value is num) {
-      return value.toDouble();
+      return (value as NumericHealthValue).numericValue.toDouble();
     }
 
     return double.tryParse(value.toString()) ?? 0;

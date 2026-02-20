@@ -6,10 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/globals/app_state.dart';
 import 'package:zerotrust_fitness/globals/router.dart';
+import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 
 @NowaGenerated()
 main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  LocalVault().setupSqlCipher(); // Ensure SQLCipher is set up before any database operations
   sharedPrefs = await SharedPreferences.getInstance();
   
   // Note: Ensure your .env file is in pubspec.yaml assets!

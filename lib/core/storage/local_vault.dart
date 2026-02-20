@@ -1,11 +1,14 @@
 import 'dart:io';
 import 'dart:convert';
-
+import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:sqlite3/open.dart' as sqlite_open;
+import 'package:sqlite3/sqlite3.dart'; 
+import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 
 @NowaGenerated()
 class LocalVault {
@@ -22,6 +25,14 @@ class LocalVault {
     final digest = await Sha256().hash(keyBytes);
     return base64Url.encode(digest.bytes);
   }
+
+void setupSqlCipher() {
+  // Using the aliased import avoids the property/variable confusion
+  sqlite_open.open.overrideFor(
+    sqlite_open.OperatingSystem.android, 
+    openCipherOnAndroid,
+  );
+}
 
   Future<void> _openWithKey(SecretKey secretKey) async {
     final keyFingerprint = await _buildKeyFingerprint(secretKey);
