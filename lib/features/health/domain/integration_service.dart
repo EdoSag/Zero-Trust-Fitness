@@ -18,10 +18,19 @@ class IntegrationService {
   static final IntegrationService _instance = IntegrationService._();
 
   Future<void> syncHealthToVault(SecretKey secretKey) async {
-    final healthData = await HealthService().fetchLatestData();
-    var totalSteps = 0;
+    final healthService = HealthService();
+    final hasPermissions = await healthService.requestPermissions();
+    if (!hasPermissions) {
+      return;
+    }
 
-    for (final point in healthData) {
+    final healthData = await healthService.fetchLatestData();
+    final deduplicated = Health().removeDuplicates(healthData);
+
+    var totalSteps = 0;
+    var totalHeartPoints = 0;
+
+    for (final point in deduplicated) {
       final jsonString = jsonEncode({
         'type': point.type.toString(),
         'value': point.value.toString(),
@@ -35,16 +44,32 @@ class IntegrationService {
       await LocalVault().saveWorkout(encryptedBlob, secretKey);
       await SupabaseService().syncLocalToSupabase(encryptedBlob);
 
-      if (point.type == HealthDataType.STEPS && point.value is NumericHealthValue) {
-        totalSteps += (point.value as NumericHealthValue).numericValue.toInt();
+      final numericValue = _extractNumericValue(point);
+      if (point.type == HealthDataType.STEPS) {
+        totalSteps += numericValue.toInt();
+      } else if (point.type == HealthDataType.EXERCISE_TIME) {
+        totalHeartPoints += numericValue.toInt();
       }
     }
 
-    final totalPoints = (totalSteps / 1000).floor();
     await WidgetService.updateWidgetData(
       steps: totalSteps,
-      heartPoints: totalPoints,
+      heartPoints: totalHeartPoints,
       isLocked: false,
     );
+  }
+
+  double _extractNumericValue(HealthDataPoint point) {
+    final value = point.value;
+
+    if (value is NumericHealthValue) {
+      return value.numericValue;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value.toString()) ?? 0;
   }
 }
