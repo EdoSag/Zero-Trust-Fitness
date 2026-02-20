@@ -92,7 +92,12 @@ Future<void> _loadHealthData() async {
 
     // 1. Handle NumericHealthValue (most common for steps/calories)
     if (value is NumericHealthValue) {
-      return value.numericValue.toDouble(); // Added .toDouble()
+      final numericValue = value.numericValue;
+      if (numericValue is num) {
+        return numericValue.toDouble();
+      }
+
+      return double.tryParse(numericValue.toString()) ?? 0;
     }
 
     // 2. Handle cases where value might already be a num (int or double)
