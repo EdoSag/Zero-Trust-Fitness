@@ -67,7 +67,7 @@ class IntegrationService {
     }
 
     if (value is num) {
-      return (value as NumericHealthValue).numericValue.toDouble();
+      return value.toDouble();
     }
 
     return double.tryParse(value.toString()) ?? 0;

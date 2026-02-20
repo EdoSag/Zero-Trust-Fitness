@@ -97,7 +97,7 @@ Future<void> _loadHealthData() async {
 
     // 2. Handle cases where value might already be a num (int or double)
     if (value is num) {
-      return (value as NumericHealthValue).numericValue.toDouble(); // Cast to NumericHealthValue to access numericValue
+      return value.toDouble();
     }
 
     // 3. Fallback for unexpected types
