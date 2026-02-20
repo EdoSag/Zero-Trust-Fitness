@@ -134,16 +134,22 @@ class _OnboardingPageState extends ConsumerState<FirstTimeOnboardingPage> {
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: OutlinedButton(
-                    onPressed: isLoading ? null : _handleSignIn,
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('SIGN IN'),
-                  ),
-                ),
+  width: double.infinity,
+  height: 56,
+  child: OutlinedButton(
+    onPressed: isLoading ? null : _handleSignIn, // Disables button while loading
+    style: OutlinedButton.styleFrom(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+    child: isLoading 
+      ? const SizedBox(
+          height: 20, 
+          width: 20, 
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ) 
+      : const Text('SIGN IN'), // Shows text when NOT loading
+  ),
+),
               ],
             ),
           ),
