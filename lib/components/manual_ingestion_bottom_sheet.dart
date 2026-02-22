@@ -184,7 +184,15 @@ class _ManualIngestionBottomSheetState
         secretKey,
       );
       await LocalVault().saveWorkout(encryptedBlob, secretKey);
-      await SupabaseService().syncLocalToSupabase(encryptedBlob);
+
+      // Cloud sync is best-effort; manual logging should still succeed offline
+      // or when the user is not authenticated yet.
+      try {
+        await SupabaseService().syncLocalToSupabase(encryptedBlob);
+      } catch (e) {
+        debugPrint('Supabase sync failed (continuing with local save): $e');
+      }
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -195,6 +203,11 @@ class _ManualIngestionBottomSheetState
       }
     } catch (e) {
       debugPrint('Save error: ${e}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save activity: $e')),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
