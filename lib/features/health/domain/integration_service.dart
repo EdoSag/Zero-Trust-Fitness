@@ -60,21 +60,17 @@ class IntegrationService {
   }
 
   double _extractNumericValue(HealthDataPoint point) {
-    final value = point.value;
+  final value = point.value;
 
-    if (value is NumericHealthValue) {
-      final numericValue = value.numericValue;
-      if (numericValue is num) {
-        return numericValue.toDouble();
-      }
-
-      return double.tryParse(numericValue.toString()) ?? 0;
-    }
-
-    if (value is num) {
-      return value.toDouble();
-    }
-
-    return double.tryParse(value.toString()) ?? 0;
+  // 1. You MUST check the type first
+  if (value is NumericHealthValue) {
+    // 2. You then access 'numericValue' (which is the actual num/double)
+    // 3. DO NOT call .toDouble() on 'value'. Call it on 'value.numericValue'.
+    return value.numericValue.toDouble();
   }
+
+  // 4. If it's not a NumericHealthValue, we can't treat it like a number directly.
+  // We have to convert it to a string and try to parse it.
+  return double.tryParse(value.toString()) ?? 0.0;
+}
 }

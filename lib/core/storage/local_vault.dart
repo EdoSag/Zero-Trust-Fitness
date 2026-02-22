@@ -7,8 +7,6 @@ import 'package:drift/native.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/open.dart' as sqlite_open;
-import 'package:sqlite3/sqlite3.dart'; 
-import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 
 @NowaGenerated()
 class LocalVault {
@@ -17,6 +15,7 @@ class LocalVault {
   LocalVault._();
 
   static final LocalVault _instance = LocalVault._();
+  static const _vaultExecutorUser = _VaultExecutorUser();
   QueryExecutor? _executor;
   String? _activeKeyFingerprint;
 
@@ -73,6 +72,7 @@ void setupSqlCipher() {
         );
       },
     );
+    await _executor!.ensureOpen(_vaultExecutorUser);
     _activeKeyFingerprint = keyFingerprint;
   }
 
@@ -107,4 +107,14 @@ void setupSqlCipher() {
     _executor = null;
     _activeKeyFingerprint = null;
   }
+}
+
+class _VaultExecutorUser implements QueryExecutorUser {
+  const _VaultExecutorUser();
+
+  @override
+  int get schemaVersion => 1;
+
+  @override
+  Future<void> beforeOpen(QueryExecutor executor, OpeningDetails details) async {}
 }

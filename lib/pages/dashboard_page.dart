@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:cryptography/cryptography.dart';
@@ -19,6 +21,8 @@ import 'package:zerotrust_fitness/widget_service.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:zerotrust_fitness/heart_point_calculator.dart';
+import 'package:zerotrust_fitness/core/security/encryption_service.dart';
+import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 
 @NowaGenerated()
 // Changed from StatefulWidget to ConsumerStatefulWidget
@@ -37,6 +41,7 @@ class DashboardPage extends ConsumerStatefulWidget {
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _isLoading = false;
   List<HealthDataPoint> _healthData = [];
+  List<Map<String, dynamic>> _recentActivities = [];
 final LocalAuthentication _auth = LocalAuthentication();
 final _storage = const FlutterSecureStorage();
   final GpsTrackingService _gpsTrackingService = GpsTrackingService();
@@ -93,12 +98,13 @@ Future<void> _loadHealthData() async {
           .where((p) => p.type == HealthDataType.HEART_RATE)
           .fold<int>(0, (sum, p) {
             final bpm = _extractNumericValue(p);
-            return sum + HeartPointCalculator.calculateFromHeartRate(bpm, 1);
+            return sum + _calculateHeartPointsFromHeartRate(bpm, 1);
           });
     }
 
     final secretKey = ref.read(securityEnclaveProvider);
     if (secretKey == null) {
+      await _loadRecentActivities();
       return;
     }
 
@@ -107,6 +113,7 @@ Future<void> _loadHealthData() async {
       heartPoints: heartPoints,
       isLocked: false,
     );
+    await _loadRecentActivities();
   } catch (e) {
     debugPrint('Error loading health data: $e');
   } finally {
@@ -114,26 +121,63 @@ Future<void> _loadHealthData() async {
   }
 }
 
+  Future<void> _loadRecentActivities() async {
+    final secretKey = ref.read(securityEnclaveProvider);
+    if (secretKey == null) {
+      if (mounted) {
+        setState(() => _recentActivities = []);
+      }
+      return;
+    }
+
+    try {
+      final encryptedRows = await LocalVault().fetchWorkouts(secretKey);
+      final activities = <Map<String, dynamic>>[];
+
+      for (final encrypted in encryptedRows) {
+        if (activities.length == 3) break;
+        try {
+          final decrypted = await EncryptionService().decryptString(
+            encrypted,
+            secretKey,
+          );
+          final decoded = jsonDecode(decrypted);
+          if (decoded is Map<String, dynamic>) {
+            activities.add(decoded);
+          } else if (decoded is Map) {
+            activities.add(decoded.map((k, v) => MapEntry('$k', v)));
+          }
+        } catch (_) {
+          // Skip entries that fail to decrypt or parse.
+        }
+      }
+
+      if (!mounted) return;
+      setState(() => _recentActivities = activities);
+    } catch (e) {
+      debugPrint('Error loading recent activities: $e');
+      if (!mounted) return;
+      setState(() => _recentActivities = []);
+    }
+  }
+
   double _extractNumericValue(HealthDataPoint point) {
     final value = point.value;
 
     // 1. Handle NumericHealthValue (most common for steps/calories)
     if (value is NumericHealthValue) {
-      final numericValue = value.numericValue;
-      if (numericValue is num) {
-        return numericValue.toDouble();
-      }
-
-      return double.tryParse(numericValue.toString()) ?? 0;
+      return value.numericValue.toDouble();
     }
 
-    // 2. Handle cases where value might already be a num (int or double)
-    if (value is num) {
-      return value.toDouble();
-    }
-
-    // 3. Fallback for unexpected types
+    // 2. Fallback for non-numeric HealthValue variants
     return double.tryParse(value.toString()) ?? 0.0;
+  }
+
+  int _calculateHeartPointsFromHeartRate(double bpm, int minutes) {
+    // Fallback profile assumption when user age is not captured in state.
+    const assumedAge = 30;
+    final maxHeartRate = HeartPointCalculator.calculateMaxHeartRate(assumedAge);
+    return HeartPointCalculator.calculatePoints(bpm, maxHeartRate, minutes);
   }
 
   String _getMetricValue(HealthDataType type, {String unit = ''}) {
@@ -153,13 +197,15 @@ Future<void> _loadHealthData() async {
     return (value / goal).clamp(0, 1);
   }
 
-  void _showManualIngestion(BuildContext context, SecretKey? secretKey) {
-    showModalBottomSheet(
+  Future<void> _showManualIngestion(BuildContext context, SecretKey? secretKey) async {
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ManualIngestionBottomSheet(secretKey: secretKey),
     );
+
+    await _loadRecentActivities();
   }
 
   // Changed dynamic ref to WidgetRef for type safety
@@ -301,6 +347,7 @@ Future<void> _loadHealthData() async {
               onPressed: () {
                 HapticFeedback.heavyImpact();
                 ref.read(securityEnclaveProvider.notifier).lock();
+                setState(() => _recentActivities = []);
                 WidgetService.redactWidget();
               },
             ),
@@ -347,7 +394,7 @@ Future<void> _loadHealthData() async {
                 ),
               ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () => _showManualIngestion(context, secretKey),
+          onPressed: () async => _showManualIngestion(context, secretKey),
           backgroundColor: theme.colorScheme.primary,
           foregroundColor: Colors.white,
           child: const Icon(Icons.add),
@@ -438,18 +485,33 @@ Future<void> _loadHealthData() async {
   }
 
   Widget _buildActivityFeed(ThemeData theme) {
+    if (_recentActivities.isEmpty) {
+      return Card(
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: theme.colorScheme.secondary.withOpacity(0.1),
+            child: Icon(Icons.inbox_outlined, color: theme.colorScheme.secondary),
+          ),
+          title: const Text('No recent activities'),
+          subtitle: const Text('Add one manually or sync from health data.'),
+        ),
+      );
+    }
+
     return Column(
-      children: List.generate(
-        3,
-        (index) => Card(
+      children: _recentActivities.map((activity) {
+        final title = _activityTitle(activity);
+        final subtitle = _activitySubtitle(activity);
+        final tag = _activityTag(activity);
+        return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: theme.colorScheme.secondary.withOpacity(0.1),
-              child: Icon(Icons.bolt, color: theme.colorScheme.secondary),
+              child: Icon(_activityIcon(activity), color: theme.colorScheme.secondary),
             ),
-            title: Text(index == 0 ? 'High Intensity Run' : 'Morning Walk'),
-            subtitle: const Text('Secured in local vault'),
+            title: Text(title),
+            subtitle: Text(subtitle),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
@@ -457,14 +519,77 @@ Future<void> _loadHealthData() async {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.green.withOpacity(0.5)),
               ),
-              child: const Text(
-                'VAULTED',
+              child: Text(
+                tag,
                 style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      }).toList(),
     );
+  }
+
+  String _activityTitle(Map<String, dynamic> activity) {
+    final rawType = (activity['type'] ?? 'Activity').toString();
+    if (rawType.startsWith('HealthDataType.')) {
+      final normalized = rawType
+          .replaceFirst('HealthDataType.', '')
+          .replaceAll('_', ' ')
+          .toLowerCase();
+      return normalized
+          .split(' ')
+          .where((part) => part.isNotEmpty)
+          .map((part) => part[0].toUpperCase() + part.substring(1))
+          .join(' ');
+    }
+    return rawType;
+  }
+
+  String _activitySubtitle(Map<String, dynamic> activity) {
+    final timestampRaw = activity['timestamp'] ?? activity['date'];
+    final parsedTimestamp = timestampRaw is String
+        ? DateTime.tryParse(timestampRaw)?.toLocal()
+        : null;
+
+    final timeText = parsedTimestamp == null
+        ? 'Unknown time'
+        : '${parsedTimestamp.year.toString().padLeft(4, '0')}-'
+            '${parsedTimestamp.month.toString().padLeft(2, '0')}-'
+            '${parsedTimestamp.day.toString().padLeft(2, '0')} '
+            '${parsedTimestamp.hour.toString().padLeft(2, '0')}:'
+            '${parsedTimestamp.minute.toString().padLeft(2, '0')}';
+
+    final duration = activity['duration'];
+    final intensity = activity['intensity'];
+    if (duration != null) {
+      final intensityText = intensity == null ? 'n/a' : '$intensity/10';
+      return '$duration min, intensity $intensityText, $timeText';
+    }
+
+    final value = activity['value'];
+    if (value != null) {
+      return 'Value: $value, $timeText';
+    }
+
+    return timeText;
+  }
+
+  String _activityTag(Map<String, dynamic> activity) {
+    if (activity.containsKey('duration')) {
+      return 'MANUAL';
+    }
+    return 'AUTO';
+  }
+
+  IconData _activityIcon(Map<String, dynamic> activity) {
+    final type = _activityTitle(activity).toLowerCase();
+    if (type.contains('run')) return Icons.directions_run;
+    if (type.contains('walk')) return Icons.directions_walk;
+    if (type.contains('cycl')) return Icons.directions_bike;
+    if (type.contains('swim')) return Icons.pool;
+    if (type.contains('heart')) return Icons.favorite;
+    if (type.contains('step')) return Icons.hiking;
+    return Icons.bolt;
   }
 }
