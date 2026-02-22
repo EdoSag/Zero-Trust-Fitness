@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
+import 'package:zerotrust_fitness/core/security/private_key_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 @NowaGenerated()
@@ -11,6 +13,21 @@ class SupabaseService {
   factory SupabaseService() => _instance;
 
   static final SupabaseService _instance = SupabaseService._();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
+  static const String _deviceIdKey = 'sync_device_id';
+
+
+  Future<String> _getOrCreateDeviceId() async {
+    final existing = await _storage.read(key: _deviceIdKey);
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
+    }
+
+    final created = DateTime.now().microsecondsSinceEpoch.toString();
+    await _storage.write(key: _deviceIdKey, value: created);
+    return created;
+  }
 
   Future<AuthResponse> signIn(String email, String password) {
     return Supabase.instance.client.auth.signInWithPassword(
@@ -34,9 +51,16 @@ class SupabaseService {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
+    final signedPayload = await PrivateKeyService().signBase64Payload(encryptedData);
+    final publicKey = await PrivateKeyService().getPublicKeyBase64();
+    final deviceId = await _getOrCreateDeviceId();
+
     await Supabase.instance.client.from('encrypted_vault').upsert({
       'user_id': user.id,
       'data_blob': encryptedData,
+      'signature': signedPayload,
+      'public_key': publicKey,
+      'device_id': deviceId,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     });
   }
