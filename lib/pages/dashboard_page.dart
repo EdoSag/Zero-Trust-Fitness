@@ -16,6 +16,7 @@ import 'package:zerotrust_fitness/main.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:zerotrust_fitness/heart_point_calculator.dart';
 
 @NowaGenerated()
 // Changed from StatefulWidget to ConsumerStatefulWidget
@@ -45,16 +46,15 @@ final _storage = const FlutterSecureStorage();
 
 Future<void> _loadHealthData() async {
   if (!mounted) return;
-  
-  final secretKey = ref.read(securityEnclaveProvider);
-  if (secretKey == null) {
-    await WidgetService.redactWidget();
-    return;
-  }
 
   setState(() => _isLoading = true);
   try {
     final healthService = HealthService();
+    final isHealthConnectAvailable = await healthService.isHealthConnectAvailable();
+    if (!isHealthConnectAvailable) {
+      debugPrint('Health Connect is unavailable. Install/enable it before syncing.');
+    }
+
     final hasPermissions = await healthService.requestPermissions();
     if (!hasPermissions) {
       debugPrint('Health permissions denied.');
@@ -71,9 +71,23 @@ Future<void> _loadHealthData() async {
         .where((p) => p.type == HealthDataType.STEPS)
         .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
 
-    final heartPoints = deduplicated
+    var heartPoints = deduplicated
         .where((p) => p.type == HealthDataType.EXERCISE_TIME)
         .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
+
+    if (heartPoints == 0) {
+      heartPoints = deduplicated
+          .where((p) => p.type == HealthDataType.HEART_RATE)
+          .fold<int>(0, (sum, p) {
+            final bpm = _extractNumericValue(p);
+            return sum + HeartPointCalculator.calculateFromHeartRate(bpm, 1);
+          });
+    }
+
+    final secretKey = ref.read(securityEnclaveProvider);
+    if (secretKey == null) {
+      return;
+    }
 
     await WidgetService.updateWidgetData(
       steps: totalSteps,
@@ -243,6 +257,7 @@ Future<void> _loadHealthData() async {
               onPressed: () {
                 HapticFeedback.heavyImpact();
                 ref.read(securityEnclaveProvider.notifier).lock();
+                WidgetService.redactWidget();
               },
             ),
           ],

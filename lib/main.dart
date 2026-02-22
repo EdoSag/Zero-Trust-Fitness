@@ -7,6 +7,7 @@ import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/globals/app_state.dart';
 import 'package:zerotrust_fitness/globals/router.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
+import 'package:home_widget/home_widget.dart';
 
 @NowaGenerated()
 main() async {
@@ -16,6 +17,7 @@ main() async {
   
   // Note: Ensure your .env file is in pubspec.yaml assets!
   await SupabaseService().initialize();
+  await HomeWidget.setAppGroupId('group.zerotrustfitness');
 
   final appState = AppState();
   if (sharedPrefs.getBool('bg_tasks_initialized') ?? false) {
