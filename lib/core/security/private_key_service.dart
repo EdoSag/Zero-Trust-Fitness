@@ -19,10 +19,7 @@ class PrivateKeyService {
     final encoded = await _storage.read(key: _privateKeyStorageKey);
     if (encoded != null && encoded.isNotEmpty) {
       final keyBytes = base64Url.decode(encoded);
-      return SimpleKeyPairData(
-        keyBytes,
-        type: KeyPairType.ed25519,
-      );
+      return _algorithm.newKeyPairFromSeed(keyBytes);
     }
 
     final keyPair = await _algorithm.newKeyPair();
@@ -32,7 +29,7 @@ class PrivateKeyService {
       value: base64Url.encode(privateKey),
     );
 
-    return SimpleKeyPairData(privateKey, type: KeyPairType.ed25519);
+    return keyPair;
   }
 
   Future<String> getPublicKeyBase64() async {
