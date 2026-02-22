@@ -33,37 +33,102 @@ struct Provider: TimelineProvider {
     }
 }
 
+struct StatCard: View {
+    let title: String
+    let value: String
+    let icon: String
+    let gradient: LinearGradient
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 10, weight: .bold))
+            }
+            .foregroundColor(.white.opacity(0.85))
+
+            Text(value)
+                .font(.system(size: 24, weight: .black, design: .rounded))
+                .foregroundColor(.white)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(gradient)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(.white.opacity(0.22), lineWidth: 1)
+        )
+    }
+}
+
 struct FitnessWidgetEntryView: View {
     var entry: Provider.Entry
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Zero-Trust Stats")
-                .font(.caption)
-                .foregroundColor(.secondary)
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.05, green: 0.11, blue: 0.24),
+                    Color(red: 0.10, green: 0.29, blue: 0.63),
+                    Color(red: 0.65, green: 0.12, blue: 0.35)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
 
-            Spacer()
+            Circle()
+                .fill(Color.white.opacity(0.15))
+                .frame(width: 120, height: 120)
+                .offset(x: 80, y: -60)
 
-            HStack {
-                VStack(alignment: .leading) {
-                    Text("\(entry.steps)").font(.title).bold()
-                    Text("Steps").font(.caption2)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("ZERO-TRUST FITNESS")
+                        .font(.system(size: 11, weight: .heavy))
+                        .foregroundColor(.white.opacity(0.92))
+                    Spacer()
+                    Text(entry.isLocked ? "Vault Locked" : "Securely Synced")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(entry.isLocked ? .white : Color(red: 0.82, green: 0.98, blue: 0.90))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.white.opacity(0.18))
+                        .clipShape(Capsule())
                 }
-                Spacer()
-                VStack(alignment: .leading) {
-                    Text("\(entry.heartPoints)").font(.title).bold()
-                    Text("Points").font(.caption2)
-                }
-            }
-            .blur(radius: entry.isLocked ? 12 : 0)
 
-            if entry.isLocked {
-                Text("Tap to Unlock")
-                    .font(.system(size: 10))
-                    .foregroundColor(.red)
+                HStack(spacing: 8) {
+                    StatCard(
+                        title: "STEPS",
+                        value: entry.isLocked ? "---" : "\(entry.steps)",
+                        icon: "figure.walk",
+                        gradient: LinearGradient(
+                            colors: [Color(red: 0.21, green: 0.30, blue: 0.91), Color(red: 0.30, green: 0.53, blue: 0.96)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+
+                    StatCard(
+                        title: "HEART POINTS",
+                        value: entry.isLocked ? "---" : "\(entry.heartPoints)",
+                        icon: "heart.fill",
+                        gradient: LinearGradient(
+                            colors: [Color(red: 0.86, green: 0.18, blue: 0.34), Color(red: 0.95, green: 0.34, blue: 0.45)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                }
+
+                Text(entry.isLocked ? "Unlock in app to reveal your latest stats." : "Encrypted sync is active.")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.white.opacity(0.85))
             }
+            .padding(12)
         }
-        .padding()
     }
 }
 
