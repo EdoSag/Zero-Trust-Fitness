@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:provider/provider.dart' as legacy; // Prefix to avoid Riverpod collision
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
+import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/components/manual_ingestion_bottom_sheet.dart';
 import 'package:zerotrust_fitness/features/app/providers.dart';
 import 'package:zerotrust_fitness/components/security_barrier.dart';
 import 'package:flutter/services.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:zerotrust_fitness/components/shimmer_loader.dart';
 import 'package:zerotrust_fitness/components/hero_ring.dart';
 import 'package:zerotrust_fitness/globals/app_state.dart';
@@ -37,10 +39,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   List<HealthDataPoint> _healthData = [];
 final LocalAuthentication _auth = LocalAuthentication();
 final _storage = const FlutterSecureStorage();
+  final GpsTrackingService _gpsTrackingService = GpsTrackingService();
+  GpsTrackingSnapshot _gpsSnapshot = GpsTrackingSnapshot(
+    distanceMeters: 0,
+    elapsed: Duration.zero,
+    currentPaceMinutesPerKm: 0,
+    isTracking: false,
+  );
 
   @override
   void initState() {
     super.initState();
+    _gpsTrackingService.snapshots.listen((snapshot) {
+      if (!mounted) return;
+      setState(() => _gpsSnapshot = snapshot);
+    });
     _loadHealthData();
   }
 
@@ -237,6 +250,37 @@ Future<void> _loadHealthData() async {
   await _loadHealthData();
 }
 
+  Future<void> _toggleGpsTracking() async {
+    if (_gpsSnapshot.isTracking) {
+      await _gpsTrackingService.stop();
+      return;
+    }
+
+    try {
+      await _gpsTrackingService.start();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('GPS tracking unavailable: $e')),
+      );
+    }
+  }
+
+  List<FlSpot> _buildChartSpots(HealthDataType type) {
+    final filtered = _healthData.where((point) => point.type == type).toList()
+      ..sort((a, b) => a.dateFrom.compareTo(b.dateFrom));
+
+    return filtered.asMap().entries.map((entry) {
+      return FlSpot(entry.key.toDouble(), _extractNumericValue(entry.value));
+    }).toList();
+  }
+
+  String _formatElapsed(Duration duration) {
+    final mins = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final secs = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '${duration.inHours.toString().padLeft(2, '0')}:$mins:$secs';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -290,6 +334,8 @@ Future<void> _loadHealthData() async {
                     ),
                     const SizedBox(height: 40),
                     _buildAnalyticsSection(theme),
+                    const SizedBox(height: 24),
+                    _buildGpsTrackingSection(theme),
                     const SizedBox(height: 32),
                     Text(
                       'Recent Activity',
@@ -328,20 +374,64 @@ Future<void> _loadHealthData() async {
             ],
           ),
           const SizedBox(height: 24),
-          Container(
+          SizedBox(
             height: 180,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Center(
-              child: Text(
-                'Performance Charts Loading...',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+            child: LineChart(
+              LineChartData(
+                minY: 0,
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                titlesData: const FlTitlesData(show: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: _buildChartSpots(HealthDataType.STEPS),
+                    isCurved: true,
+                    color: const Color(0xFF6366F1),
+                    dotData: const FlDotData(show: false),
+                    barWidth: 3,
+                  ),
+                  LineChartBarData(
+                    spots: _buildChartSpots(HealthDataType.HEART_RATE),
+                    isCurved: true,
+                    color: const Color(0xFFF43F5E),
+                    dotData: const FlDotData(show: false),
+                    barWidth: 3,
+                  ),
+                ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildGpsTrackingSection(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Real-time GPS', style: theme.textTheme.titleMedium),
+              FilledButton.icon(
+                onPressed: _toggleGpsTracking,
+                icon: Icon(_gpsSnapshot.isTracking ? Icons.stop : Icons.play_arrow),
+                label: Text(_gpsSnapshot.isTracking ? 'Stop' : 'Start'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text('Distance: ${(_gpsSnapshot.distanceMeters / 1000).toStringAsFixed(2)} km'),
+          Text('Elapsed: ${_formatElapsed(_gpsSnapshot.elapsed)}'),
+          Text('Pace: ${_gpsSnapshot.currentPaceMinutesPerKm.toStringAsFixed(2)} min/km'),
         ],
       ),
     );

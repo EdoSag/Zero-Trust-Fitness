@@ -64,5 +64,7 @@
     <true/>
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Location is used for privacy-first on-device run and cycling tracking.</string>
 </dict>
 </plist>

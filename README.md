@@ -54,8 +54,8 @@ All sensitive records (Workouts, Vitals, GPS) follow this flow:
 
 ### Phase 3: The Ghost Sync
 - [x] Implement End-to-End Encrypted (E2EE) cloud backup.
-- [ ] Multi-device sync using the user's private key.
-- [ ] Self-hosting guide for Docker/Nextcloud.
+- [x] Multi-device sync using the user's private key.
+- [x] Self-hosting guide for Docker/Nextcloud ([docs/self-hosting.md](docs/self-hosting.md)).
 
 ---
 
