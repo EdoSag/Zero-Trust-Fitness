@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
@@ -22,7 +21,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:zerotrust_fitness/heart_point_calculator.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:zerotrust_fitness/pages/permissions_page.dart';
 
 @NowaGenerated()
 // Changed from StatefulWidget to ConsumerStatefulWidget
@@ -44,13 +43,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   List<Map<String, dynamic>> _recentActivities = [];
   final Health _health = Health();
   final GpsTrackingService _gpsTrackingService = GpsTrackingService();
-  bool _healthConnectAvailable = true;
-  bool? _stepsPermission;
-  bool? _heartPermission;
-  bool? _exercisePermission;
-  bool? _locationPermission;
-  bool? _backgroundHealthPermission;
-  bool _permissionsBusy = false;
+  int _heartPointsTotal = 0;
   GpsTrackingSnapshot _gpsSnapshot = GpsTrackingSnapshot(
     distanceMeters: 0,
     elapsed: Duration.zero,
@@ -65,7 +58,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       if (!mounted) return;
       setState(() => _gpsSnapshot = snapshot);
     });
-    _refreshPermissionStates();
     _loadHealthData();
   }
 
@@ -77,30 +69,30 @@ Future<void> _loadHealthData() async {
     final healthService = HealthService();
     final isHealthConnectAvailable =
         await healthService.isHealthConnectAvailable();
-    _healthConnectAvailable = isHealthConnectAvailable;
     if (!isHealthConnectAvailable) {
       debugPrint(
         'Health Connect is unavailable. Install/enable it before syncing.',
       );
       setState(() => _healthData = []);
-      await _refreshPermissionStates();
       return;
     }
 
-    final hasPermissions = await _hasAllRequiredHealthPermissions();
-    if (!hasPermissions) {
+    final readableTypes = await _getReadableHealthTypes();
+    if (readableTypes.isEmpty) {
       debugPrint('Health permissions not granted.');
-      setState(() => _healthData = []);
-      await _refreshPermissionStates();
+      setState(() {
+        _healthData = [];
+        _heartPointsTotal = 0;
+      });
       return;
     }
 
-    final healthData = await healthService.fetchLatestData();
+    final healthData = await healthService.fetchLatestData(
+      requestedTypes: readableTypes,
+    );
     final deduplicated = Health().removeDuplicates(healthData);
 
     if (!mounted) return;
-    setState(() => _healthData = deduplicated);
-
     final totalSteps = deduplicated
         .where((p) => p.type == HealthDataType.STEPS)
         .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
@@ -117,21 +109,18 @@ Future<void> _loadHealthData() async {
             return sum + _calculateHeartPointsFromHeartRate(bpm, 1);
           });
     }
+    setState(() {
+      _healthData = deduplicated;
+      _heartPointsTotal = heartPoints;
+    });
 
     final secretKey = ref.read(securityEnclaveProvider);
-    if (secretKey == null) {
-      await _loadRecentActivities();
-      await _refreshPermissionStates();
-      return;
-    }
-
     await WidgetService.updateWidgetData(
       steps: totalSteps,
       heartPoints: heartPoints,
-      isLocked: false,
+      isLocked: secretKey == null,
     );
     await _loadRecentActivities();
-    await _refreshPermissionStates();
   } catch (e) {
     debugPrint('Error loading health data: $e');
   } finally {
@@ -139,7 +128,7 @@ Future<void> _loadHealthData() async {
   }
 }
 
-  Future<bool> _hasAllRequiredHealthPermissions() async {
+  Future<List<HealthDataType>> _getReadableHealthTypes() async {
     final statuses = await Future.wait<bool?>([
       _health.hasPermissions(
         [HealthDataType.STEPS],
@@ -155,105 +144,11 @@ Future<void> _loadHealthData() async {
       ),
     ]);
 
-    // iOS may return null for read checks; treat it as unknown but not denied.
-    return statuses.every((status) => status != false);
-  }
-
-  Future<void> _refreshPermissionStates() async {
-    try {
-      final healthService = HealthService();
-      final healthConnectAvailable = await healthService
-          .isHealthConnectAvailable();
-
-      final results = await Future.wait<bool?>([
-        _health.hasPermissions(
-          [HealthDataType.STEPS],
-          permissions: [HealthDataAccess.READ],
-        ),
-        _health.hasPermissions(
-          [HealthDataType.HEART_RATE],
-          permissions: [HealthDataAccess.READ],
-        ),
-        _health.hasPermissions(
-          [HealthDataType.EXERCISE_TIME],
-          permissions: [HealthDataAccess.READ],
-        ),
-      ]);
-
-      bool? locationGranted;
-      final locationPermission = await Geolocator.checkPermission();
-      final locationServiceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!locationServiceEnabled) {
-        locationGranted = false;
-      } else {
-        locationGranted =
-            locationPermission == LocationPermission.always ||
-            locationPermission == LocationPermission.whileInUse;
-      }
-
-      bool? backgroundHealthGranted = true;
-      if (defaultTargetPlatform == TargetPlatform.android &&
-          healthConnectAvailable) {
-        backgroundHealthGranted =
-            await _health.isHealthDataInBackgroundAuthorized();
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _healthConnectAvailable = healthConnectAvailable;
-        _stepsPermission = results[0];
-        _heartPermission = results[1];
-        _exercisePermission = results[2];
-        _locationPermission = locationGranted;
-        _backgroundHealthPermission = backgroundHealthGranted;
-      });
-    } catch (e) {
-      debugPrint('Permission refresh failed: $e');
-    }
-  }
-
-  Future<void> _handlePermissionAction(Future<void> Function() action) async {
-    if (_permissionsBusy) return;
-    setState(() => _permissionsBusy = true);
-    try {
-      await action();
-      await _refreshPermissionStates();
-      await _loadHealthData();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Permission action failed: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _permissionsBusy = false);
-    }
-  }
-
-  Future<void> _grantHealthType(HealthDataType type) async {
-    await _health.requestAuthorization(
-      [type],
-      permissions: [HealthDataAccess.READ],
-    );
-  }
-
-  Future<void> _disableHealthPermissions() async {
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      await _health.revokePermissions();
-      return;
-    }
-    await Geolocator.openAppSettings();
-  }
-
-  Future<void> _grantLocationPermission() async {
-    await _gpsTrackingService.ensurePermission();
-  }
-
-  Future<void> _disableLocationPermission() async {
-    await Geolocator.openAppSettings();
-  }
-
-  Future<void> _grantBackgroundHealthPermission() async {
-    await _health.requestHealthDataInBackgroundAuthorization();
+    final readableTypes = <HealthDataType>[];
+    if (statuses[0] != false) readableTypes.add(HealthDataType.STEPS);
+    if (statuses[1] != false) readableTypes.add(HealthDataType.HEART_RATE);
+    if (statuses[2] != false) readableTypes.add(HealthDataType.EXERCISE_TIME);
+    return readableTypes;
   }
 
   Future<void> _loadRecentActivities() async {
@@ -315,7 +210,7 @@ Future<void> _loadHealthData() async {
     return HeartPointCalculator.calculatePoints(bpm, maxHeartRate, minutes);
   }
 
-  String _getMetricValue(HealthDataType type, {String unit = ''}) {
+  String _getMetricValue(HealthDataType type) {
     final points = _healthData.where((p) => p.type == type).toList();
     if (points.isEmpty) return '0';
     double sum = 0;
@@ -472,6 +367,18 @@ Future<void> _loadHealthData() async {
           title: const Text('Zero-Trust Health'),
           actions: [
             IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: 'Permissions Center',
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const PermissionsPage(),
+                  ),
+                );
+                await _loadHealthData();
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.lock_outline_rounded),
               onPressed: () {
                 HapticFeedback.heavyImpact();
@@ -492,8 +399,6 @@ Future<void> _loadHealthData() async {
                     _buildMetricHighlights(theme),
                     const SizedBox(height: 20),
                     _buildAnalyticsSection(theme),
-                    const SizedBox(height: 24),
-                    _buildPermissionsSection(theme),
                     const SizedBox(height: 24),
                     _buildGpsTrackingSection(theme),
                     const SizedBox(height: 32),
@@ -618,7 +523,7 @@ Future<void> _loadHealthData() async {
 
   Widget _buildMetricHighlights(ThemeData theme) {
     final steps = _getMetricValue(HealthDataType.STEPS);
-    final points = _getMetricValue(HealthDataType.EXERCISE_TIME, unit: 'pts');
+    final points = _heartPointsTotal.toString();
     return Row(
       children: [
         Expanded(
@@ -760,180 +665,6 @@ Future<void> _loadHealthData() async {
           ),
         );
       }).toList(),
-    );
-  }
-
-  Widget _buildPermissionsSection(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: theme.cardColor.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.admin_panel_settings_outlined, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                'Permissions Center',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              if (_permissionsBusy)
-                const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Control each permission directly from here.',
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 16),
-          _buildPermissionRow(
-            title: 'Steps',
-            description: 'Read daily step count from health provider.',
-            granted: _stepsPermission,
-            onEnable: () => _handlePermissionAction(
-              () => _grantHealthType(HealthDataType.STEPS),
-            ),
-            onDisable: () => _handlePermissionAction(_disableHealthPermissions),
-          ),
-          _buildPermissionRow(
-            title: 'Heart Rate',
-            description: 'Read BPM and heart-rate events.',
-            granted: _heartPermission,
-            onEnable: () => _handlePermissionAction(
-              () => _grantHealthType(HealthDataType.HEART_RATE),
-            ),
-            onDisable: () => _handlePermissionAction(_disableHealthPermissions),
-          ),
-          _buildPermissionRow(
-            title: 'Exercise Time',
-            description: 'Read active exercise minutes for points.',
-            granted: _exercisePermission,
-            onEnable: () => _handlePermissionAction(
-              () => _grantHealthType(HealthDataType.EXERCISE_TIME),
-            ),
-            onDisable: () => _handlePermissionAction(_disableHealthPermissions),
-          ),
-          _buildPermissionRow(
-            title: 'Location',
-            description: 'Enable real-time GPS run/cycle tracking.',
-            granted: _locationPermission,
-            onEnable: () => _handlePermissionAction(_grantLocationPermission),
-            onDisable: () => _handlePermissionAction(_disableLocationPermission),
-          ),
-          if (defaultTargetPlatform == TargetPlatform.android)
-            _buildPermissionRow(
-              title: 'Background Health Sync',
-              description: 'Allow periodic background health data reads.',
-              granted: _backgroundHealthPermission,
-              onEnable: () => _handlePermissionAction(
-                _grantBackgroundHealthPermission,
-              ),
-              onDisable: () => _handlePermissionAction(_disableHealthPermissions),
-            ),
-          if (defaultTargetPlatform == TargetPlatform.android &&
-              !_healthConnectAvailable)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                onPressed: _permissionsBusy
-                    ? null
-                    : () => _handlePermissionAction(_health.installHealthConnect),
-                icon: const Icon(Icons.download_rounded),
-                label: const Text('Install Health Connect'),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPermissionRow({
-    required String title,
-    required String description,
-    required bool? granted,
-    required VoidCallback onEnable,
-    required VoidCallback onDisable,
-  }) {
-    final statusText = granted == true
-        ? 'Granted'
-        : granted == false
-            ? 'Denied'
-            : 'Unknown';
-    final statusColor = granted == true
-        ? Colors.green
-        : granted == false
-            ? Colors.redAccent
-            : Colors.orangeAccent;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  statusText,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(description, style: const TextStyle(fontSize: 12)),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              FilledButton.tonalIcon(
-                onPressed: _permissionsBusy ? null : onEnable,
-                icon: const Icon(Icons.toggle_on),
-                label: const Text('Turn On'),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton.icon(
-                onPressed: _permissionsBusy ? null : onDisable,
-                icon: const Icon(Icons.toggle_off),
-                label: const Text('Turn Off'),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 

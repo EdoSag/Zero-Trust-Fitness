@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:health/health.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 
@@ -22,11 +23,18 @@ class HealthService {
     return await _health.requestAuthorization(types, permissions: permissions);
   }
 
-  Future<List<HealthDataPoint>> fetchLatestData() async {
+  Future<List<HealthDataPoint>> fetchLatestData({
+    List<HealthDataType>? requestedTypes,
+  }) async {
     final now = DateTime.now();
     final yesterday = now.subtract(const Duration(hours: 24));
+    final dataTypes = requestedTypes ?? types;
+    if (dataTypes.isEmpty) {
+      return const <HealthDataPoint>[];
+    }
+
     return await _health.getHealthDataFromTypes(
-      types: types,
+      types: dataTypes,
       startTime: yesterday,
       endTime: now,
     );
@@ -35,11 +43,18 @@ class HealthService {
   /// This checks if Health Connect is installed/available on Android.
   /// On iOS, it will generally return true as HealthKit is a system service.
   Future<bool> isHealthConnectAvailable() async {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return true;
+    }
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return true;
+    }
+
     try {
       final status = await _health.getHealthConnectSdkStatus();
       return status == HealthConnectSdkStatus.sdkAvailable;
-    } catch (e) {
-      // Fallback for iOS or platforms where this check isn't applicable
+    } catch (_) {
+      // On Android, failure here should be treated as unavailable.
       return false;
     }
   }
