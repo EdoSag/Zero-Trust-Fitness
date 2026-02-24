@@ -5,7 +5,6 @@ import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
-import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 
 @NowaGenerated()
@@ -184,14 +183,6 @@ class _ManualIngestionBottomSheetState
         secretKey,
       );
       await LocalVault().saveWorkout(encryptedBlob, secretKey);
-
-      // Cloud sync is best-effort; manual logging should still succeed offline
-      // or when the user is not authenticated yet.
-      try {
-        await SupabaseService().syncLocalToSupabase(encryptedBlob);
-      } catch (e) {
-        debugPrint('Supabase sync failed (continuing with local save): $e');
-      }
 
       if (mounted) {
         Navigator.pop(context);

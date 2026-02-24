@@ -102,6 +102,22 @@ void setupSqlCipher() {
         .toList(growable: false);
   }
 
+  Future<void> replaceWorkouts(
+    List<String> encryptedRows,
+    SecretKey secretKey,
+  ) async {
+    await _openWithKey(secretKey);
+    await _executor!.runUpdate('DELETE FROM workouts', const []);
+
+    final insertedAt = DateTime.now().toUtc().toIso8601String();
+    for (final row in encryptedRows) {
+      await _executor!.runInsert(
+        'INSERT INTO workouts (encrypted_data, created_at) VALUES (?, ?)',
+        [row, insertedAt],
+      );
+    }
+  }
+
   Future<void> close() async {
     await _executor?.close();
     _executor = null;

@@ -48,21 +48,65 @@ class SupabaseService {
   }
 
   Future<void> syncLocalToSupabase(String encryptedData) async {
+    await upsertEncryptedVaultBlobForCurrentUser(encryptedData);
+  }
+
+  Future<void> upsertEncryptedVaultBlobForCurrentUser(String encryptedData) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return;
 
-    final signedPayload = await PrivateKeyService().signBase64Payload(encryptedData);
-    final publicKey = await PrivateKeyService().getPublicKeyBase64();
-    final deviceId = await _getOrCreateDeviceId();
-
-    await Supabase.instance.client.from('encrypted_vault').upsert({
+    final basePayload = {
       'user_id': user.id,
       'data_blob': encryptedData,
-      'signature': signedPayload,
-      'public_key': publicKey,
-      'device_id': deviceId,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
-    });
+    };
+
+    try {
+      final signedPayload = await PrivateKeyService().signBase64Payload(encryptedData);
+      final publicKey = await PrivateKeyService().getPublicKeyBase64();
+      final deviceId = await _getOrCreateDeviceId();
+
+      await Supabase.instance.client.from('encrypted_vault').upsert({
+        ...basePayload,
+        'signature': signedPayload,
+        'public_key': publicKey,
+        'device_id': deviceId,
+      }, onConflict: 'user_id');
+    } on PostgrestException catch (e) {
+      final errorMessage = e.message.toLowerCase();
+      final missingColumnError = errorMessage.contains('column') &&
+          (errorMessage.contains('signature') ||
+              errorMessage.contains('public_key') ||
+              errorMessage.contains('device_id'));
+      final conflictConstraintError = errorMessage.contains('conflict') ||
+          errorMessage.contains('unique') ||
+          errorMessage.contains('constraint');
+      if (!missingColumnError && !conflictConstraintError) rethrow;
+
+      try {
+        await Supabase.instance.client
+            .from('encrypted_vault')
+            .upsert(basePayload, onConflict: 'user_id');
+      } on PostgrestException catch (_) {
+        final existing = await Supabase.instance.client
+            .from('encrypted_vault')
+            .select('id')
+            .eq('user_id', user.id)
+            .limit(1);
+
+        if (existing.isEmpty) {
+          await Supabase.instance.client.from('encrypted_vault').insert(basePayload);
+        } else {
+          await Supabase.instance.client
+              .from('encrypted_vault')
+              .update({
+                'data_blob': encryptedData,
+                'updated_at': basePayload['updated_at'],
+              })
+              .eq('user_id', user.id);
+        }
+      }
+    }
   }
 
   Future<List<int>> fetchSaltForCurrentUser() async {
@@ -109,7 +153,7 @@ class SupabaseService {
 
     final rows = await Supabase.instance.client
         .from('encrypted_vault')
-        .select('data_blob, updated_at')
+        .select('id, data_blob, updated_at')
         .eq('user_id', user.id)
         .order('updated_at', ascending: false)
         .limit(1);

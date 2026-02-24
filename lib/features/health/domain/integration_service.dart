@@ -4,7 +4,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:health/health.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
-import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
@@ -42,7 +41,6 @@ class IntegrationService {
         secretKey,
       );
       await LocalVault().saveWorkout(encryptedBlob, secretKey);
-      await SupabaseService().syncLocalToSupabase(encryptedBlob);
 
       final numericValue = _extractNumericValue(point);
       if (point.type == HealthDataType.STEPS) {

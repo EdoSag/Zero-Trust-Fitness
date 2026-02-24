@@ -20,8 +20,10 @@ import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:zerotrust_fitness/heart_point_calculator.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
+import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 @NowaGenerated()
 // Changed from StatefulWidget to ConsumerStatefulWidget
@@ -39,6 +41,9 @@ class DashboardPage extends ConsumerStatefulWidget {
 // Changed from State to ConsumerState
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _isLoading = false;
+  bool _isSyncing = false;
+  bool _isPulling = false;
+  int? _syncedStepsTotal;
   List<HealthDataPoint> _healthData = [];
   List<Map<String, dynamic>> _recentActivities = [];
   final Health _health = Health();
@@ -212,7 +217,12 @@ Future<void> _loadHealthData() async {
 
   String _getMetricValue(HealthDataType type) {
     final points = _healthData.where((p) => p.type == type).toList();
-    if (points.isEmpty) return '0';
+    if (points.isEmpty) {
+      if (type == HealthDataType.STEPS && _syncedStepsTotal != null) {
+        return _syncedStepsTotal.toString();
+      }
+      return '0';
+    }
     double sum = 0;
     for (var p in points) {
       sum += _extractNumericValue(p);
@@ -336,6 +346,245 @@ Future<void> _loadHealthData() async {
     }
   }
 
+  Future<void> _syncEncryptedVault(SecretKey? secretKey) async {
+    if (_isSyncing) return;
+    if (secretKey == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unlock vault before syncing.')),
+      );
+      return;
+    }
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to sync with cloud vault.')),
+      );
+      return;
+    }
+
+    setState(() => _isSyncing = true);
+    try {
+      final payload = await _buildCloudVaultPayload(secretKey);
+      final payloadJson = jsonEncode(payload);
+      final encryptedPayload = await EncryptionService().encryptString(
+        payloadJson,
+        secretKey,
+      );
+      await SupabaseService().upsertEncryptedVaultBlobForCurrentUser(
+        encryptedPayload,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Sync complete: ${payload['workouts_count']} workouts, ${payload['steps_count']} step records.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cloud sync failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSyncing = false);
+    }
+  }
+
+  Future<Map<String, dynamic>> _buildCloudVaultPayload(
+    SecretKey secretKey,
+  ) async {
+    final encryptedRows = await LocalVault().fetchWorkouts(secretKey);
+    final workouts = <Map<String, dynamic>>[];
+    for (final row in encryptedRows) {
+      try {
+        final decrypted = await EncryptionService().decryptString(row, secretKey);
+        final decoded = jsonDecode(decrypted);
+        if (decoded is Map<String, dynamic>) {
+          workouts.add(decoded);
+        } else if (decoded is Map) {
+          workouts.add(decoded.map((k, v) => MapEntry('$k', v)));
+        }
+      } catch (_) {
+        // Skip malformed workout entries.
+      }
+    }
+
+    final steps = _healthData
+        .where((point) => point.type == HealthDataType.STEPS)
+        .map((point) => <String, dynamic>{
+              'timestamp': point.dateFrom.toUtc().toIso8601String(),
+              'value': _extractNumericValue(point).toInt(),
+              'source': point.sourceId,
+            })
+        .toList(growable: false);
+
+    final heartRecords = _healthData
+        .where((point) =>
+            point.type == HealthDataType.EXERCISE_TIME ||
+            point.type == HealthDataType.HEART_RATE)
+        .map((point) {
+          final value = _extractNumericValue(point);
+          if (point.type == HealthDataType.EXERCISE_TIME) {
+            return <String, dynamic>{
+              'timestamp': point.dateFrom.toUtc().toIso8601String(),
+              'metric': 'exercise_time_min',
+              'value': value.toInt(),
+            };
+          }
+          return <String, dynamic>{
+            'timestamp': point.dateFrom.toUtc().toIso8601String(),
+            'metric': 'heart_rate_bpm',
+            'value': value.toInt(),
+            'derived_points': _calculateHeartPointsFromHeartRate(value, 1),
+          };
+        })
+        .toList(growable: false);
+
+    return {
+      'version': 2,
+      'synced_at': DateTime.now().toUtc().toIso8601String(),
+      'workouts_count': workouts.length,
+      'steps_count': steps.length,
+      'heart_points_total': _heartPointsTotal,
+      'workouts': workouts,
+      'steps': steps,
+      'heart_points': {
+        'total': _heartPointsTotal,
+        'records': heartRecords,
+      },
+    };
+  }
+
+  Future<void> _pullEncryptedVault(SecretKey? secretKey) async {
+    if (_isPulling) return;
+    if (secretKey == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unlock vault before pulling cloud data.')),
+      );
+      return;
+    }
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to pull cloud vault data.')),
+      );
+      return;
+    }
+
+    setState(() => _isPulling = true);
+    try {
+      final encryptedBlob = await SupabaseService().fetchEncryptedVaultBlobForCurrentUser();
+      if (encryptedBlob == null || encryptedBlob.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No cloud vault backup found yet.')),
+        );
+        return;
+      }
+
+      String payloadJson;
+      try {
+        payloadJson = await EncryptionService().decryptString(
+          encryptedBlob,
+          secretKey,
+        );
+      } catch (_) {
+        // Backward compatibility for older unencrypted JSON cloud payloads.
+        payloadJson = encryptedBlob;
+      }
+
+      final decoded = jsonDecode(payloadJson);
+      if (decoded is! Map) {
+        throw StateError('Cloud payload format is invalid.');
+      }
+      final payload = decoded.map((k, v) => MapEntry('$k', v));
+
+      final workoutsRaw = payload['workouts'];
+      final workouts = <Map<String, dynamic>>[];
+      if (workoutsRaw is List) {
+        for (final item in workoutsRaw) {
+          if (item is Map<String, dynamic>) {
+            workouts.add(item);
+          } else if (item is Map) {
+            workouts.add(item.map((k, v) => MapEntry('$k', v)));
+          }
+        }
+      }
+
+      final restoredEncryptedRows = <String>[];
+      for (final workout in workouts) {
+        final encryptedWorkout = await EncryptionService().encryptString(
+          jsonEncode(workout),
+          secretKey,
+        );
+        restoredEncryptedRows.add(encryptedWorkout);
+      }
+      await LocalVault().replaceWorkouts(restoredEncryptedRows, secretKey);
+
+      final stepsRaw = payload['steps'];
+      var pulledStepTotal = 0;
+      if (stepsRaw is List) {
+        for (final record in stepsRaw) {
+          if (record is Map && record['value'] is num) {
+            pulledStepTotal += (record['value'] as num).toInt();
+          }
+        }
+      }
+
+      var pulledHeartTotal = 0;
+      final heartPointsRaw = payload['heart_points'];
+      if (heartPointsRaw is Map && heartPointsRaw['total'] is num) {
+        pulledHeartTotal = (heartPointsRaw['total'] as num).toInt();
+      } else if (payload['heart_points_total'] is num) {
+        pulledHeartTotal = (payload['heart_points_total'] as num).toInt();
+      }
+
+      workouts.sort((a, b) {
+        final aTs = DateTime.tryParse(
+              (a['timestamp'] ?? a['date'] ?? '').toString(),
+            ) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        final bTs = DateTime.tryParse(
+              (b['timestamp'] ?? b['date'] ?? '').toString(),
+            ) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        return bTs.compareTo(aTs);
+      });
+
+      if (!mounted) return;
+      setState(() {
+        _syncedStepsTotal = pulledStepTotal;
+        if (pulledHeartTotal > 0) {
+          _heartPointsTotal = pulledHeartTotal;
+        }
+        _recentActivities = workouts.take(3).toList(growable: false);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Pull complete: ${workouts.length} workouts restored.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Cloud pull failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isPulling = false);
+    }
+  }
+
   List<FlSpot> _buildChartSpots(HealthDataType type) {
     final filtered = _healthData.where((point) => point.type == type).toList()
       ..sort((a, b) => a.dateFrom.compareTo(b.dateFrom));
@@ -366,6 +615,31 @@ Future<void> _loadHealthData() async {
         appBar: AppBar(
           title: const Text('Zero-Trust Health'),
           actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: TextButton.icon(
+                onPressed: _isSyncing ? null : () => _syncEncryptedVault(secretKey),
+                icon: _isSyncing
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.cloud_upload_outlined),
+                label: Text(_isSyncing ? 'Syncing...' : 'Sync'),
+              ),
+            ),
+            IconButton(
+              icon: _isPulling
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cloud_download_outlined),
+              tooltip: 'Pull cloud vault',
+              onPressed: _isPulling ? null : () => _pullEncryptedVault(secretKey),
+            ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
               tooltip: 'Permissions Center',
