@@ -167,6 +167,18 @@ class SupabaseService {
     return blob is String ? blob : null;
   }
 
+  Future<void> deleteEncryptedVaultDataForCurrentUser() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user found.');
+    }
+
+    await Supabase.instance.client
+        .from('encrypted_vault')
+        .delete()
+        .eq('user_id', user.id);
+  }
+
   Future<void> initialize() async {
     await dotenv.load(fileName: '.env');
     final url = dotenv.env['SUPABASE_URL'];

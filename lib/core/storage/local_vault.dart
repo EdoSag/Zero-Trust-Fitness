@@ -118,6 +118,11 @@ void setupSqlCipher() {
     }
   }
 
+  Future<void> clearWorkouts(SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    await _executor!.runUpdate('DELETE FROM workouts', const []);
+  }
+
   Future<void> close() async {
     await _executor?.close();
     _executor = null;

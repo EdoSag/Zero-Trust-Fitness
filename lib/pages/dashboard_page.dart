@@ -25,6 +25,8 @@ import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+enum _DeleteDataScope { cloud, local, all }
+
 @NowaGenerated()
 // Changed from StatefulWidget to ConsumerStatefulWidget
 class DashboardPage extends ConsumerStatefulWidget {
@@ -43,6 +45,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _isLoading = false;
   bool _isSyncing = false;
   bool _isPulling = false;
+  bool _isDeletingData = false;
   int? _syncedStepsTotal;
   List<HealthDataPoint> _healthData = [];
   List<Map<String, dynamic>> _recentActivities = [];
@@ -585,6 +588,98 @@ Future<void> _loadHealthData() async {
     }
   }
 
+  Future<void> _promptDeleteData(SecretKey? secretKey) async {
+    final selectedScope = await showDialog<_DeleteDataScope>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete data'),
+        content: const Text(
+          'Choose what to delete: cloud data, local data, or all data.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(_DeleteDataScope.cloud),
+            child: const Text('Cloud data'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(_DeleteDataScope.local),
+            child: const Text('Local data'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(_DeleteDataScope.all),
+            child: const Text('All data'),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedScope == null) return;
+    await _deleteDataForScope(selectedScope, secretKey);
+  }
+
+  Future<void> _deleteDataForScope(
+    _DeleteDataScope scope,
+    SecretKey? secretKey,
+  ) async {
+    if (_isDeletingData) return;
+
+    final needsCloudDelete =
+        scope == _DeleteDataScope.cloud || scope == _DeleteDataScope.all;
+    final needsLocalDelete =
+        scope == _DeleteDataScope.local || scope == _DeleteDataScope.all;
+
+    if (needsLocalDelete && secretKey == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unlock vault before deleting local data.')),
+      );
+      return;
+    }
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (needsCloudDelete && user == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in before deleting cloud data.')),
+      );
+      return;
+    }
+
+    setState(() => _isDeletingData = true);
+    try {
+      if (needsCloudDelete) {
+        await SupabaseService().deleteEncryptedVaultDataForCurrentUser();
+      }
+      if (needsLocalDelete) {
+        await LocalVault().clearWorkouts(secretKey!);
+      }
+
+      await _loadRecentActivities();
+
+      if (!mounted) return;
+      setState(() {
+        _recentActivities = [];
+        _syncedStepsTotal = null;
+      });
+
+      final statusText = switch (scope) {
+        _DeleteDataScope.cloud => 'Cloud vault data deleted.',
+        _DeleteDataScope.local => 'Local vault data deleted.',
+        _DeleteDataScope.all => 'Cloud and local vault data deleted.',
+      };
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(statusText)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Delete failed: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isDeletingData = false);
+    }
+  }
+
   List<FlSpot> _buildChartSpots(HealthDataType type) {
     final filtered = _healthData.where((point) => point.type == type).toList()
       ..sort((a, b) => a.dateFrom.compareTo(b.dateFrom));
@@ -639,6 +734,17 @@ Future<void> _loadHealthData() async {
                   : const Icon(Icons.cloud_download_outlined),
               tooltip: 'Pull cloud vault',
               onPressed: _isPulling ? null : () => _pullEncryptedVault(secretKey),
+            ),
+            IconButton(
+              icon: _isDeletingData
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline),
+              tooltip: 'Delete data',
+              onPressed: _isDeletingData ? null : () => _promptDeleteData(secretKey),
             ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
