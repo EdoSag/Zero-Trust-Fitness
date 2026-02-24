@@ -23,6 +23,7 @@ import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
+import 'package:zerotrust_fitness/pages/profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum _DeleteDataScope { cloud, local, all }
@@ -347,6 +348,21 @@ Future<void> _loadHealthData() async {
         SnackBar(content: Text('GPS tracking unavailable: $e')),
       );
     }
+  }
+
+  Future<void> _openProfilePage(SecretKey? secretKey) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ProfilePage(
+          isSyncing: _isSyncing,
+          isPulling: _isPulling,
+          isDeletingData: _isDeletingData,
+          onSync: () => _syncEncryptedVault(secretKey),
+          onPull: () => _pullEncryptedVault(secretKey),
+          onDeleteData: () => _promptDeleteData(secretKey),
+        ),
+      ),
+    );
   }
 
   Future<void> _syncEncryptedVault(SecretKey? secretKey) async {
@@ -710,41 +726,10 @@ Future<void> _loadHealthData() async {
         appBar: AppBar(
           title: const Text('Zero-Trust Health'),
           actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: TextButton.icon(
-                onPressed: _isSyncing ? null : () => _syncEncryptedVault(secretKey),
-                icon: _isSyncing
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.cloud_upload_outlined),
-                label: Text(_isSyncing ? 'Syncing...' : 'Sync'),
-              ),
-            ),
             IconButton(
-              icon: _isPulling
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.cloud_download_outlined),
-              tooltip: 'Pull cloud vault',
-              onPressed: _isPulling ? null : () => _pullEncryptedVault(secretKey),
-            ),
-            IconButton(
-              icon: _isDeletingData
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.delete_outline),
-              tooltip: 'Delete data',
-              onPressed: _isDeletingData ? null : () => _promptDeleteData(secretKey),
+              icon: const Icon(Icons.person_outline),
+              tooltip: 'Profile',
+              onPressed: () => _openProfilePage(secretKey),
             ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
