@@ -27,7 +27,7 @@ class HealthService {
     List<HealthDataType>? requestedTypes,
   }) async {
     final now = DateTime.now();
-    final yesterday = now.subtract(const Duration(hours: 24));
+    final startOfDay = DateTime(now.year, now.month, now.day);
     final dataTypes = requestedTypes ?? types;
     if (dataTypes.isEmpty) {
       return const <HealthDataPoint>[];
@@ -35,7 +35,7 @@ class HealthService {
 
     return await _health.getHealthDataFromTypes(
       types: dataTypes,
-      startTime: yesterday,
+      startTime: startOfDay,
       endTime: now,
     );
   }

@@ -28,6 +28,18 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum _DeleteDataScope { cloud, local, all }
 
+class _DualMetricPoint {
+  const _DualMetricPoint({
+    required this.label,
+    required this.steps,
+    required this.heartPoints,
+  });
+
+  final String label;
+  final double steps;
+  final double heartPoints;
+}
+
 @NowaGenerated()
 // Changed from StatefulWidget to ConsumerStatefulWidget
 class DashboardPage extends ConsumerStatefulWidget {
@@ -53,6 +65,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   final Health _health = Health();
   final GpsTrackingService _gpsTrackingService = GpsTrackingService();
   int _heartPointsTotal = 0;
+  List<Map<String, dynamic>> _dailyMetrics = [];
   GpsTrackingSnapshot _gpsSnapshot = GpsTrackingSnapshot(
     distanceMeters: 0,
     elapsed: Duration.zero,
@@ -70,72 +83,83 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     _loadHealthData();
   }
 
-Future<void> _loadHealthData() async {
-  if (!mounted) return;
-
-  setState(() => _isLoading = true);
-  try {
-    final healthService = HealthService();
-    final isHealthConnectAvailable =
-        await healthService.isHealthConnectAvailable();
-    if (!isHealthConnectAvailable) {
-      debugPrint(
-        'Health Connect is unavailable. Install/enable it before syncing.',
-      );
-      setState(() => _healthData = []);
-      return;
-    }
-
-    final readableTypes = await _getReadableHealthTypes();
-    if (readableTypes.isEmpty) {
-      debugPrint('Health permissions not granted.');
-      setState(() {
-        _healthData = [];
-        _heartPointsTotal = 0;
-      });
-      return;
-    }
-
-    final healthData = await healthService.fetchLatestData(
-      requestedTypes: readableTypes,
-    );
-    final deduplicated = Health().removeDuplicates(healthData);
-
+  Future<void> _loadHealthData() async {
     if (!mounted) return;
-    final totalSteps = deduplicated
-        .where((p) => p.type == HealthDataType.STEPS)
-        .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
 
-    var heartPoints = deduplicated
-        .where((p) => p.type == HealthDataType.EXERCISE_TIME)
-        .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
+    setState(() => _isLoading = true);
+    try {
+      final healthService = HealthService();
+      final isHealthConnectAvailable =
+          await healthService.isHealthConnectAvailable();
+      if (!isHealthConnectAvailable) {
+        debugPrint(
+          'Health Connect is unavailable. Install/enable it before syncing.',
+        );
+        setState(() => _healthData = []);
+        return;
+      }
 
-    if (heartPoints == 0) {
-      heartPoints = deduplicated
-          .where((p) => p.type == HealthDataType.HEART_RATE)
-          .fold<int>(0, (sum, p) {
-            final bpm = _extractNumericValue(p);
-            return sum + _calculateHeartPointsFromHeartRate(bpm, 1);
-          });
+      final readableTypes = await _getReadableHealthTypes();
+      if (readableTypes.isEmpty) {
+        debugPrint('Health permissions not granted.');
+        setState(() {
+          _healthData = [];
+          _heartPointsTotal = 0;
+        });
+        return;
+      }
+
+      final healthData = await healthService.fetchLatestData(
+        requestedTypes: readableTypes,
+      );
+      final deduplicated = Health().removeDuplicates(healthData);
+      final todayPoints = deduplicated.where((p) => _isSameLocalDay(p.dateFrom, DateTime.now()));
+
+      if (!mounted) return;
+      final totalSteps = todayPoints
+          .where((p) => p.type == HealthDataType.STEPS)
+          .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
+
+      var heartPoints = todayPoints
+          .where((p) => p.type == HealthDataType.EXERCISE_TIME)
+          .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
+
+      if (heartPoints == 0) {
+        heartPoints = todayPoints
+            .where((p) => p.type == HealthDataType.HEART_RATE)
+            .fold<int>(0, (sum, p) {
+              final bpm = _extractNumericValue(p);
+              return sum + _calculateHeartPointsFromHeartRate(bpm, 1);
+            });
+      }
+      setState(() {
+        _healthData = deduplicated;
+        _heartPointsTotal = heartPoints;
+      });
+
+      final secretKey = ref.read(securityEnclaveProvider);
+      if (secretKey != null) {
+        await LocalVault().upsertDailyMetrics(
+          dateKey: _dateKey(DateTime.now()),
+          steps: totalSteps,
+          heartPoints: heartPoints,
+          secretKey: secretKey,
+        );
+      }
+
+      await WidgetService.updateWidgetData(
+        steps: totalSteps,
+        heartPoints: heartPoints,
+        isLocked: secretKey == null,
+      );
+      await _loadRecentActivities();
+      await _loadDailyMetrics();
+    } catch (e) {
+      debugPrint('Error loading health data: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-    setState(() {
-      _healthData = deduplicated;
-      _heartPointsTotal = heartPoints;
-    });
-
-    final secretKey = ref.read(securityEnclaveProvider);
-    await WidgetService.updateWidgetData(
-      steps: totalSteps,
-      heartPoints: heartPoints,
-      isLocked: secretKey == null,
-    );
-    await _loadRecentActivities();
-  } catch (e) {
-    debugPrint('Error loading health data: $e');
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
   }
-}
 
   Future<List<HealthDataType>> _getReadableHealthTypes() async {
     final statuses = await Future.wait<bool?>([
@@ -200,6 +224,38 @@ Future<void> _loadHealthData() async {
     }
   }
 
+  Future<void> _loadDailyMetrics() async {
+    final secretKey = ref.read(securityEnclaveProvider);
+    if (secretKey == null) {
+      if (!mounted) return;
+      setState(() => _dailyMetrics = []);
+      return;
+    }
+
+    try {
+      final rows = await LocalVault().fetchDailyMetrics(secretKey);
+      if (!mounted) return;
+      setState(() => _dailyMetrics = rows);
+    } catch (e) {
+      debugPrint('Error loading daily metrics: $e');
+      if (!mounted) return;
+      setState(() => _dailyMetrics = []);
+    }
+  }
+
+  String _dateKey(DateTime date) {
+    final local = date.toLocal();
+    return '${local.year.toString().padLeft(4, '0')}-'
+        '${local.month.toString().padLeft(2, '0')}-'
+        '${local.day.toString().padLeft(2, '0')}';
+  }
+
+  bool _isSameLocalDay(DateTime left, DateTime right) {
+    final l = left.toLocal();
+    final r = right.toLocal();
+    return l.year == r.year && l.month == r.month && l.day == r.day;
+  }
+
   double _extractNumericValue(HealthDataPoint point) {
     final value = point.value;
 
@@ -220,7 +276,9 @@ Future<void> _loadHealthData() async {
   }
 
   String _getMetricValue(HealthDataType type) {
-    final points = _healthData.where((p) => p.type == type).toList();
+    final points = _healthData
+        .where((p) => p.type == type && _isSameLocalDay(p.dateFrom, DateTime.now()))
+        .toList();
     if (points.isEmpty) {
       if (type == HealthDataType.STEPS && _syncedStepsTotal != null) {
         return _syncedStepsTotal.toString();
@@ -463,6 +521,7 @@ Future<void> _loadHealthData() async {
           };
         })
         .toList(growable: false);
+    final dailyMetrics = await LocalVault().fetchDailyMetrics(secretKey);
 
     return {
       'version': 2,
@@ -470,6 +529,7 @@ Future<void> _loadHealthData() async {
       'workouts_count': workouts.length,
       'steps_count': steps.length,
       'heart_points_total': _heartPointsTotal,
+      'daily_metrics': dailyMetrics,
       'workouts': workouts,
       'steps': steps,
       'heart_points': {
@@ -477,6 +537,77 @@ Future<void> _loadHealthData() async {
         'records': heartRecords,
       },
     };
+  }
+
+  List<Map<String, dynamic>> _buildDailyMetricsFromPayload(
+    Map<String, dynamic> payload,
+  ) {
+    final fromPayload = <Map<String, dynamic>>[];
+    final dailyRaw = payload['daily_metrics'];
+    if (dailyRaw is List) {
+      for (final row in dailyRaw) {
+        if (row is! Map) continue;
+        final dateKey = row['date_key']?.toString();
+        if (dateKey == null || dateKey.isEmpty) continue;
+        fromPayload.add({
+          'date_key': dateKey,
+          'steps': (row['steps'] as num?)?.toInt() ?? 0,
+          'heart_points': (row['heart_points'] as num?)?.toInt() ?? 0,
+          'updated_at': row['updated_at']?.toString(),
+        });
+      }
+    }
+    if (fromPayload.isNotEmpty) return fromPayload;
+
+    final merged = <String, Map<String, dynamic>>{};
+    final stepsRaw = payload['steps'];
+    if (stepsRaw is List) {
+      for (final row in stepsRaw) {
+        if (row is! Map) continue;
+        final timestamp = DateTime.tryParse((row['timestamp'] ?? '').toString());
+        if (timestamp == null) continue;
+        final key = _dateKey(timestamp);
+        final existing = merged[key] ?? {
+          'date_key': key,
+          'steps': 0,
+          'heart_points': 0,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        };
+        existing['steps'] = (existing['steps'] as int) + ((row['value'] as num?)?.toInt() ?? 0);
+        merged[key] = existing;
+      }
+    }
+
+    final heartRaw = payload['heart_points'];
+    if (heartRaw is Map) {
+      final records = heartRaw['records'];
+      if (records is List) {
+        for (final row in records) {
+          if (row is! Map) continue;
+          final timestamp = DateTime.tryParse((row['timestamp'] ?? '').toString());
+          if (timestamp == null) continue;
+          final key = _dateKey(timestamp);
+          final existing = merged[key] ?? {
+            'date_key': key,
+            'steps': 0,
+            'heart_points': 0,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          };
+          var pointsToAdd = 0;
+          if (row['metric'] == 'exercise_time_min') {
+            pointsToAdd = (row['value'] as num?)?.toInt() ?? 0;
+          } else if (row['metric'] == 'heart_rate_bpm') {
+            pointsToAdd = (row['derived_points'] as num?)?.toInt() ?? 0;
+          }
+          existing['heart_points'] = (existing['heart_points'] as int) + pointsToAdd;
+          merged[key] = existing;
+        }
+      }
+    }
+
+    final values = merged.values.toList(growable: false)
+      ..sort((a, b) => (b['date_key'] as String).compareTo(a['date_key'] as String));
+    return values;
   }
 
   Future<void> _pullEncryptedVault(SecretKey? secretKey) async {
@@ -547,6 +678,8 @@ Future<void> _loadHealthData() async {
         restoredEncryptedRows.add(encryptedWorkout);
       }
       await LocalVault().replaceWorkouts(restoredEncryptedRows, secretKey);
+      final pulledDailyMetrics = _buildDailyMetricsFromPayload(payload);
+      await LocalVault().replaceDailyMetrics(pulledDailyMetrics, secretKey);
 
       final stepsRaw = payload['steps'];
       var pulledStepTotal = 0;
@@ -585,6 +718,7 @@ Future<void> _loadHealthData() async {
           _heartPointsTotal = pulledHeartTotal;
         }
         _recentActivities = workouts.take(3).toList(growable: false);
+        _dailyMetrics = pulledDailyMetrics;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -671,11 +805,13 @@ Future<void> _loadHealthData() async {
       }
 
       await _loadRecentActivities();
+      await _loadDailyMetrics();
 
       if (!mounted) return;
       setState(() {
         _recentActivities = [];
         _syncedStepsTotal = null;
+        _dailyMetrics = [];
       });
 
       final statusText = switch (scope) {
@@ -694,15 +830,6 @@ Future<void> _loadHealthData() async {
     } finally {
       if (mounted) setState(() => _isDeletingData = false);
     }
-  }
-
-  List<FlSpot> _buildChartSpots(HealthDataType type) {
-    final filtered = _healthData.where((point) => point.type == type).toList()
-      ..sort((a, b) => a.dateFrom.compareTo(b.dateFrom));
-
-    return filtered.asMap().entries.map((entry) {
-      return FlSpot(entry.key.toDouble(), _extractNumericValue(entry.value));
-    }).toList();
   }
 
   String _formatElapsed(Duration duration) {
@@ -812,25 +939,27 @@ Future<void> _loadHealthData() async {
             ],
           ),
           const SizedBox(height: 24),
-          Text('Steps Trend', style: theme.textTheme.labelLarge),
+          Text('Steps & Heart Points Trend (Hourly)', style: theme.textTheme.labelLarge),
           const SizedBox(height: 8),
           SizedBox(
-            height: 180,
-            child: _buildSingleChart(
-              type: HealthDataType.STEPS,
-              lineColor: const Color(0xFF5B7CFF),
-              fillColor: const Color(0xFF5B7CFF),
+            height: 220,
+            child: _buildDualMetricBarChart(
+              points: _buildHourlyTrendPoints(),
+              stepColor: const Color(0xFF5B7CFF),
+              heartColor: const Color(0xFFFF5D7A),
+              xLabelInterval: 1,
             ),
           ),
           const SizedBox(height: 18),
-          Text('Heart Rate Trend', style: theme.textTheme.labelLarge),
+          Text('Current Week (Sunday to Saturday)', style: theme.textTheme.labelLarge),
           const SizedBox(height: 8),
           SizedBox(
-            height: 180,
-            child: _buildSingleChart(
-              type: HealthDataType.HEART_RATE,
-              lineColor: const Color(0xFFFF5D7A),
-              fillColor: const Color(0xFFFF5D7A),
+            height: 220,
+            child: _buildDualMetricBarChart(
+              points: _buildCurrentWeekPoints(),
+              stepColor: const Color(0xFF5B7CFF),
+              heartColor: const Color(0xFFFF5D7A),
+              xLabelInterval: 1,
             ),
           ),
         ],
@@ -838,49 +967,196 @@ Future<void> _loadHealthData() async {
     );
   }
 
-  Widget _buildSingleChart({
-    required HealthDataType type,
-    required Color lineColor,
-    required Color fillColor,
+  List<_DualMetricPoint> _buildHourlyTrendPoints() {
+    final now = DateTime.now();
+    final todayData =
+        _healthData.where((p) => _isSameLocalDay(p.dateFrom, now)).toList(growable: false);
+    if (todayData.isEmpty) return const [];
+
+    final hasExerciseTime =
+        todayData.any((point) => point.type == HealthDataType.EXERCISE_TIME);
+    final byHour = <int, Map<String, double>>{};
+    for (final point in todayData) {
+      final hour = point.dateFrom.toLocal().hour;
+      final bucket = byHour.putIfAbsent(hour, () => {'steps': 0, 'heart': 0});
+      if (point.type == HealthDataType.STEPS) {
+        bucket['steps'] = (bucket['steps'] ?? 0) + _extractNumericValue(point);
+      } else if (hasExerciseTime && point.type == HealthDataType.EXERCISE_TIME) {
+        bucket['heart'] = (bucket['heart'] ?? 0) + _extractNumericValue(point);
+      } else if (!hasExerciseTime && point.type == HealthDataType.HEART_RATE) {
+        final bpm = _extractNumericValue(point);
+        bucket['heart'] =
+            (bucket['heart'] ?? 0) + _calculateHeartPointsFromHeartRate(bpm, 1);
+      }
+    }
+
+    final hours = byHour.keys.toList()..sort();
+    return hours
+        .map(
+          (hour) => _DualMetricPoint(
+            label: _hourLabel(hour),
+            steps: byHour[hour]?['steps'] ?? 0,
+            heartPoints: byHour[hour]?['heart'] ?? 0,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  List<_DualMetricPoint> _buildCurrentWeekPoints() {
+    final today = DateTime.now();
+    final currentDay = DateTime(today.year, today.month, today.day);
+    final daysSinceSunday = currentDay.weekday % 7;
+    final weekStartSunday = currentDay.subtract(Duration(days: daysSinceSunday));
+    final byDate = <String, Map<String, dynamic>>{};
+    for (final row in _dailyMetrics) {
+      final key = row['date_key']?.toString();
+      if (key == null || key.isEmpty) continue;
+      byDate[key] = row;
+    }
+
+    const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return List.generate(7, (index) {
+      final date = weekStartSunday.add(Duration(days: index));
+      final key = _dateKey(date);
+      final row = byDate[key];
+      return _DualMetricPoint(
+        label: labels[index],
+        steps: ((row?['steps'] as num?)?.toDouble() ?? 0),
+        heartPoints: ((row?['heart_points'] as num?)?.toDouble() ?? 0),
+      );
+    }, growable: false);
+  }
+
+  String _hourLabel(int hour) {
+    final suffix = hour >= 12 ? 'pm' : 'am';
+    final normalized = hour % 12 == 0 ? 12 : hour % 12;
+    return '$normalized:00 $suffix';
+  }
+
+  Widget _buildDualMetricBarChart({
+    required List<_DualMetricPoint> points,
+    required Color stepColor,
+    required Color heartColor,
+    int xLabelInterval = 1,
   }) {
-    final spots = _buildChartSpots(type);
-    if (spots.isEmpty) {
+    if (points.isEmpty) {
       return const Center(child: Text('No data yet'));
     }
 
-    return LineChart(
-      LineChartData(
-        minY: 0,
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: null,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: Colors.white.withValues(alpha: 0.08),
-            strokeWidth: 1,
-          ),
+    final maxY = points
+        .map((point) => point.steps > point.heartPoints ? point.steps : point.heartPoints)
+        .fold<double>(0, (current, value) => value > current ? value : current);
+    final axisMax = maxY <= 0 ? 10.0 : (maxY * 1.2).ceilToDouble();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _buildLegendChip(color: stepColor, label: 'Steps'),
+            const SizedBox(width: 8),
+            _buildLegendChip(color: heartColor, label: 'Heart Points'),
+          ],
         ),
-        borderData: FlBorderData(show: false),
-        titlesData: const FlTitlesData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: spots,
-            isCurved: true,
-            color: lineColor,
-            barWidth: 4,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              gradient: LinearGradient(
-                colors: [
-                  fillColor.withValues(alpha: 0.28),
-                  fillColor.withValues(alpha: 0.02),
-                ],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+        const SizedBox(height: 8),
+        Expanded(
+          child: BarChart(
+            BarChartData(
+              maxY: axisMax,
+              minY: 0,
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                getDrawingHorizontalLine: (_) => FlLine(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  strokeWidth: 1,
+                ),
+              ),
+              borderData: FlBorderData(show: false),
+              groupsSpace: 10,
+              barGroups: points.asMap().entries.map((entry) {
+                final i = entry.key;
+                final point = entry.value;
+                return BarChartGroupData(
+                  x: i,
+                  barsSpace: 4,
+                  barRods: [
+                    BarChartRodData(
+                      toY: point.steps,
+                      width: 8,
+                      borderRadius: BorderRadius.circular(3),
+                      color: stepColor,
+                    ),
+                    BarChartRodData(
+                      toY: point.heartPoints,
+                      width: 8,
+                      borderRadius: BorderRadius.circular(3),
+                      color: heartColor,
+                    ),
+                  ],
+                );
+              }).toList(growable: false),
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 32,
+                    interval: axisMax / 4,
+                    getTitlesWidget: (value, meta) => Text(
+                      value.toInt().toString(),
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                  ),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 32,
+                    getTitlesWidget: (value, meta) {
+                      final index = value.toInt();
+                      if (index < 0 || index >= points.length) {
+                        return const SizedBox.shrink();
+                      }
+                      if (index % xLabelInterval != 0) {
+                        return const SizedBox.shrink();
+                      }
+                      return SideTitleWidget(
+                        meta: meta,
+                        child: Text(points[index].label, style: const TextStyle(fontSize: 10)),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegendChip({
+    required Color color,
+    required String label,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(fontSize: 11)),
         ],
       ),
     );
@@ -894,7 +1170,7 @@ Future<void> _loadHealthData() async {
         Expanded(
           child: _buildStatCard(
             theme: theme,
-            title: 'Steps',
+            title: 'Steps Today',
             value: steps,
             icon: Icons.directions_walk,
             gradientColors: const [Color(0xFF3B82F6), Color(0xFF6366F1)],
@@ -904,7 +1180,7 @@ Future<void> _loadHealthData() async {
         Expanded(
           child: _buildStatCard(
             theme: theme,
-            title: 'Heart Points',
+            title: 'Heart Today',
             value: points,
             icon: Icons.favorite,
             gradientColors: const [Color(0xFFF43F5E), Color(0xFFFB7185)],

@@ -166,6 +166,14 @@ class OnboardingNotifier extends _$OnboardingNotifier {
           created_at TEXT NOT NULL
         );
       ''');
+      db.execute('''
+        CREATE TABLE IF NOT EXISTS daily_metrics (
+          date_key TEXT PRIMARY KEY,
+          steps INTEGER NOT NULL,
+          heart_points INTEGER NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+      ''');
     } finally {
       db.dispose();
     }

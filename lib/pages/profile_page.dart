@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zerotrust_fitness/core/services/supabase_service.dart';
+import 'package:zerotrust_fitness/globals/router.dart';
 
 @NowaGenerated()
 class ProfilePage extends StatefulWidget {
@@ -31,14 +31,20 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   bool _isSigningOut = false;
 
+  void _exitToOnboarding() {
+    appRouter.go('/onboarding');
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
   Future<void> _signOut() async {
     if (_isSigningOut) return;
 
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
       if (!mounted) return;
-      Navigator.of(context).pop();
-      context.go('/onboarding');
+      _exitToOnboarding();
       return;
     }
 
@@ -46,9 +52,12 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await SupabaseService().signOut();
       if (!mounted) return;
-      Navigator.of(context).pop();
-      context.go('/onboarding');
+      _exitToOnboarding();
     } catch (e) {
+      if (Supabase.instance.client.auth.currentUser == null && mounted) {
+        _exitToOnboarding();
+        return;
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Sign out failed: $e')),

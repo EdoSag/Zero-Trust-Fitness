@@ -70,6 +70,14 @@ void setupSqlCipher() {
           'created_at TEXT NOT NULL'
           ');',
         );
+        database.execute(
+          'CREATE TABLE IF NOT EXISTS daily_metrics ('
+          'date_key TEXT PRIMARY KEY,'
+          'steps INTEGER NOT NULL,'
+          'heart_points INTEGER NOT NULL,'
+          'updated_at TEXT NOT NULL'
+          ');',
+        );
       },
     );
     await _executor!.ensureOpen(_vaultExecutorUser);
@@ -121,6 +129,59 @@ void setupSqlCipher() {
   Future<void> clearWorkouts(SecretKey secretKey) async {
     await _openWithKey(secretKey);
     await _executor!.runUpdate('DELETE FROM workouts', const []);
+    await _executor!.runUpdate('DELETE FROM daily_metrics', const []);
+  }
+
+  Future<void> upsertDailyMetrics({
+    required String dateKey,
+    required int steps,
+    required int heartPoints,
+    required SecretKey secretKey,
+  }) async {
+    await _openWithKey(secretKey);
+    await _executor!.runInsert(
+      'INSERT OR REPLACE INTO daily_metrics (date_key, steps, heart_points, updated_at)'
+      ' VALUES (?, ?, ?, ?)',
+      [dateKey, steps, heartPoints, DateTime.now().toUtc().toIso8601String()],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> fetchDailyMetrics(SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    final rows = await _executor!.runSelect(
+      'SELECT date_key, steps, heart_points, updated_at '
+      'FROM daily_metrics ORDER BY date_key DESC',
+      const [],
+    );
+    return rows
+        .map((row) => {
+              'date_key': row['date_key'],
+              'steps': row['steps'],
+              'heart_points': row['heart_points'],
+              'updated_at': row['updated_at'],
+            })
+        .toList(growable: false);
+  }
+
+  Future<void> replaceDailyMetrics(
+    List<Map<String, dynamic>> metrics,
+    SecretKey secretKey,
+  ) async {
+    await _openWithKey(secretKey);
+    await _executor!.runUpdate('DELETE FROM daily_metrics', const []);
+    for (final metric in metrics) {
+      final dateKey = metric['date_key']?.toString();
+      if (dateKey == null || dateKey.isEmpty) continue;
+      final steps = (metric['steps'] as num?)?.toInt() ?? 0;
+      final heartPoints = (metric['heart_points'] as num?)?.toInt() ?? 0;
+      final updatedAt = metric['updated_at']?.toString() ??
+          DateTime.now().toUtc().toIso8601String();
+      await _executor!.runInsert(
+        'INSERT OR REPLACE INTO daily_metrics (date_key, steps, heart_points, updated_at)'
+        ' VALUES (?, ?, ?, ?)',
+        [dateKey, steps, heartPoints, updatedAt],
+      );
+    }
   }
 
   Future<void> close() async {
