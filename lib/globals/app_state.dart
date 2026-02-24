@@ -38,7 +38,8 @@ class AppState extends ChangeNotifier {
     await Workmanager().registerPeriodicTask(
       '1',
       syncTask,
-      frequency: const Duration(hours: 6),
+      frequency: const Duration(minutes: 15),
+      existingWorkPolicy: ExistingWorkPolicy.replace,
       constraints: Constraints(networkType: NetworkType.connected),
     );
   }

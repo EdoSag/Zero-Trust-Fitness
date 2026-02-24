@@ -11,6 +11,12 @@ import 'package:zerotrust_fitness/widget_service.dart';
 @NowaGenerated()
 const String syncTask = 'syncTask';
 
+Future<bool> _isVaultLocked() async {
+  const storage = FlutterSecureStorage();
+  final raw = await storage.read(key: 'vault_locked');
+  return raw != 'false';
+}
+
 Future<SecretKey?> _resolveBackgroundSecretKey() async {
   const storage = FlutterSecureStorage();
   final passphrase = await storage.read(key: 'vault_passphrase');
@@ -30,6 +36,11 @@ void callbackDispatcher() {
   Workmanager().executeTask((task, _) async {
     if (task == syncTask) {
       try {
+        if (await _isVaultLocked()) {
+          await WidgetService.redactWidget();
+          return true;
+        }
+
         final secretKey = await _resolveBackgroundSecretKey();
         if (secretKey == null) {
           await WidgetService.redactWidget();

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cryptography/cryptography.dart';
 import 'package:health/health.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
+import 'package:zerotrust_fitness/heart_point_calculator.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
@@ -28,6 +29,8 @@ class IntegrationService {
 
     var totalSteps = 0;
     var totalHeartPoints = 0;
+    var hasExerciseMinutes = false;
+    var fallbackHeartRatePoints = 0;
 
     for (final point in deduplicated) {
       final jsonString = jsonEncode({
@@ -46,8 +49,23 @@ class IntegrationService {
       if (point.type == HealthDataType.STEPS) {
         totalSteps += numericValue.toInt();
       } else if (point.type == HealthDataType.EXERCISE_TIME) {
+        hasExerciseMinutes = true;
         totalHeartPoints += numericValue.toInt();
+      } else if (point.type == HealthDataType.WORKOUT) {
+        final minutes = point.dateTo.difference(point.dateFrom).inMinutes;
+        if (minutes > 0) {
+          hasExerciseMinutes = true;
+          totalHeartPoints += minutes;
+        }
+      } else if (point.type == HealthDataType.HEART_RATE) {
+        fallbackHeartRatePoints += _calculateHeartPointsFromHeartRate(
+          numericValue,
+          1,
+        );
       }
+    }
+    if (!hasExerciseMinutes) {
+      totalHeartPoints = fallbackHeartRatePoints;
     }
 
     await WidgetService.updateWidgetData(
@@ -71,4 +89,10 @@ class IntegrationService {
   // We have to convert it to a string and try to parse it.
   return double.tryParse(value.toString()) ?? 0.0;
 }
+
+  int _calculateHeartPointsFromHeartRate(double bpm, int minutes) {
+    const assumedAge = 30;
+    final maxHeartRate = HeartPointCalculator.calculateMaxHeartRate(assumedAge);
+    return HeartPointCalculator.calculatePoints(bpm, maxHeartRate, minutes);
+  }
 }

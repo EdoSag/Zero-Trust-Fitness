@@ -50,7 +50,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
           permissions: [HealthDataAccess.READ],
         ),
         _health.hasPermissions(
-          [HealthDataType.EXERCISE_TIME],
+          [HealthDataType.WORKOUT],
           permissions: [HealthDataAccess.READ],
         ),
       ]);
@@ -118,7 +118,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
   }
 
   Future<void> _grantExercisePermission() async {
-    await _grantHealthType(HealthDataType.EXERCISE_TIME);
+    await _grantHealthType(HealthDataType.WORKOUT);
   }
 
   Future<void> _disableHealthPermissions() async {
@@ -219,8 +219,8 @@ class _PermissionsPageState extends State<PermissionsPage> {
                 onDisable: () => _handlePermissionAction(_disableHealthPermissions),
               ),
               _buildPermissionRow(
-                title: 'Exercise Time',
-                description: 'Read active exercise minutes for points.',
+                title: 'Exercise Sessions',
+                description: 'Read workouts to derive exercise minutes for points.',
                 granted: _exercisePermission,
                 onEnable: () => _handlePermissionAction(_grantExercisePermission),
                 onDisable: () => _handlePermissionAction(_openAppSettings),

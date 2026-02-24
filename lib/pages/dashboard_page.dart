@@ -121,8 +121,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
 
       var heartPoints = todayPoints
-          .where((p) => p.type == HealthDataType.EXERCISE_TIME)
-          .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
+          .where((p) =>
+              p.type == HealthDataType.EXERCISE_TIME ||
+              p.type == HealthDataType.WORKOUT)
+          .fold<int>(0, (sum, p) => sum + _extractExerciseMinutes(p));
 
       if (heartPoints == 0) {
         heartPoints = todayPoints
@@ -172,7 +174,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         permissions: [HealthDataAccess.READ],
       ),
       _health.hasPermissions(
-        [HealthDataType.EXERCISE_TIME],
+        [HealthDataType.WORKOUT],
         permissions: [HealthDataAccess.READ],
       ),
     ]);
@@ -180,7 +182,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final readableTypes = <HealthDataType>[];
     if (statuses[0] != false) readableTypes.add(HealthDataType.STEPS);
     if (statuses[1] != false) readableTypes.add(HealthDataType.HEART_RATE);
-    if (statuses[2] != false) readableTypes.add(HealthDataType.EXERCISE_TIME);
+    if (statuses[2] != false) readableTypes.add(HealthDataType.WORKOUT);
     return readableTypes;
   }
 
@@ -273,6 +275,17 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     const assumedAge = 30;
     final maxHeartRate = HeartPointCalculator.calculateMaxHeartRate(assumedAge);
     return HeartPointCalculator.calculatePoints(bpm, maxHeartRate, minutes);
+  }
+
+  int _extractExerciseMinutes(HealthDataPoint point) {
+    if (point.type == HealthDataType.EXERCISE_TIME) {
+      return _extractNumericValue(point).toInt();
+    }
+    if (point.type == HealthDataType.WORKOUT) {
+      final minutes = point.dateTo.difference(point.dateFrom).inMinutes;
+      return minutes < 0 ? 0 : minutes;
+    }
+    return 0;
   }
 
   String _getMetricValue(HealthDataType type) {
@@ -503,16 +516,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final heartRecords = _healthData
         .where((point) =>
             point.type == HealthDataType.EXERCISE_TIME ||
+            point.type == HealthDataType.WORKOUT ||
             point.type == HealthDataType.HEART_RATE)
         .map((point) {
-          final value = _extractNumericValue(point);
-          if (point.type == HealthDataType.EXERCISE_TIME) {
+          if (point.type == HealthDataType.EXERCISE_TIME ||
+              point.type == HealthDataType.WORKOUT) {
             return <String, dynamic>{
               'timestamp': point.dateFrom.toUtc().toIso8601String(),
               'metric': 'exercise_time_min',
-              'value': value.toInt(),
+              'value': _extractExerciseMinutes(point),
             };
           }
+          final value = _extractNumericValue(point);
           return <String, dynamic>{
             'timestamp': point.dateFrom.toUtc().toIso8601String(),
             'metric': 'heart_rate_bpm',
@@ -872,11 +887,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
             IconButton(
               icon: const Icon(Icons.lock_outline_rounded),
-              onPressed: () {
+              onPressed: () async {
                 HapticFeedback.heavyImpact();
-                ref.read(securityEnclaveProvider.notifier).lock();
+                await ref.read(securityEnclaveProvider.notifier).lock();
                 setState(() => _recentActivities = []);
-                WidgetService.redactWidget();
+                await WidgetService.redactWidget();
               },
             ),
           ],
@@ -974,15 +989,19 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     if (todayData.isEmpty) return const [];
 
     final hasExerciseTime =
-        todayData.any((point) => point.type == HealthDataType.EXERCISE_TIME);
+        todayData.any((point) =>
+            point.type == HealthDataType.EXERCISE_TIME ||
+            point.type == HealthDataType.WORKOUT);
     final byHour = <int, Map<String, double>>{};
     for (final point in todayData) {
       final hour = point.dateFrom.toLocal().hour;
       final bucket = byHour.putIfAbsent(hour, () => {'steps': 0, 'heart': 0});
       if (point.type == HealthDataType.STEPS) {
         bucket['steps'] = (bucket['steps'] ?? 0) + _extractNumericValue(point);
-      } else if (hasExerciseTime && point.type == HealthDataType.EXERCISE_TIME) {
-        bucket['heart'] = (bucket['heart'] ?? 0) + _extractNumericValue(point);
+      } else if (hasExerciseTime &&
+          (point.type == HealthDataType.EXERCISE_TIME ||
+              point.type == HealthDataType.WORKOUT)) {
+        bucket['heart'] = (bucket['heart'] ?? 0) + _extractExerciseMinutes(point);
       } else if (!hasExerciseTime && point.type == HealthDataType.HEART_RATE) {
         final bpm = _extractNumericValue(point);
         bucket['heart'] =

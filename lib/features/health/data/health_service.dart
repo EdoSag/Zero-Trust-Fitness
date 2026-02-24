@@ -14,7 +14,7 @@ class HealthService {
   final List<HealthDataType> types = [
     HealthDataType.STEPS,
     HealthDataType.HEART_RATE,
-    HealthDataType.EXERCISE_TIME,
+    HealthDataType.WORKOUT,
   ];
 
   Future<bool> requestPermissions() async {

@@ -1,5 +1,6 @@
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Added this import
@@ -11,6 +12,7 @@ import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 class SecurityEnclave extends Notifier<SecretKey?> {
   final LocalAuthentication _localAuth = LocalAuthentication();
   final KeyDerivationService _keyDerivationService = KeyDerivationService();
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   // In Riverpod 3.0, the build method is the first thing called.
   // It defines the initial state of the notifier.
@@ -39,6 +41,7 @@ Future<bool> initialize(String passphrase) async {
 
       // 3. Update state to unblur the UI
       state = derivedKey;
+      await _secureStorage.write(key: 'vault_locked', value: 'false');
       return true;
     } catch (e) {
       debugPrint('Unlock error: $e');
@@ -46,8 +49,9 @@ Future<bool> initialize(String passphrase) async {
     }
   }
 
-  void lock() {
-    LocalVault().close();
+  Future<void> lock() async {
+    await LocalVault().close();
+    await _secureStorage.write(key: 'vault_locked', value: 'true');
     state = null;
   }
 }
