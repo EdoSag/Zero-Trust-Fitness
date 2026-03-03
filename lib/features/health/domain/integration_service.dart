@@ -19,13 +19,30 @@ class IntegrationService {
 
   Future<void> syncHealthToVault(SecretKey secretKey) async {
     final healthService = HealthService();
-    final hasPermissions = await healthService.requestPermissions();
-    if (!hasPermissions) {
+    final health = Health();
+    final readableTypes = <HealthDataType>[];
+    for (final type in healthService.types) {
+      try {
+        final status = await health.hasPermissions(
+          [type],
+          permissions: [HealthDataAccess.READ],
+        );
+        if (status != false) {
+          readableTypes.add(type);
+        }
+      } catch (_) {
+        // Some metrics are unsupported on specific devices.
+      }
+    }
+
+    if (readableTypes.isEmpty) {
       return;
     }
 
-    final healthData = await healthService.fetchLatestData();
-    final deduplicated = Health().removeDuplicates(healthData);
+    final healthData = await healthService.fetchLatestData(
+      requestedTypes: readableTypes,
+    );
+    final deduplicated = health.removeDuplicates(healthData);
 
     var totalSteps = 0;
     var totalHeartPoints = 0;
@@ -76,19 +93,19 @@ class IntegrationService {
   }
 
   double _extractNumericValue(HealthDataPoint point) {
-  final value = point.value;
+    final value = point.value;
 
-  // 1. You MUST check the type first
-  if (value is NumericHealthValue) {
-    // 2. You then access 'numericValue' (which is the actual num/double)
-    // 3. DO NOT call .toDouble() on 'value'. Call it on 'value.numericValue'.
-    return value.numericValue.toDouble();
+    // 1. You MUST check the type first
+    if (value is NumericHealthValue) {
+      // 2. You then access 'numericValue' (which is the actual num/double)
+      // 3. DO NOT call .toDouble() on 'value'. Call it on 'value.numericValue'.
+      return value.numericValue.toDouble();
+    }
+
+    // 4. If it's not a NumericHealthValue, we can't treat it like a number directly.
+    // We have to convert it to a string and try to parse it.
+    return double.tryParse(value.toString()) ?? 0.0;
   }
-
-  // 4. If it's not a NumericHealthValue, we can't treat it like a number directly.
-  // We have to convert it to a string and try to parse it.
-  return double.tryParse(value.toString()) ?? 0.0;
-}
 
   int _calculateHeartPointsFromHeartRate(double bpm, int minutes) {
     const assumedAge = 30;

@@ -40,6 +40,154 @@ class _DualMetricPoint {
   final double heartPoints;
 }
 
+class _SingleMetricPoint {
+  const _SingleMetricPoint({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final double value;
+}
+
+class _MetricCardSpec {
+  const _MetricCardSpec({
+    required this.key,
+    required this.title,
+    required this.unit,
+    required this.icon,
+    required this.gradientColors,
+  });
+
+  final String key;
+  final String title;
+  final String unit;
+  final IconData icon;
+  final List<Color> gradientColors;
+}
+
+const _metricCardSpecs = <_MetricCardSpec>[
+  _MetricCardSpec(
+    key: 'steps',
+    title: 'Steps',
+    unit: '',
+    icon: Icons.directions_walk,
+    gradientColors: [Color(0xFF3B82F6), Color(0xFF6366F1)],
+  ),
+  _MetricCardSpec(
+    key: 'heart_points',
+    title: 'Heart Points',
+    unit: '',
+    icon: Icons.favorite,
+    gradientColors: [Color(0xFFF43F5E), Color(0xFFFB7185)],
+  ),
+  _MetricCardSpec(
+    key: 'sleep_asleep_min',
+    title: 'Sleep Asleep',
+    unit: 'min',
+    icon: Icons.nights_stay_outlined,
+    gradientColors: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
+  ),
+  _MetricCardSpec(
+    key: 'sleep_light_min',
+    title: 'Sleep Light',
+    unit: 'min',
+    icon: Icons.bedtime_outlined,
+    gradientColors: [Color(0xFF38BDF8), Color(0xFF0EA5E9)],
+  ),
+  _MetricCardSpec(
+    key: 'sleep_deep_min',
+    title: 'Sleep Deep',
+    unit: 'min',
+    icon: Icons.hotel_outlined,
+    gradientColors: [Color(0xFF1D4ED8), Color(0xFF1E40AF)],
+  ),
+  _MetricCardSpec(
+    key: 'sleep_rem_min',
+    title: 'Sleep REM',
+    unit: 'min',
+    icon: Icons.bed_outlined,
+    gradientColors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+  ),
+  _MetricCardSpec(
+    key: 'resting_hr_bpm_avg',
+    title: 'Resting HR',
+    unit: 'bpm',
+    icon: Icons.monitor_heart_outlined,
+    gradientColors: [Color(0xFFEC4899), Color(0xFFDB2777)],
+  ),
+  _MetricCardSpec(
+    key: 'respiratory_rate_avg',
+    title: 'Respiratory',
+    unit: 'rpm',
+    icon: Icons.air_outlined,
+    gradientColors: [Color(0xFF14B8A6), Color(0xFF0F766E)],
+  ),
+  _MetricCardSpec(
+    key: 'blood_oxygen_pct_avg',
+    title: 'Blood Oxygen',
+    unit: '%',
+    icon: Icons.bloodtype_outlined,
+    gradientColors: [Color(0xFF06B6D4), Color(0xFF0E7490)],
+  ),
+  _MetricCardSpec(
+    key: 'weight_kg',
+    title: 'Weight',
+    unit: 'kg',
+    icon: Icons.monitor_weight_outlined,
+    gradientColors: [Color(0xFF84CC16), Color(0xFF65A30D)],
+  ),
+  _MetricCardSpec(
+    key: 'bmi',
+    title: 'BMI',
+    unit: '',
+    icon: Icons.straighten_outlined,
+    gradientColors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+  ),
+  _MetricCardSpec(
+    key: 'body_fat_pct',
+    title: 'Body Fat',
+    unit: '%',
+    icon: Icons.accessibility_new_outlined,
+    gradientColors: [Color(0xFFF97316), Color(0xFFEA580C)],
+  ),
+  _MetricCardSpec(
+    key: 'water_l',
+    title: 'Hydration',
+    unit: 'L',
+    icon: Icons.water_drop_outlined,
+    gradientColors: [Color(0xFF0EA5E9), Color(0xFF2563EB)],
+  ),
+  _MetricCardSpec(
+    key: 'nutrition_entries',
+    title: 'Nutrition',
+    unit: 'entries',
+    icon: Icons.restaurant_menu_outlined,
+    gradientColors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+  ),
+  _MetricCardSpec(
+    key: 'blood_pressure_systolic_mmhg',
+    title: 'BP Systolic',
+    unit: 'mmHg',
+    icon: Icons.monitor_heart,
+    gradientColors: [Color(0xFFE11D48), Color(0xFFBE123C)],
+  ),
+  _MetricCardSpec(
+    key: 'blood_pressure_diastolic_mmhg',
+    title: 'BP Diastolic',
+    unit: 'mmHg',
+    icon: Icons.favorite_border,
+    gradientColors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
+  ),
+  _MetricCardSpec(
+    key: 'blood_glucose_mg_dl',
+    title: 'Glucose',
+    unit: 'mg/dL',
+    icon: Icons.science_outlined,
+    gradientColors: [Color(0xFFA855F7), Color(0xFF7E22CE)],
+  ),
+];
+
 @NowaGenerated()
 // Changed from StatefulWidget to ConsumerStatefulWidget
 class DashboardPage extends ConsumerStatefulWidget {
@@ -59,13 +207,15 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _isSyncing = false;
   bool _isPulling = false;
   bool _isDeletingData = false;
-  int? _syncedStepsTotal;
   List<HealthDataPoint> _healthData = [];
   List<Map<String, dynamic>> _recentActivities = [];
   final Health _health = Health();
   final GpsTrackingService _gpsTrackingService = GpsTrackingService();
   int _heartPointsTotal = 0;
   List<Map<String, dynamic>> _dailyMetrics = [];
+  Map<String, num> _todayMetrics = const <String, num>{};
+  String _selectedTrendMetricKey = 'sleep_asleep_min';
+  bool _showAllMetrics = false;
   GpsTrackingSnapshot _gpsSnapshot = GpsTrackingSnapshot(
     distanceMeters: 0,
     elapsed: Duration.zero,
@@ -95,7 +245,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         debugPrint(
           'Health Connect is unavailable. Install/enable it before syncing.',
         );
-        setState(() => _healthData = []);
+        setState(() {
+          _healthData = [];
+          _todayMetrics = const <String, num>{};
+        });
         return;
       }
 
@@ -105,6 +258,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         setState(() {
           _healthData = [];
           _heartPointsTotal = 0;
+          _todayMetrics = const <String, num>{};
         });
         return;
       }
@@ -113,7 +267,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         requestedTypes: readableTypes,
       );
       final deduplicated = Health().removeDuplicates(healthData);
-      final todayPoints = deduplicated.where((p) => _isSameLocalDay(p.dateFrom, DateTime.now()));
+      final todayPoints = deduplicated
+          .where((p) => _isSameLocalDay(p.dateFrom, DateTime.now()))
+          .toList(growable: false);
 
       if (!mounted) return;
       final totalSteps = todayPoints
@@ -130,21 +286,26 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         heartPoints = todayPoints
             .where((p) => p.type == HealthDataType.HEART_RATE)
             .fold<int>(0, (sum, p) {
-              final bpm = _extractNumericValue(p);
-              return sum + _calculateHeartPointsFromHeartRate(bpm, 1);
-            });
+          final bpm = _extractNumericValue(p);
+          return sum + _calculateHeartPointsFromHeartRate(bpm, 1);
+        });
       }
+      final todayMetrics = _buildTodayMetricsMap(
+        todayPoints,
+        steps: totalSteps,
+        heartPoints: heartPoints,
+      );
       setState(() {
         _healthData = deduplicated;
         _heartPointsTotal = heartPoints;
+        _todayMetrics = todayMetrics;
       });
 
       final secretKey = ref.read(securityEnclaveProvider);
       if (secretKey != null) {
         await LocalVault().upsertDailyMetrics(
           dateKey: _dateKey(DateTime.now()),
-          steps: totalSteps,
-          heartPoints: heartPoints,
+          metrics: todayMetrics,
           secretKey: secretKey,
         );
       }
@@ -164,25 +325,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   Future<List<HealthDataType>> _getReadableHealthTypes() async {
-    final statuses = await Future.wait<bool?>([
-      _health.hasPermissions(
-        [HealthDataType.STEPS],
-        permissions: [HealthDataAccess.READ],
-      ),
-      _health.hasPermissions(
-        [HealthDataType.HEART_RATE],
-        permissions: [HealthDataAccess.READ],
-      ),
-      _health.hasPermissions(
-        [HealthDataType.WORKOUT],
-        permissions: [HealthDataAccess.READ],
-      ),
-    ]);
-
     final readableTypes = <HealthDataType>[];
-    if (statuses[0] != false) readableTypes.add(HealthDataType.STEPS);
-    if (statuses[1] != false) readableTypes.add(HealthDataType.HEART_RATE);
-    if (statuses[2] != false) readableTypes.add(HealthDataType.WORKOUT);
+    for (final type in HealthService().types) {
+      try {
+        final status = await _health.hasPermissions(
+          [type],
+          permissions: [HealthDataAccess.READ],
+        );
+        if (status != false) {
+          readableTypes.add(type);
+        }
+      } catch (_) {
+        // Some metrics can be unavailable on specific devices/providers.
+      }
+    }
     return readableTypes;
   }
 
@@ -236,8 +392,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
     try {
       final rows = await LocalVault().fetchDailyMetrics(secretKey);
+      final fallbackToday = _metricsForDate(DateTime.now(), rows);
       if (!mounted) return;
-      setState(() => _dailyMetrics = rows);
+      setState(() {
+        _dailyMetrics = rows;
+        if (_todayMetrics.isEmpty && fallbackToday.isNotEmpty) {
+          _todayMetrics = fallbackToday;
+          _heartPointsTotal =
+              (fallbackToday['heart_points'])?.toInt() ?? _heartPointsTotal;
+        }
+      });
     } catch (e) {
       debugPrint('Error loading daily metrics: $e');
       if (!mounted) return;
@@ -288,25 +452,183 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     return 0;
   }
 
-  String _getMetricValue(HealthDataType type) {
-    final points = _healthData
-        .where((p) => p.type == type && _isSameLocalDay(p.dateFrom, DateTime.now()))
-        .toList();
-    if (points.isEmpty) {
-      if (type == HealthDataType.STEPS && _syncedStepsTotal != null) {
-        return _syncedStepsTotal.toString();
-      }
-      return '0';
-    }
-    double sum = 0;
-    for (var p in points) {
-      sum += _extractNumericValue(p);
-    }
-    if (type == HealthDataType.STEPS) return sum.toInt().toString();
-    return sum.toStringAsFixed(0);
+  int _extractSleepMinutes(HealthDataPoint point) {
+    final minutes = point.dateTo.difference(point.dateFrom).inMinutes;
+    if (minutes > 0) return minutes;
+    return _extractNumericValue(point).toInt();
   }
 
-  Future<void> _showManualIngestion(BuildContext context, SecretKey? secretKey) async {
+  Map<String, num> _buildTodayMetricsMap(
+    List<HealthDataPoint> points, {
+    required int steps,
+    required int heartPoints,
+  }) {
+    final metrics = <String, num>{
+      'steps': steps,
+      'heart_points': heartPoints,
+      'sleep_asleep_min': 0,
+      'sleep_light_min': 0,
+      'sleep_deep_min': 0,
+      'sleep_rem_min': 0,
+      'water_l': 0.0,
+      'nutrition_entries': 0,
+      'resting_hr_bpm_avg': 0.0,
+      'respiratory_rate_avg': 0.0,
+      'blood_oxygen_pct_avg': 0.0,
+      'weight_kg': 0.0,
+      'bmi': 0.0,
+      'body_fat_pct': 0.0,
+      'blood_pressure_systolic_mmhg': 0.0,
+      'blood_pressure_diastolic_mmhg': 0.0,
+      'blood_glucose_mg_dl': 0.0,
+    };
+
+    final restingSamples = <double>[];
+    final respiratorySamples = <double>[];
+    final oxygenSamples = <double>[];
+    final latestAt = <String, DateTime>{};
+
+    void sumMetric(String key, num value) {
+      final current = metrics[key] ?? 0;
+      metrics[key] = current + value;
+    }
+
+    void setLatestMetric(String key, num value, DateTime date) {
+      final currentLatest = latestAt[key];
+      if (currentLatest == null || date.isAfter(currentLatest)) {
+        latestAt[key] = date;
+        metrics[key] = value;
+      }
+    }
+
+    for (final point in points) {
+      switch (point.type) {
+        case HealthDataType.SLEEP_ASLEEP:
+          sumMetric('sleep_asleep_min', _extractSleepMinutes(point));
+          break;
+        case HealthDataType.SLEEP_LIGHT:
+          sumMetric('sleep_light_min', _extractSleepMinutes(point));
+          break;
+        case HealthDataType.SLEEP_DEEP:
+          sumMetric('sleep_deep_min', _extractSleepMinutes(point));
+          break;
+        case HealthDataType.SLEEP_REM:
+          sumMetric('sleep_rem_min', _extractSleepMinutes(point));
+          break;
+        case HealthDataType.RESTING_HEART_RATE:
+          restingSamples.add(_extractNumericValue(point));
+          break;
+        case HealthDataType.RESPIRATORY_RATE:
+          respiratorySamples.add(_extractNumericValue(point));
+          break;
+        case HealthDataType.BLOOD_OXYGEN:
+          var value = _extractNumericValue(point);
+          if (value <= 1.0) value *= 100;
+          oxygenSamples.add(value);
+          break;
+        case HealthDataType.WATER:
+          sumMetric('water_l', _extractNumericValue(point));
+          break;
+        case HealthDataType.NUTRITION:
+          sumMetric('nutrition_entries', 1);
+          break;
+        case HealthDataType.WEIGHT:
+          setLatestMetric(
+              'weight_kg', _extractNumericValue(point), point.dateFrom);
+          break;
+        case HealthDataType.BODY_MASS_INDEX:
+          setLatestMetric('bmi', _extractNumericValue(point), point.dateFrom);
+          break;
+        case HealthDataType.BODY_FAT_PERCENTAGE:
+          var value = _extractNumericValue(point);
+          if (value <= 1.0) value *= 100;
+          setLatestMetric('body_fat_pct', value, point.dateFrom);
+          break;
+        case HealthDataType.BLOOD_PRESSURE_SYSTOLIC:
+          setLatestMetric(
+            'blood_pressure_systolic_mmhg',
+            _extractNumericValue(point),
+            point.dateFrom,
+          );
+          break;
+        case HealthDataType.BLOOD_PRESSURE_DIASTOLIC:
+          setLatestMetric(
+            'blood_pressure_diastolic_mmhg',
+            _extractNumericValue(point),
+            point.dateFrom,
+          );
+          break;
+        case HealthDataType.BLOOD_GLUCOSE:
+          setLatestMetric(
+            'blood_glucose_mg_dl',
+            _extractNumericValue(point),
+            point.dateFrom,
+          );
+          break;
+        default:
+          break;
+      }
+    }
+
+    metrics['resting_hr_bpm_avg'] = _avg(restingSamples);
+    metrics['respiratory_rate_avg'] = _avg(respiratorySamples);
+    metrics['blood_oxygen_pct_avg'] = _avg(oxygenSamples);
+    return metrics;
+  }
+
+  double _avg(List<double> values) {
+    if (values.isEmpty) return 0;
+    final sum = values.fold<double>(0, (a, b) => a + b);
+    return sum / values.length;
+  }
+
+  num _metricFromRow(Map<String, dynamic>? row, String key) {
+    if (row == null) return 0;
+    final metrics = row['metrics'];
+    if (metrics is Map) {
+      final value = metrics[key];
+      if (value is num) return value;
+      if (value is String) return num.tryParse(value) ?? 0;
+    }
+    final fallback = row[key];
+    if (fallback is num) return fallback;
+    if (fallback is String) return num.tryParse(fallback) ?? 0;
+    return 0;
+  }
+
+  Map<String, num> _metricsForDate(
+    DateTime date,
+    List<Map<String, dynamic>> rows,
+  ) {
+    final key = _dateKey(date);
+    final row = rows.firstWhere(
+      (item) => item['date_key']?.toString() == key,
+      orElse: () => const <String, dynamic>{},
+    );
+    if (row.isEmpty) return const <String, num>{};
+
+    final metricsRaw = row['metrics'];
+    if (metricsRaw is Map) {
+      final parsed = <String, num>{};
+      metricsRaw.forEach((k, v) {
+        if (v is num) {
+          parsed['$k'] = v;
+        } else if (v is String) {
+          final n = num.tryParse(v);
+          if (n != null) parsed['$k'] = n;
+        }
+      });
+      if (parsed.isNotEmpty) return parsed;
+    }
+
+    return <String, num>{
+      'steps': _metricFromRow(row, 'steps'),
+      'heart_points': _metricFromRow(row, 'heart_points'),
+    };
+  }
+
+  Future<void> _showManualIngestion(
+      BuildContext context, SecretKey? secretKey) async {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -319,91 +641,94 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   // Changed dynamic ref to WidgetRef for type safety
   Future<void> _unlockVault(WidgetRef ref) async {
-  final LocalAuthentication auth = LocalAuthentication();
-  const storage = FlutterSecureStorage();
-  String? finalPassphrase;
+    final LocalAuthentication auth = LocalAuthentication();
+    const storage = FlutterSecureStorage();
+    String? finalPassphrase;
 
-  try {
-    // 1. Check if biometrics are available and configured
-    final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
-    final bool isDeviceSupported = await auth.isDeviceSupported();
+    try {
+      // 1. Check if biometrics are available and configured
+      final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
+      final bool isDeviceSupported = await auth.isDeviceSupported();
 
-    if (canAuthenticateWithBiometrics && isDeviceSupported) {
-      // 2. Attempt biometric authentication
-      final bool didAuthenticate = await auth.authenticate(
-        localizedReason: 'Scan fingerprint to unlock your health dashboard',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: true, // Forces fingerprint/face specifically
-        ),
-      );
+      if (canAuthenticateWithBiometrics && isDeviceSupported) {
+        // 2. Attempt biometric authentication
+        final bool didAuthenticate = await auth.authenticate(
+          localizedReason: 'Scan fingerprint to unlock your health dashboard',
+          options: const AuthenticationOptions(
+            stickyAuth: true,
+            biometricOnly: true, // Forces fingerprint/face specifically
+          ),
+        );
 
-      if (didAuthenticate) {
-        // 3. Retrieve the saved passphrase from the secure hardware enclave
-        finalPassphrase = await storage.read(key: 'vault_passphrase');
+        if (didAuthenticate) {
+          // 3. Retrieve the saved passphrase from the secure hardware enclave
+          finalPassphrase = await storage.read(key: 'vault_passphrase');
+        }
       }
+    } catch (e) {
+      debugPrint('Biometric authentication error: $e');
+      // Fallback to manual if biometrics error out
     }
-  } catch (e) {
-    debugPrint('Biometric authentication error: $e');
-    // Fallback to manual if biometrics error out
-  }
 
-  // 4. Fallback: If biometrics failed or no passphrase was saved yet, show Dialog
-  if (finalPassphrase == null) {
-    final TextEditingController passphraseController = TextEditingController();
-    finalPassphrase = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Unlock Vault'),
-        content: TextField(
-          controller: passphraseController,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: 'Master Passphrase'),
+    // 4. Fallback: If biometrics failed or no passphrase was saved yet, show Dialog
+    if (finalPassphrase == null) {
+      final TextEditingController passphraseController =
+          TextEditingController();
+      finalPassphrase = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Unlock Vault'),
+          content: TextField(
+            controller: passphraseController,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: 'Master Passphrase'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(passphraseController.text),
+              child: const Text('Unlock'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(passphraseController.text),
-            child: const Text('Unlock'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Exit if user cancelled manual dialog
-  if (finalPassphrase == null || finalPassphrase.isEmpty) return;
-
-  // 5. Try to initialize the Enclave with the passphrase
-  final unlocked = await ref
-      .read(securityEnclaveProvider.notifier)
-      .initialize(finalPassphrase);
-
-  if (!unlocked) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unlock failed. Invalid passphrase.')),
       );
     }
-    return;
+
+    // Exit if user cancelled manual dialog
+    if (finalPassphrase == null || finalPassphrase.isEmpty) return;
+
+    // 5. Try to initialize the Enclave with the passphrase
+    final unlocked = await ref
+        .read(securityEnclaveProvider.notifier)
+        .initialize(finalPassphrase);
+
+    if (!unlocked) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unlock failed. Invalid passphrase.')),
+        );
+      }
+      return;
+    }
+
+    // 6. Success! If this was a manual entry, save it for future biometric use
+    await storage.write(key: 'vault_passphrase', value: finalPassphrase);
+
+    // 7. Initialize background tasks if needed
+    final tasksInitialized =
+        sharedPrefs.getBool('bg_tasks_initialized') ?? false;
+    if (!tasksInitialized) {
+      await AppState.of(context, listen: false).initializeBackgroundTasks();
+      await sharedPrefs.setBool('bg_tasks_initialized', true);
+    }
+
+    HapticFeedback.mediumImpact();
+    await _loadHealthData();
   }
-
-  // 6. Success! If this was a manual entry, save it for future biometric use
-  await storage.write(key: 'vault_passphrase', value: finalPassphrase);
-
-  // 7. Initialize background tasks if needed
-  final tasksInitialized = sharedPrefs.getBool('bg_tasks_initialized') ?? false;
-  if (!tasksInitialized) {
-    await AppState.of(context, listen: false).initializeBackgroundTasks();
-    await sharedPrefs.setBool('bg_tasks_initialized', true);
-  }
-
-  HapticFeedback.mediumImpact();
-  await _loadHealthData();
-}
 
   Future<void> _toggleGpsTracking() async {
     if (_gpsSnapshot.isTracking) {
@@ -492,7 +817,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final workouts = <Map<String, dynamic>>[];
     for (final row in encryptedRows) {
       try {
-        final decrypted = await EncryptionService().decryptString(row, secretKey);
+        final decrypted =
+            await EncryptionService().decryptString(row, secretKey);
         final decoded = jsonDecode(decrypted);
         if (decoded is Map<String, dynamic>) {
           workouts.add(decoded);
@@ -519,24 +845,43 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             point.type == HealthDataType.WORKOUT ||
             point.type == HealthDataType.HEART_RATE)
         .map((point) {
-          if (point.type == HealthDataType.EXERCISE_TIME ||
-              point.type == HealthDataType.WORKOUT) {
-            return <String, dynamic>{
-              'timestamp': point.dateFrom.toUtc().toIso8601String(),
-              'metric': 'exercise_time_min',
-              'value': _extractExerciseMinutes(point),
-            };
-          }
-          final value = _extractNumericValue(point);
-          return <String, dynamic>{
-            'timestamp': point.dateFrom.toUtc().toIso8601String(),
-            'metric': 'heart_rate_bpm',
-            'value': value.toInt(),
-            'derived_points': _calculateHeartPointsFromHeartRate(value, 1),
-          };
-        })
-        .toList(growable: false);
+      if (point.type == HealthDataType.EXERCISE_TIME ||
+          point.type == HealthDataType.WORKOUT) {
+        return <String, dynamic>{
+          'timestamp': point.dateFrom.toUtc().toIso8601String(),
+          'metric': 'exercise_time_min',
+          'value': _extractExerciseMinutes(point),
+        };
+      }
+      final value = _extractNumericValue(point);
+      return <String, dynamic>{
+        'timestamp': point.dateFrom.toUtc().toIso8601String(),
+        'metric': 'heart_rate_bpm',
+        'value': value.toInt(),
+        'derived_points': _calculateHeartPointsFromHeartRate(value, 1),
+      };
+    }).toList(growable: false);
     final dailyMetrics = await LocalVault().fetchDailyMetrics(secretKey);
+    final dailyMetricMap = <String, Map<String, num>>{};
+    for (final row in dailyMetrics) {
+      final dateKey = row['date_key']?.toString();
+      if (dateKey == null || dateKey.isEmpty) continue;
+      final metricsRaw = row['metrics'];
+      if (metricsRaw is Map) {
+        final parsed = <String, num>{};
+        metricsRaw.forEach((k, v) {
+          if (v is num) {
+            parsed['$k'] = v;
+          } else if (v is String) {
+            final n = num.tryParse(v);
+            if (n != null) parsed['$k'] = n;
+          }
+        });
+        if (parsed.isNotEmpty) {
+          dailyMetricMap[dateKey] = parsed;
+        }
+      }
+    }
 
     return {
       'version': 2,
@@ -545,6 +890,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       'steps_count': steps.length,
       'heart_points_total': _heartPointsTotal,
       'daily_metrics': dailyMetrics,
+      'daily_metric_map': dailyMetricMap,
       'workouts': workouts,
       'steps': steps,
       'heart_points': {
@@ -557,38 +903,95 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   List<Map<String, dynamic>> _buildDailyMetricsFromPayload(
     Map<String, dynamic> payload,
   ) {
+    Map<String, num> parseMetricMap(dynamic raw) {
+      if (raw is! Map) return const <String, num>{};
+      final parsed = <String, num>{};
+      raw.forEach((key, value) {
+        if (value is num) {
+          parsed['$key'] = value;
+        } else if (value is String) {
+          final n = num.tryParse(value);
+          if (n != null) parsed['$key'] = n;
+        }
+      });
+      return parsed;
+    }
+
     final fromPayload = <Map<String, dynamic>>[];
+    final dailyMetricMapRaw = payload['daily_metric_map'];
+    if (dailyMetricMapRaw is Map) {
+      dailyMetricMapRaw.forEach((key, value) {
+        final dateKey = key.toString();
+        if (dateKey.isEmpty) return;
+        final parsed = parseMetricMap(value);
+        if (parsed.isEmpty) return;
+        fromPayload.add({
+          'date_key': dateKey,
+          'metrics': parsed,
+          'steps': (parsed['steps'] ?? 0).toInt(),
+          'heart_points': (parsed['heart_points'] ?? 0).toInt(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        });
+      });
+    }
+
     final dailyRaw = payload['daily_metrics'];
     if (dailyRaw is List) {
       for (final row in dailyRaw) {
         if (row is! Map) continue;
         final dateKey = row['date_key']?.toString();
         if (dateKey == null || dateKey.isEmpty) continue;
+        var metrics = parseMetricMap(row['metrics']);
+        if (metrics.isEmpty) {
+          metrics = <String, num>{
+            'steps': (row['steps'] as num?) ?? 0,
+            'heart_points': (row['heart_points'] as num?) ?? 0,
+          };
+        }
         fromPayload.add({
           'date_key': dateKey,
-          'steps': (row['steps'] as num?)?.toInt() ?? 0,
-          'heart_points': (row['heart_points'] as num?)?.toInt() ?? 0,
-          'updated_at': row['updated_at']?.toString(),
+          'metrics': metrics,
+          'steps': (metrics['steps'] ?? 0).toInt(),
+          'heart_points': (metrics['heart_points'] ?? 0).toInt(),
+          'updated_at': row['updated_at']?.toString() ??
+              DateTime.now().toUtc().toIso8601String(),
         });
       }
     }
-    if (fromPayload.isNotEmpty) return fromPayload;
+
+    if (fromPayload.isNotEmpty) {
+      final deduped = <String, Map<String, dynamic>>{};
+      for (final row in fromPayload) {
+        final key = row['date_key']?.toString();
+        if (key == null || key.isEmpty) continue;
+        deduped[key] = row;
+      }
+      final values = deduped.values.toList(growable: false)
+        ..sort((a, b) =>
+            (b['date_key'] as String).compareTo(a['date_key'] as String));
+      return values;
+    }
 
     final merged = <String, Map<String, dynamic>>{};
     final stepsRaw = payload['steps'];
     if (stepsRaw is List) {
       for (final row in stepsRaw) {
         if (row is! Map) continue;
-        final timestamp = DateTime.tryParse((row['timestamp'] ?? '').toString());
+        final timestamp =
+            DateTime.tryParse((row['timestamp'] ?? '').toString());
         if (timestamp == null) continue;
         final key = _dateKey(timestamp);
-        final existing = merged[key] ?? {
-          'date_key': key,
-          'steps': 0,
-          'heart_points': 0,
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        };
-        existing['steps'] = (existing['steps'] as int) + ((row['value'] as num?)?.toInt() ?? 0);
+        final existing = merged[key] ??
+            <String, dynamic>{
+              'date_key': key,
+              'metrics': <String, num>{'steps': 0, 'heart_points': 0},
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            };
+        final metrics = existing['metrics'] as Map<String, num>;
+        metrics['steps'] =
+            (metrics['steps'] ?? 0) + ((row['value'] as num?) ?? 0);
+        existing['steps'] = (metrics['steps'] ?? 0).toInt();
+        existing['heart_points'] = (metrics['heart_points'] ?? 0).toInt();
         merged[key] = existing;
       }
     }
@@ -599,29 +1002,35 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       if (records is List) {
         for (final row in records) {
           if (row is! Map) continue;
-          final timestamp = DateTime.tryParse((row['timestamp'] ?? '').toString());
+          final timestamp =
+              DateTime.tryParse((row['timestamp'] ?? '').toString());
           if (timestamp == null) continue;
           final key = _dateKey(timestamp);
-          final existing = merged[key] ?? {
-            'date_key': key,
-            'steps': 0,
-            'heart_points': 0,
-            'updated_at': DateTime.now().toUtc().toIso8601String(),
-          };
+          final existing = merged[key] ??
+              <String, dynamic>{
+                'date_key': key,
+                'metrics': <String, num>{'steps': 0, 'heart_points': 0},
+                'updated_at': DateTime.now().toUtc().toIso8601String(),
+              };
+          final metrics = existing['metrics'] as Map<String, num>;
           var pointsToAdd = 0;
           if (row['metric'] == 'exercise_time_min') {
             pointsToAdd = (row['value'] as num?)?.toInt() ?? 0;
           } else if (row['metric'] == 'heart_rate_bpm') {
             pointsToAdd = (row['derived_points'] as num?)?.toInt() ?? 0;
           }
-          existing['heart_points'] = (existing['heart_points'] as int) + pointsToAdd;
+          metrics['heart_points'] =
+              (metrics['heart_points'] ?? 0) + pointsToAdd;
+          existing['steps'] = (metrics['steps'] ?? 0).toInt();
+          existing['heart_points'] = (metrics['heart_points'] ?? 0).toInt();
           merged[key] = existing;
         }
       }
     }
 
     final values = merged.values.toList(growable: false)
-      ..sort((a, b) => (b['date_key'] as String).compareTo(a['date_key'] as String));
+      ..sort((a, b) =>
+          (b['date_key'] as String).compareTo(a['date_key'] as String));
     return values;
   }
 
@@ -630,7 +1039,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     if (secretKey == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unlock vault before pulling cloud data.')),
+        const SnackBar(
+            content: Text('Unlock vault before pulling cloud data.')),
       );
       return;
     }
@@ -646,7 +1056,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
     setState(() => _isPulling = true);
     try {
-      final encryptedBlob = await SupabaseService().fetchEncryptedVaultBlobForCurrentUser();
+      final encryptedBlob =
+          await SupabaseService().fetchEncryptedVaultBlobForCurrentUser();
       if (encryptedBlob == null || encryptedBlob.isEmpty) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -696,16 +1107,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       final pulledDailyMetrics = _buildDailyMetricsFromPayload(payload);
       await LocalVault().replaceDailyMetrics(pulledDailyMetrics, secretKey);
 
-      final stepsRaw = payload['steps'];
-      var pulledStepTotal = 0;
-      if (stepsRaw is List) {
-        for (final record in stepsRaw) {
-          if (record is Map && record['value'] is num) {
-            pulledStepTotal += (record['value'] as num).toInt();
-          }
-        }
-      }
-
       var pulledHeartTotal = 0;
       final heartPointsRaw = payload['heart_points'];
       if (heartPointsRaw is Map && heartPointsRaw['total'] is num) {
@@ -727,13 +1128,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       });
 
       if (!mounted) return;
+      final pulledTodayMetrics =
+          _metricsForDate(DateTime.now(), pulledDailyMetrics);
+      if (pulledHeartTotal <= 0) {
+        pulledHeartTotal = (pulledTodayMetrics['heart_points'])?.toInt() ?? 0;
+      }
       setState(() {
-        _syncedStepsTotal = pulledStepTotal;
         if (pulledHeartTotal > 0) {
           _heartPointsTotal = pulledHeartTotal;
         }
         _recentActivities = workouts.take(3).toList(growable: false);
         _dailyMetrics = pulledDailyMetrics;
+        if (pulledTodayMetrics.isNotEmpty) {
+          _todayMetrics = pulledTodayMetrics;
+        }
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -796,7 +1204,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     if (needsLocalDelete && secretKey == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unlock vault before deleting local data.')),
+        const SnackBar(
+            content: Text('Unlock vault before deleting local data.')),
       );
       return;
     }
@@ -825,8 +1234,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       if (!mounted) return;
       setState(() {
         _recentActivities = [];
-        _syncedStepsTotal = null;
         _dailyMetrics = [];
+        _todayMetrics = const <String, num>{};
       });
 
       final statusText = switch (scope) {
@@ -856,7 +1265,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     // With ConsumerState, we watch providers directly without a 'Consumer' widget
     final secretKey = ref.watch(securityEnclaveProvider);
     final isLocked = secretKey == null;
@@ -904,6 +1313,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildMetricHighlights(theme),
+                    const SizedBox(height: 16),
+                    _buildAllMetricsSection(theme),
                     const SizedBox(height: 20),
                     _buildAnalyticsSection(theme),
                     const SizedBox(height: 24),
@@ -911,7 +1322,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     const SizedBox(height: 32),
                     Text(
                       'Recent Activity',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
                     _buildActivityFeed(theme),
@@ -954,7 +1366,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ],
           ),
           const SizedBox(height: 24),
-          Text('Steps & Heart Points Trend (Hourly)', style: theme.textTheme.labelLarge),
+          Text('Steps & Heart Points Trend (Hourly)',
+              style: theme.textTheme.labelLarge),
           const SizedBox(height: 8),
           SizedBox(
             height: 220,
@@ -966,7 +1379,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
           ),
           const SizedBox(height: 18),
-          Text('Current Week (Sunday to Saturday)', style: theme.textTheme.labelLarge),
+          Text('Current Week (Sunday to Saturday)',
+              style: theme.textTheme.labelLarge),
           const SizedBox(height: 8),
           SizedBox(
             height: 220,
@@ -977,6 +1391,39 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               xLabelInterval: 1,
             ),
           ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: Text('Selected Metric Trend (Week)',
+                    style: theme.textTheme.labelLarge),
+              ),
+              const SizedBox(width: 10),
+              DropdownButton<String>(
+                value: _selectedTrendMetricKey,
+                items: _metricCardSpecs
+                    .map(
+                      (spec) => DropdownMenuItem<String>(
+                        value: spec.key,
+                        child: Text(spec.title),
+                      ),
+                    )
+                    .toList(growable: false),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() => _selectedTrendMetricKey = value);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 220,
+            child: _buildSingleMetricBarChart(
+              points: _buildSelectedMetricWeekPoints(),
+              color: const Color(0xFF10B981),
+            ),
+          ),
         ],
       ),
     );
@@ -984,14 +1431,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   List<_DualMetricPoint> _buildHourlyTrendPoints() {
     final now = DateTime.now();
-    final todayData =
-        _healthData.where((p) => _isSameLocalDay(p.dateFrom, now)).toList(growable: false);
+    final todayData = _healthData
+        .where((p) => _isSameLocalDay(p.dateFrom, now))
+        .toList(growable: false);
     if (todayData.isEmpty) return const [];
 
-    final hasExerciseTime =
-        todayData.any((point) =>
-            point.type == HealthDataType.EXERCISE_TIME ||
-            point.type == HealthDataType.WORKOUT);
+    final hasExerciseTime = todayData.any((point) =>
+        point.type == HealthDataType.EXERCISE_TIME ||
+        point.type == HealthDataType.WORKOUT);
     final byHour = <int, Map<String, double>>{};
     for (final point in todayData) {
       final hour = point.dateFrom.toLocal().hour;
@@ -1001,7 +1448,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       } else if (hasExerciseTime &&
           (point.type == HealthDataType.EXERCISE_TIME ||
               point.type == HealthDataType.WORKOUT)) {
-        bucket['heart'] = (bucket['heart'] ?? 0) + _extractExerciseMinutes(point);
+        bucket['heart'] =
+            (bucket['heart'] ?? 0) + _extractExerciseMinutes(point);
       } else if (!hasExerciseTime && point.type == HealthDataType.HEART_RATE) {
         final bpm = _extractNumericValue(point);
         bucket['heart'] =
@@ -1025,7 +1473,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final today = DateTime.now();
     final currentDay = DateTime(today.year, today.month, today.day);
     final daysSinceSunday = currentDay.weekday % 7;
-    final weekStartSunday = currentDay.subtract(Duration(days: daysSinceSunday));
+    final weekStartSunday =
+        currentDay.subtract(Duration(days: daysSinceSunday));
     final byDate = <String, Map<String, dynamic>>{};
     for (final row in _dailyMetrics) {
       final key = row['date_key']?.toString();
@@ -1040,8 +1489,33 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       final row = byDate[key];
       return _DualMetricPoint(
         label: labels[index],
-        steps: ((row?['steps'] as num?)?.toDouble() ?? 0),
-        heartPoints: ((row?['heart_points'] as num?)?.toDouble() ?? 0),
+        steps: _metricFromRow(row, 'steps').toDouble(),
+        heartPoints: _metricFromRow(row, 'heart_points').toDouble(),
+      );
+    }, growable: false);
+  }
+
+  List<_SingleMetricPoint> _buildSelectedMetricWeekPoints() {
+    final today = DateTime.now();
+    final currentDay = DateTime(today.year, today.month, today.day);
+    final daysSinceSunday = currentDay.weekday % 7;
+    final weekStartSunday =
+        currentDay.subtract(Duration(days: daysSinceSunday));
+    final byDate = <String, Map<String, dynamic>>{};
+    for (final row in _dailyMetrics) {
+      final key = row['date_key']?.toString();
+      if (key == null || key.isEmpty) continue;
+      byDate[key] = row;
+    }
+
+    const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return List.generate(7, (index) {
+      final date = weekStartSunday.add(Duration(days: index));
+      final key = _dateKey(date);
+      final row = byDate[key];
+      return _SingleMetricPoint(
+        label: labels[index],
+        value: _metricFromRow(row, _selectedTrendMetricKey).toDouble(),
       );
     }, growable: false);
   }
@@ -1063,7 +1537,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
 
     final maxY = points
-        .map((point) => point.steps > point.heartPoints ? point.steps : point.heartPoints)
+        .map((point) =>
+            point.steps > point.heartPoints ? point.steps : point.heartPoints)
         .fold<double>(0, (current, value) => value > current ? value : current);
     final axisMax = maxY <= 0 ? 10.0 : (maxY * 1.2).ceilToDouble();
 
@@ -1116,8 +1591,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 );
               }).toList(growable: false),
               titlesData: FlTitlesData(
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -1143,7 +1620,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       }
                       return SideTitleWidget(
                         meta: meta,
-                        child: Text(points[index].label, style: const TextStyle(fontSize: 10)),
+                        child: Text(points[index].label,
+                            style: const TextStyle(fontSize: 10)),
                       );
                     },
                   ),
@@ -1153,6 +1631,86 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSingleMetricBarChart({
+    required List<_SingleMetricPoint> points,
+    required Color color,
+  }) {
+    if (points.isEmpty) {
+      return const Center(child: Text('No data yet'));
+    }
+
+    final maxY = points
+        .map((point) => point.value)
+        .fold<double>(0, (current, value) => value > current ? value : current);
+    final axisMax = maxY <= 0 ? 10.0 : (maxY * 1.2).ceilToDouble();
+
+    return BarChart(
+      BarChartData(
+        maxY: axisMax,
+        minY: 0,
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: Colors.white.withValues(alpha: 0.08),
+            strokeWidth: 1,
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        groupsSpace: 10,
+        barGroups: points.asMap().entries.map((entry) {
+          final i = entry.key;
+          final point = entry.value;
+          return BarChartGroupData(
+            x: i,
+            barRods: [
+              BarChartRodData(
+                toY: point.value,
+                width: 14,
+                borderRadius: BorderRadius.circular(4),
+                color: color,
+              ),
+            ],
+          );
+        }).toList(growable: false),
+        titlesData: FlTitlesData(
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 32,
+              interval: axisMax / 4,
+              getTitlesWidget: (value, meta) => Text(
+                value.toInt().toString(),
+                style: const TextStyle(fontSize: 10),
+              ),
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 32,
+              getTitlesWidget: (value, meta) {
+                final index = value.toInt();
+                if (index < 0 || index >= points.length) {
+                  return const SizedBox.shrink();
+                }
+                return SideTitleWidget(
+                  meta: meta,
+                  child: Text(points[index].label,
+                      style: const TextStyle(fontSize: 10)),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1182,8 +1740,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   Widget _buildMetricHighlights(ThemeData theme) {
-    final steps = _getMetricValue(HealthDataType.STEPS);
-    final points = _heartPointsTotal.toString();
+    final steps = (_todayMetrics['steps'] ?? 0).toInt().toString();
+    final points =
+        (_todayMetrics['heart_points'] ?? _heartPointsTotal).toInt().toString();
     return Row(
       children: [
         Expanded(
@@ -1206,6 +1765,123 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildExpandedMetricCards(ThemeData theme) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: _metricCardSpecs.map((spec) {
+        final rawValue = _todayMetrics[spec.key] ?? 0;
+        return SizedBox(
+          width: (MediaQuery.of(context).size.width - 60) / 2,
+          child: _buildCompactMetricCard(
+            theme: theme,
+            title: spec.title,
+            value: _formatMetricValue(spec.key, rawValue, spec.unit),
+            icon: spec.icon,
+            gradientColors: spec.gradientColors,
+          ),
+        );
+      }).toList(growable: false),
+    );
+  }
+
+  Widget _buildAllMetricsSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: FilledButton.tonalIcon(
+            onPressed: () => setState(() => _showAllMetrics = !_showAllMetrics),
+            icon: Icon(
+              _showAllMetrics
+                  ? Icons.keyboard_arrow_up
+                  : Icons.keyboard_arrow_down,
+            ),
+            label:
+                Text(_showAllMetrics ? 'Hide all metrics' : 'Show all metrics'),
+          ),
+        ),
+        const SizedBox(height: 10),
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 220),
+          firstCurve: Curves.easeInOut,
+          secondCurve: Curves.easeInOut,
+          sizeCurve: Curves.easeInOut,
+          crossFadeState: _showAllMetrics
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          firstChild: const SizedBox.shrink(),
+          secondChild: _buildExpandedMetricCards(theme),
+        ),
+      ],
+    );
+  }
+
+  String _formatMetricValue(String key, num value, String unit) {
+    String text;
+    if (key == 'nutrition_entries' || key == 'steps' || key == 'heart_points') {
+      text = value.toInt().toString();
+    } else if (key == 'blood_pressure_systolic_mmhg' ||
+        key == 'blood_pressure_diastolic_mmhg') {
+      text = value.toInt().toString();
+    } else if (key == 'weight_kg' || key == 'bmi') {
+      text = value.toStringAsFixed(1);
+    } else if (key.endsWith('_pct') || key.contains('oxygen')) {
+      text = value.toStringAsFixed(1);
+    } else if (key == 'water_l') {
+      text = value.toStringAsFixed(2);
+    } else {
+      text = value.toStringAsFixed(1);
+    }
+    if (unit.isEmpty) return text;
+    return '$text $unit';
+  }
+
+  Widget _buildCompactMetricCard({
+    required ThemeData theme,
+    required String title,
+    required String value,
+    required IconData icon,
+    required List<Color> gradientColors,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: Colors.white.withValues(alpha: 0.95)),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1251,7 +1927,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     );
   }
 
-
   Widget _buildGpsTrackingSection(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1268,15 +1943,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               Text('Real-time GPS', style: theme.textTheme.titleMedium),
               FilledButton.icon(
                 onPressed: _toggleGpsTracking,
-                icon: Icon(_gpsSnapshot.isTracking ? Icons.stop : Icons.play_arrow),
+                icon: Icon(
+                    _gpsSnapshot.isTracking ? Icons.stop : Icons.play_arrow),
                 label: Text(_gpsSnapshot.isTracking ? 'Stop' : 'Start'),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Text('Distance: ${(_gpsSnapshot.distanceMeters / 1000).toStringAsFixed(2)} km'),
+          Text(
+              'Distance: ${(_gpsSnapshot.distanceMeters / 1000).toStringAsFixed(2)} km'),
           Text('Elapsed: ${_formatElapsed(_gpsSnapshot.elapsed)}'),
-          Text('Pace: ${_gpsSnapshot.currentPaceMinutesPerKm.toStringAsFixed(2)} min/km'),
+          Text(
+              'Pace: ${_gpsSnapshot.currentPaceMinutesPerKm.toStringAsFixed(2)} min/km'),
         ],
       ),
     );
@@ -1288,7 +1966,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         child: ListTile(
           leading: CircleAvatar(
             backgroundColor: theme.colorScheme.secondary.withOpacity(0.1),
-            child: Icon(Icons.inbox_outlined, color: theme.colorScheme.secondary),
+            child:
+                Icon(Icons.inbox_outlined, color: theme.colorScheme.secondary),
           ),
           title: const Text('No recent activities'),
           subtitle: const Text('Add one manually or sync from health data.'),
@@ -1306,7 +1985,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: theme.colorScheme.secondary.withOpacity(0.1),
-              child: Icon(_activityIcon(activity), color: theme.colorScheme.secondary),
+              child: Icon(_activityIcon(activity),
+                  color: theme.colorScheme.secondary),
             ),
             title: Text(title),
             subtitle: Text(subtitle),
@@ -1319,7 +1999,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
               child: Text(
                 tag,
-                style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold),
               ),
             ),
           ),

@@ -45,7 +45,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
 
       final authResponse = await _supabaseService.signUp(email, masterPassword);
       if (authResponse.session == null) {
-        throw Exception('Signup successful! Check your email to verify your account.');
+        throw Exception(
+            'Signup successful! Check your email to verify your account.');
       }
 
       final salt = await _securityRepository.getOrCreateSalt();
@@ -57,7 +58,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       );
 
       await _initializeSQLCipherDatabase(derivedKey);
-      await _persistLocalMetadata(derivedKey, enableBiometrics: enableBiometrics);
+      await _persistLocalMetadata(derivedKey,
+          enableBiometrics: enableBiometrics);
     });
   }
 
@@ -89,11 +91,14 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       );
 
       await _initializeSQLCipherDatabase(derivedKey);
-      await _persistLocalMetadata(derivedKey, enableBiometrics: enableBiometrics);
+      await _persistLocalMetadata(derivedKey,
+          enableBiometrics: enableBiometrics);
 
-      final encryptedBlob = await _supabaseService.fetchEncryptedVaultBlobForCurrentUser();
+      final encryptedBlob =
+          await _supabaseService.fetchEncryptedVaultBlobForCurrentUser();
       if (encryptedBlob != null) {
-        await _secureStorage.write(key: 'vault_remote_blob', value: encryptedBlob);
+        await _secureStorage.write(
+            key: 'vault_remote_blob', value: encryptedBlob);
       }
     });
   }
@@ -103,15 +108,16 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       return;
     }
 
-    final bool canCheck =
-        await _localAuth.canCheckBiometrics || await _localAuth.isDeviceSupported();
+    final bool canCheck = await _localAuth.canCheckBiometrics ||
+        await _localAuth.isDeviceSupported();
     if (!canCheck) {
       throw Exception('Biometrics not available on this device');
     }
 
     final authenticated = await _localAuth.authenticate(
       localizedReason: 'Secure your Zero-Trust Vault',
-      options: const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
+      options:
+          const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
     );
     if (!authenticated) {
       throw Exception('Biometric setup cancelled.');
@@ -123,7 +129,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     required bool enableBiometrics,
   }) async {
     final keyBytes = await derivedKey.extractBytes();
-    final dbKeyHex = keyBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final dbKeyHex =
+        keyBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 
     await _secureStorage.write(key: 'encrypted_db_key', value: dbKeyHex);
     await _secureStorage.write(key: 'vault_passphrase', value: null);
@@ -142,7 +149,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     }
 
     final keyBytes = await secretKey.extractBytes();
-    final dbKeyHex = keyBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final dbKeyHex =
+        keyBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 
     final appDir = await getApplicationDocumentsDirectory();
     final dbPath = '${appDir.path}/vault.sqlite';
@@ -156,7 +164,8 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       // Verify encryption is active
       final result = db.select('PRAGMA cipher_version;');
       if (result.isEmpty) {
-        throw Exception('Zero-Trust Error: SQLCipher encryption failed to initialize.');
+        throw Exception(
+            'Zero-Trust Error: SQLCipher encryption failed to initialize.');
       }
 
       db.execute('''
@@ -169,8 +178,7 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       db.execute('''
         CREATE TABLE IF NOT EXISTS daily_metrics (
           date_key TEXT PRIMARY KEY,
-          steps INTEGER NOT NULL,
-          heart_points INTEGER NOT NULL,
+          metrics_json TEXT NOT NULL,
           updated_at TEXT NOT NULL
         );
       ''');

@@ -6,6 +6,135 @@ import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
 
+class _HealthPermissionConfig {
+  const _HealthPermissionConfig({
+    required this.key,
+    required this.title,
+    required this.description,
+    required this.requestTypes,
+    this.androidRequestTypes,
+  });
+
+  final String key;
+  final String title;
+  final String description;
+  final List<HealthDataType> requestTypes;
+  final List<HealthDataType>? androidRequestTypes;
+}
+
+const _healthPermissionConfigs = <_HealthPermissionConfig>[
+  _HealthPermissionConfig(
+    key: 'steps',
+    title: 'Steps',
+    description: 'Read daily step counts.',
+    requestTypes: [HealthDataType.STEPS],
+  ),
+  _HealthPermissionConfig(
+    key: 'heart_rate',
+    title: 'Heart Rate',
+    description: 'Read heart-rate samples.',
+    requestTypes: [HealthDataType.HEART_RATE],
+  ),
+  _HealthPermissionConfig(
+    key: 'exercise',
+    title: 'Exercise Sessions',
+    description: 'Read workouts and active minutes.',
+    requestTypes: [HealthDataType.WORKOUT],
+  ),
+  _HealthPermissionConfig(
+    key: 'sleep_asleep',
+    title: 'Sleep Asleep',
+    description: 'Read sleep-asleep duration.',
+    requestTypes: [HealthDataType.SLEEP_ASLEEP],
+  ),
+  _HealthPermissionConfig(
+    key: 'sleep_light',
+    title: 'Sleep Light',
+    description: 'Read light sleep duration.',
+    requestTypes: [HealthDataType.SLEEP_LIGHT],
+  ),
+  _HealthPermissionConfig(
+    key: 'sleep_deep',
+    title: 'Sleep Deep',
+    description: 'Read deep sleep duration.',
+    requestTypes: [HealthDataType.SLEEP_DEEP],
+  ),
+  _HealthPermissionConfig(
+    key: 'sleep_rem',
+    title: 'Sleep REM',
+    description: 'Read REM sleep duration.',
+    requestTypes: [HealthDataType.SLEEP_REM],
+  ),
+  _HealthPermissionConfig(
+    key: 'resting_hr',
+    title: 'Resting Heart Rate',
+    description: 'Read resting BPM.',
+    requestTypes: [HealthDataType.RESTING_HEART_RATE],
+  ),
+  _HealthPermissionConfig(
+    key: 'respiratory_rate',
+    title: 'Respiratory Rate',
+    description: 'Read respirations per minute.',
+    requestTypes: [HealthDataType.RESPIRATORY_RATE],
+  ),
+  _HealthPermissionConfig(
+    key: 'blood_oxygen',
+    title: 'Blood Oxygen',
+    description: 'Read oxygen saturation (SpO2).',
+    requestTypes: [HealthDataType.BLOOD_OXYGEN],
+  ),
+  _HealthPermissionConfig(
+    key: 'weight',
+    title: 'Weight',
+    description: 'Read body weight.',
+    requestTypes: [HealthDataType.WEIGHT],
+  ),
+  _HealthPermissionConfig(
+    key: 'bmi',
+    title: 'Body Mass Index',
+    description: 'Read BMI values.',
+    requestTypes: [HealthDataType.BODY_MASS_INDEX],
+    // Health Connect permissions are tied to weight/height records.
+    androidRequestTypes: [HealthDataType.WEIGHT, HealthDataType.HEIGHT],
+  ),
+  _HealthPermissionConfig(
+    key: 'body_fat',
+    title: 'Body Fat %',
+    description: 'Read body fat percentage.',
+    requestTypes: [HealthDataType.BODY_FAT_PERCENTAGE],
+  ),
+  _HealthPermissionConfig(
+    key: 'water',
+    title: 'Hydration',
+    description: 'Read water intake.',
+    requestTypes: [HealthDataType.WATER],
+  ),
+  _HealthPermissionConfig(
+    key: 'nutrition',
+    title: 'Nutrition',
+    description: 'Read nutrition entries.',
+    requestTypes: [HealthDataType.NUTRITION],
+  ),
+  _HealthPermissionConfig(
+    key: 'bp_systolic',
+    title: 'Blood Pressure Systolic',
+    description: 'Read systolic blood pressure.',
+    requestTypes: [HealthDataType.BLOOD_PRESSURE_SYSTOLIC],
+  ),
+  _HealthPermissionConfig(
+    key: 'bp_diastolic',
+    title: 'Blood Pressure Diastolic',
+    description: 'Read diastolic blood pressure.',
+    requestTypes: [HealthDataType.BLOOD_PRESSURE_DIASTOLIC],
+  ),
+  _HealthPermissionConfig(
+    key: 'blood_glucose',
+    title: 'Blood Glucose',
+    description: 'Read blood glucose samples.',
+    requestTypes: [HealthDataType.BLOOD_GLUCOSE],
+  ),
+];
+
 @NowaGenerated()
 class PermissionsPage extends StatefulWidget {
   @NowaGenerated({'loader': 'auto-constructor'})
@@ -21,9 +150,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
   final GpsTrackingService _gpsTrackingService = GpsTrackingService();
 
   bool _healthConnectAvailable = true;
-  bool? _stepsPermission;
-  bool? _heartPermission;
-  bool? _exercisePermission;
+  final Map<String, bool?> _healthPermissionStates = {};
   bool? _locationPermission;
   bool? _backgroundHealthPermission;
   bool _permissionsBusy = false;
@@ -34,35 +161,48 @@ class _PermissionsPageState extends State<PermissionsPage> {
     _refreshPermissionStates();
   }
 
+  List<HealthDataType> _effectiveTypes(_HealthPermissionConfig config) {
+    if (defaultTargetPlatform == TargetPlatform.android &&
+        config.androidRequestTypes != null &&
+        config.androidRequestTypes!.isNotEmpty) {
+      return config.androidRequestTypes!;
+    }
+    return config.requestTypes;
+  }
+
   Future<void> _refreshPermissionStates() async {
     try {
       final healthService = HealthService();
-      final healthConnectAvailable = await healthService
-          .isHealthConnectAvailable();
+      final healthConnectAvailable =
+          await healthService.isHealthConnectAvailable();
 
-      final results = await Future.wait<bool?>([
-        _health.hasPermissions(
-          [HealthDataType.STEPS],
-          permissions: [HealthDataAccess.READ],
-        ),
-        _health.hasPermissions(
-          [HealthDataType.HEART_RATE],
-          permissions: [HealthDataAccess.READ],
-        ),
-        _health.hasPermissions(
-          [HealthDataType.WORKOUT],
-          permissions: [HealthDataAccess.READ],
-        ),
-      ]);
+      final statuses = await Future.wait<bool?>(
+        _healthPermissionConfigs.map((config) async {
+          final types = _effectiveTypes(config);
+          if (types.isEmpty) return false;
+          try {
+            final status = await _health.hasPermissions(
+              types,
+              permissions: List<HealthDataAccess>.filled(
+                types.length,
+                HealthDataAccess.READ,
+              ),
+            );
+            return status;
+          } catch (_) {
+            return false;
+          }
+        }),
+      );
 
       bool? locationGranted;
       final locationPermission = await Geolocator.checkPermission();
-      final locationServiceEnabled = await Geolocator.isLocationServiceEnabled();
+      final locationServiceEnabled =
+          await Geolocator.isLocationServiceEnabled();
       if (!locationServiceEnabled) {
         locationGranted = false;
       } else {
-        locationGranted =
-            locationPermission == LocationPermission.always ||
+        locationGranted = locationPermission == LocationPermission.always ||
             locationPermission == LocationPermission.whileInUse;
       }
 
@@ -76,9 +216,10 @@ class _PermissionsPageState extends State<PermissionsPage> {
       if (!mounted) return;
       setState(() {
         _healthConnectAvailable = healthConnectAvailable;
-        _stepsPermission = results[0];
-        _heartPermission = results[1];
-        _exercisePermission = results[2];
+        for (var i = 0; i < _healthPermissionConfigs.length; i++) {
+          _healthPermissionStates[_healthPermissionConfigs[i].key] =
+              statuses[i];
+        }
         _locationPermission = locationGranted;
         _backgroundHealthPermission = backgroundHealthGranted;
       });
@@ -107,18 +248,18 @@ class _PermissionsPageState extends State<PermissionsPage> {
     await Geolocator.openAppSettings();
   }
 
-  Future<void> _grantHealthType(HealthDataType type) async {
+  Future<void> _grantHealthType(_HealthPermissionConfig config) async {
+    final types = _effectiveTypes(config);
     final granted = await _health.requestAuthorization(
-      [type],
-      permissions: [HealthDataAccess.READ],
+      types,
+      permissions: List<HealthDataAccess>.filled(
+        types.length,
+        HealthDataAccess.READ,
+      ),
     );
     if (!granted && defaultTargetPlatform == TargetPlatform.android) {
       await _openAppSettings();
     }
-  }
-
-  Future<void> _grantExercisePermission() async {
-    await _grantHealthType(HealthDataType.WORKOUT);
   }
 
   Future<void> _disableHealthPermissions() async {
@@ -200,37 +341,26 @@ class _PermissionsPageState extends State<PermissionsPage> {
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 16),
-              _buildPermissionRow(
-                title: 'Steps',
-                description: 'Read daily step count from health provider.',
-                granted: _stepsPermission,
-                onEnable: () => _handlePermissionAction(
-                  () => _grantHealthType(HealthDataType.STEPS),
-                ),
-                onDisable: () => _handlePermissionAction(_disableHealthPermissions),
-              ),
-              _buildPermissionRow(
-                title: 'Heart Rate',
-                description: 'Read BPM and heart-rate events.',
-                granted: _heartPermission,
-                onEnable: () => _handlePermissionAction(
-                  () => _grantHealthType(HealthDataType.HEART_RATE),
-                ),
-                onDisable: () => _handlePermissionAction(_disableHealthPermissions),
-              ),
-              _buildPermissionRow(
-                title: 'Exercise Sessions',
-                description: 'Read workouts to derive exercise minutes for points.',
-                granted: _exercisePermission,
-                onEnable: () => _handlePermissionAction(_grantExercisePermission),
-                onDisable: () => _handlePermissionAction(_openAppSettings),
-              ),
+              ..._healthPermissionConfigs.map((config) {
+                return _buildPermissionRow(
+                  title: config.title,
+                  description: config.description,
+                  granted: _healthPermissionStates[config.key],
+                  onEnable: () => _handlePermissionAction(
+                    () => _grantHealthType(config),
+                  ),
+                  onDisable: () =>
+                      _handlePermissionAction(_disableHealthPermissions),
+                );
+              }),
               _buildPermissionRow(
                 title: 'Location',
                 description: 'Enable real-time GPS run/cycle tracking.',
                 granted: _locationPermission,
-                onEnable: () => _handlePermissionAction(_grantLocationPermission),
-                onDisable: () => _handlePermissionAction(_disableLocationPermission),
+                onEnable: () =>
+                    _handlePermissionAction(_grantLocationPermission),
+                onDisable: () =>
+                    _handlePermissionAction(_disableLocationPermission),
               ),
               if (defaultTargetPlatform == TargetPlatform.android)
                 _buildPermissionRow(

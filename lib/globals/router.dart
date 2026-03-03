@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zerotrust_fitness/pages/home_page.dart';
 import 'package:zerotrust_fitness/pages/dashboard_page.dart';
@@ -32,12 +33,39 @@ final GoRouter appRouter = GoRouter(
   
   redirect: (context, state) async {
     const storage = FlutterSecureStorage();
+    final prefs = await SharedPreferences.getInstance();
+    const hasSeenLandingKey = 'has_seen_get_started_landing';
     
     // Check if the vault's master key exists
     final hasVault = await storage.containsKey(key: 'encrypted_db_key');
+    final hasSeenLanding = prefs.getBool(hasSeenLandingKey) ?? false;
     final isSignedIn = Supabase.instance.client.auth.currentUser != null;
+    final isGoingToHome = state.matchedLocation == '/home-page';
     final isGoingToDashboard = state.matchedLocation == '/dashboard';
     final isGoingToOnboarding = state.matchedLocation == '/onboarding';
+
+    // Preserve existing users' experience after upgrade.
+    if (!hasSeenLanding && (isSignedIn || hasVault)) {
+      await prefs.setBool(hasSeenLandingKey, true);
+      if (isGoingToHome) {
+        return isSignedIn ? '/dashboard' : '/onboarding';
+      }
+    }
+
+    // Show landing page exactly once after installation.
+    if (!hasSeenLanding && !isGoingToHome) {
+      return '/home-page';
+    }
+
+    if (!hasSeenLanding && isGoingToHome) {
+      await prefs.setBool(hasSeenLandingKey, true);
+      return null;
+    }
+
+    // After first launch, bypass landing page on app open.
+    if (hasSeenLanding && isGoingToHome) {
+      return isSignedIn ? '/dashboard' : '/onboarding';
+    }
 
     // 1. Protection: If they try to go to Dashboard but haven't initialized a vault
     if (isGoingToDashboard && !hasVault) {

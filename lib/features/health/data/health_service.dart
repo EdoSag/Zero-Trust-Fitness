@@ -14,7 +14,23 @@ class HealthService {
   final List<HealthDataType> types = [
     HealthDataType.STEPS,
     HealthDataType.HEART_RATE,
+    HealthDataType.EXERCISE_TIME,
     HealthDataType.WORKOUT,
+    HealthDataType.SLEEP_ASLEEP,
+    HealthDataType.SLEEP_LIGHT,
+    HealthDataType.SLEEP_DEEP,
+    HealthDataType.SLEEP_REM,
+    HealthDataType.RESTING_HEART_RATE,
+    HealthDataType.RESPIRATORY_RATE,
+    HealthDataType.BLOOD_OXYGEN,
+    HealthDataType.WEIGHT,
+    HealthDataType.BODY_MASS_INDEX,
+    HealthDataType.BODY_FAT_PERCENTAGE,
+    HealthDataType.WATER,
+    HealthDataType.NUTRITION,
+    HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+    HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+    HealthDataType.BLOOD_GLUCOSE,
   ];
 
   Future<bool> requestPermissions() async {
@@ -25,9 +41,14 @@ class HealthService {
 
   Future<List<HealthDataPoint>> fetchLatestData({
     List<HealthDataType>? requestedTypes,
+    int lookbackDays = 2,
   }) async {
     final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
+    final startTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: lookbackDays < 1 ? 1 : lookbackDays));
     final dataTypes = requestedTypes ?? types;
     if (dataTypes.isEmpty) {
       return const <HealthDataPoint>[];
@@ -35,7 +56,7 @@ class HealthService {
 
     return await _health.getHealthDataFromTypes(
       types: dataTypes,
-      startTime: startOfDay,
+      startTime: startTime,
       endTime: now,
     );
   }

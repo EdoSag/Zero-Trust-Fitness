@@ -50,7 +50,7 @@ class HomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 64),
                 ElevatedButton(
-                  onPressed: () => context.push('/dashboard'),
+                  onPressed: () => context.push('/onboarding'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: theme.colorScheme.primary,

@@ -25,13 +25,13 @@ class LocalVault {
     return base64Url.encode(digest.bytes);
   }
 
-void setupSqlCipher() {
-  // Using the aliased import avoids the property/variable confusion
-  sqlite_open.open.overrideFor(
-    sqlite_open.OperatingSystem.android, 
-    openCipherOnAndroid,
-  );
-}
+  void setupSqlCipher() {
+    // Using the aliased import avoids the property/variable confusion.
+    sqlite_open.open.overrideFor(
+      sqlite_open.OperatingSystem.android,
+      openCipherOnAndroid,
+    );
+  }
 
   Future<void> _openWithKey(SecretKey secretKey) async {
     final keyFingerprint = await _buildKeyFingerprint(secretKey);
@@ -44,9 +44,8 @@ void setupSqlCipher() {
     }
 
     final keyBytes = await secretKey.extractBytes();
-    final dbKeyHex = keyBytes
-        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
-        .join();
+    final dbKeyHex =
+        keyBytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
 
     final appDir = await getApplicationDocumentsDirectory();
     final file = File('${appDir.path}/vault.sqlite');
@@ -73,11 +72,11 @@ void setupSqlCipher() {
         database.execute(
           'CREATE TABLE IF NOT EXISTS daily_metrics ('
           'date_key TEXT PRIMARY KEY,'
-          'steps INTEGER NOT NULL,'
-          'heart_points INTEGER NOT NULL,'
+          'metrics_json TEXT NOT NULL,'
           'updated_at TEXT NOT NULL'
           ');',
         );
+        _migrateLegacyDailyMetrics(database);
       },
     );
     await _executor!.ensureOpen(_vaultExecutorUser);
@@ -134,33 +133,49 @@ void setupSqlCipher() {
 
   Future<void> upsertDailyMetrics({
     required String dateKey,
-    required int steps,
-    required int heartPoints,
+    int? steps,
+    int? heartPoints,
+    Map<String, num>? metrics,
     required SecretKey secretKey,
   }) async {
     await _openWithKey(secretKey);
+    final payloadMetrics = _normalizeMetrics(
+      metrics ??
+          <String, num>{
+            'steps': (steps ?? 0),
+            'heart_points': (heartPoints ?? 0),
+          },
+    );
     await _executor!.runInsert(
-      'INSERT OR REPLACE INTO daily_metrics (date_key, steps, heart_points, updated_at)'
-      ' VALUES (?, ?, ?, ?)',
-      [dateKey, steps, heartPoints, DateTime.now().toUtc().toIso8601String()],
+      'INSERT OR REPLACE INTO daily_metrics (date_key, metrics_json, updated_at)'
+      ' VALUES (?, ?, ?)',
+      [
+        dateKey,
+        jsonEncode(payloadMetrics),
+        DateTime.now().toUtc().toIso8601String(),
+      ],
     );
   }
 
-  Future<List<Map<String, dynamic>>> fetchDailyMetrics(SecretKey secretKey) async {
+  Future<List<Map<String, dynamic>>> fetchDailyMetrics(
+      SecretKey secretKey) async {
     await _openWithKey(secretKey);
     final rows = await _executor!.runSelect(
-      'SELECT date_key, steps, heart_points, updated_at '
+      'SELECT date_key, metrics_json, updated_at '
       'FROM daily_metrics ORDER BY date_key DESC',
       const [],
     );
-    return rows
-        .map((row) => {
-              'date_key': row['date_key'],
-              'steps': row['steps'],
-              'heart_points': row['heart_points'],
-              'updated_at': row['updated_at'],
-            })
-        .toList(growable: false);
+    return rows.map((row) {
+      final decoded = _parseMetricsJson(row['metrics_json']?.toString());
+      return <String, dynamic>{
+        'date_key': row['date_key'],
+        'metrics': decoded,
+        // Backward-compatible aliases still used in chart/sync paths.
+        'steps': _metricAsInt(decoded, 'steps'),
+        'heart_points': _metricAsInt(decoded, 'heart_points'),
+        'updated_at': row['updated_at'],
+      };
+    }).toList(growable: false);
   }
 
   Future<void> replaceDailyMetrics(
@@ -172,16 +187,126 @@ void setupSqlCipher() {
     for (final metric in metrics) {
       final dateKey = metric['date_key']?.toString();
       if (dateKey == null || dateKey.isEmpty) continue;
-      final steps = (metric['steps'] as num?)?.toInt() ?? 0;
-      final heartPoints = (metric['heart_points'] as num?)?.toInt() ?? 0;
+      final normalizedMetrics = _metricsFromIncoming(metric);
       final updatedAt = metric['updated_at']?.toString() ??
           DateTime.now().toUtc().toIso8601String();
       await _executor!.runInsert(
-        'INSERT OR REPLACE INTO daily_metrics (date_key, steps, heart_points, updated_at)'
-        ' VALUES (?, ?, ?, ?)',
-        [dateKey, steps, heartPoints, updatedAt],
+        'INSERT OR REPLACE INTO daily_metrics (date_key, metrics_json, updated_at)'
+        ' VALUES (?, ?, ?)',
+        [dateKey, jsonEncode(normalizedMetrics), updatedAt],
       );
     }
+  }
+
+  void _migrateLegacyDailyMetrics(dynamic database) {
+    final tableInfo = database.select("PRAGMA table_info('daily_metrics');");
+    if (tableInfo.isEmpty) {
+      return;
+    }
+
+    final hasMetricsJson =
+        tableInfo.any((row) => row['name'] == 'metrics_json');
+    if (hasMetricsJson) {
+      return;
+    }
+
+    database
+        .execute('ALTER TABLE daily_metrics RENAME TO daily_metrics_legacy;');
+    database.execute(
+      'CREATE TABLE IF NOT EXISTS daily_metrics ('
+      'date_key TEXT PRIMARY KEY,'
+      'metrics_json TEXT NOT NULL,'
+      'updated_at TEXT NOT NULL'
+      ');',
+    );
+
+    final legacyRows = database.select(
+      'SELECT date_key, steps, heart_points, updated_at FROM daily_metrics_legacy',
+    );
+    for (final row in legacyRows) {
+      final metrics = _normalizeMetrics(<String, num>{
+        'steps': (row['steps'] as num?) ?? 0,
+        'heart_points': (row['heart_points'] as num?) ?? 0,
+      });
+      database.execute(
+        'INSERT OR REPLACE INTO daily_metrics (date_key, metrics_json, updated_at)'
+        " VALUES (?, ?, ?)",
+        [
+          row['date_key'],
+          jsonEncode(metrics),
+          row['updated_at']?.toString() ??
+              DateTime.now().toUtc().toIso8601String(),
+        ],
+      );
+    }
+    database.execute('DROP TABLE daily_metrics_legacy;');
+  }
+
+  Map<String, num> _metricsFromIncoming(Map<String, dynamic> row) {
+    final rawMetrics = row['metrics'];
+    if (rawMetrics is Map) {
+      final converted = <String, num>{};
+      rawMetrics.forEach((key, value) {
+        final parsed = _parseNum(value);
+        if (parsed != null) {
+          converted[key.toString()] = parsed;
+        }
+      });
+      if (converted.isNotEmpty) {
+        return _normalizeMetrics(converted);
+      }
+    }
+
+    // Legacy payload compatibility.
+    return _normalizeMetrics(<String, num>{
+      'steps': (row['steps'] as num?) ?? 0,
+      'heart_points': (row['heart_points'] as num?) ?? 0,
+    });
+  }
+
+  Map<String, num> _parseMetricsJson(String? raw) {
+    if (raw == null || raw.isEmpty) return const <String, num>{};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return const <String, num>{};
+      final metrics = <String, num>{};
+      decoded.forEach((key, value) {
+        final parsed = _parseNum(value);
+        if (parsed != null) {
+          metrics[key.toString()] = parsed;
+        }
+      });
+      return metrics;
+    } catch (_) {
+      return const <String, num>{};
+    }
+  }
+
+  num? _parseNum(dynamic value) {
+    if (value is num) return value;
+    if (value is String) return num.tryParse(value);
+    return null;
+  }
+
+  Map<String, num> _normalizeMetrics(Map<String, num> metrics) {
+    final normalized = <String, num>{};
+    metrics.forEach((key, value) {
+      if (!value.isFinite) return;
+      final rounded = value;
+      final intValue = rounded.toInt();
+      if (rounded == intValue) {
+        normalized[key] = intValue;
+      } else {
+        normalized[key] = rounded.toDouble();
+      }
+    });
+    return normalized;
+  }
+
+  int _metricAsInt(Map<String, num> metrics, String key) {
+    final value = metrics[key];
+    if (value == null) return 0;
+    return value.toInt();
   }
 
   Future<void> close() async {
@@ -195,8 +320,9 @@ class _VaultExecutorUser implements QueryExecutorUser {
   const _VaultExecutorUser();
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
-  Future<void> beforeOpen(QueryExecutor executor, OpeningDetails details) async {}
+  Future<void> beforeOpen(
+      QueryExecutor executor, OpeningDetails details) async {}
 }
