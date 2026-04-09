@@ -409,6 +409,17 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
   }
 
+  Future<void> _refreshDashboardData() async {
+    final secretKey = ref.read(securityEnclaveProvider);
+    if (secretKey == null) {
+      await _loadRecentActivities();
+      await _loadDailyMetrics();
+      return;
+    }
+
+    await _loadHealthData();
+  }
+
   String _dateKey(DateTime date) {
     final local = date.toLocal();
     return '${local.year.toString().padLeft(4, '0')}-'
@@ -1305,31 +1316,41 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
           ],
         ),
-        body: _isLoading
-            ? const Center(child: ShimmerLoader())
-            : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildMetricHighlights(theme),
-                    const SizedBox(height: 16),
-                    _buildAllMetricsSection(theme),
-                    const SizedBox(height: 20),
-                    _buildAnalyticsSection(theme),
-                    const SizedBox(height: 24),
-                    _buildGpsTrackingSection(theme),
-                    const SizedBox(height: 32),
-                    Text(
-                      'Recent Activity',
-                      style: theme.textTheme.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildActivityFeed(theme),
+        body: RefreshIndicator(
+          onRefresh: _refreshDashboardData,
+          child: _isLoading
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [
+                    SizedBox(
+                        height: 220, child: Center(child: ShimmerLoader())),
                   ],
+                )
+              : SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildMetricHighlights(theme),
+                      const SizedBox(height: 16),
+                      _buildAllMetricsSection(theme),
+                      const SizedBox(height: 20),
+                      _buildAnalyticsSection(theme),
+                      const SizedBox(height: 24),
+                      _buildGpsTrackingSection(theme),
+                      const SizedBox(height: 32),
+                      Text(
+                        'Recent Activity',
+                        style: theme.textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildActivityFeed(theme),
+                    ],
+                  ),
                 ),
-              ),
+        ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async => _showManualIngestion(context, secretKey),
           backgroundColor: theme.colorScheme.primary,
