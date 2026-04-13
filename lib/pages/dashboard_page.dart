@@ -1588,6 +1588,25 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ),
               ),
               borderData: FlBorderData(show: false),
+              barTouchData: BarTouchData(
+                enabled: true,
+                touchTooltipData: BarTouchTooltipData(
+                  getTooltipColor: (_) => Colors.black87,
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    final point = points[group.x.toInt()];
+                    final label = rodIndex == 0 ? 'Steps' : 'Heart Points';
+                    final value = rod.toY.toStringAsFixed(0);
+                    return BarTooltipItem(
+                      '${point.label}\n$label: $value',
+                      const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    );
+                  },
+                ),
+              ),
               groupsSpace: 10,
               barGroups: points.asMap().entries.map((entry) {
                 final i = entry.key;
@@ -1681,6 +1700,23 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
         ),
         borderData: FlBorderData(show: false),
+        barTouchData: BarTouchData(
+          enabled: true,
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => Colors.black87,
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              final point = points[group.x.toInt()];
+              return BarTooltipItem(
+                '${point.label}\n${point.value.toStringAsFixed(0)}',
+                const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              );
+            },
+          ),
+        ),
         groupsSpace: 10,
         barGroups: points.asMap().entries.map((entry) {
           final i = entry.key;
