@@ -66,6 +66,12 @@ flutter {
     source = "../.."
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("androidx.glance:glance-appwidget:1.1.0")
+    }
+}
+
 dependencies {
-    
+
 }
