@@ -7,6 +7,7 @@ import 'package:zerotrust_fitness/heart_point_calculator.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
+import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 
 @NowaGenerated()
@@ -90,6 +91,8 @@ class IntegrationService {
       heartPoints: totalHeartPoints,
       isLocked: false,
     );
+
+    await AchievementService().checkAndUnlockAchievements(secretKey);
   }
 
   double _extractNumericValue(HealthDataPoint point) {

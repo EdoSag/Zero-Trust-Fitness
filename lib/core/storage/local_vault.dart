@@ -76,6 +76,13 @@ class LocalVault {
           'updated_at TEXT NOT NULL'
           ');',
         );
+        database.execute(
+          'CREATE TABLE IF NOT EXISTS achievements ('
+          'id TEXT PRIMARY KEY,'
+          'unlocked_at TEXT NOT NULL,'
+          "metadata_json TEXT NOT NULL DEFAULT '{}'"
+          ');',
+        );
         _migrateLegacyDailyMetrics(database);
       },
     );
@@ -129,6 +136,44 @@ class LocalVault {
     await _openWithKey(secretKey);
     await _executor!.runUpdate('DELETE FROM workouts', const []);
     await _executor!.runUpdate('DELETE FROM daily_metrics', const []);
+    await _executor!.runUpdate('DELETE FROM achievements', const []);
+  }
+
+  Future<void> insertAchievementIfAbsent(
+    String id,
+    DateTime unlockedAt,
+    SecretKey secretKey,
+  ) async {
+    await _openWithKey(secretKey);
+    await _executor!.runInsert(
+      'INSERT OR IGNORE INTO achievements (id, unlocked_at, metadata_json) VALUES (?, ?, ?)',
+      [id, unlockedAt.toUtc().toIso8601String(), '{}'],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAchievements(
+    SecretKey secretKey,
+  ) async {
+    await _openWithKey(secretKey);
+    final rows = await _executor!.runSelect(
+      'SELECT id, unlocked_at FROM achievements',
+      const [],
+    );
+    return rows
+        .map((r) => <String, dynamic>{
+              'id': r['id'],
+              'unlocked_at': r['unlocked_at'],
+            })
+        .toList(growable: false);
+  }
+
+  Future<bool> hasAchievement(String id, SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    final rows = await _executor!.runSelect(
+      'SELECT 1 FROM achievements WHERE id = ? LIMIT 1',
+      [id],
+    );
+    return rows.isNotEmpty;
   }
 
   Future<void> upsertDailyMetrics({

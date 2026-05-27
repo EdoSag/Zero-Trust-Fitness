@@ -22,6 +22,9 @@ import 'package:zerotrust_fitness/heart_point_calculator.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
+import 'package:go_router/go_router.dart';
+import 'package:zerotrust_fitness/features/achievements/domain/achievement_definition.dart';
+import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
 import 'package:zerotrust_fitness/pages/profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -308,6 +311,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           metrics: todayMetrics,
           secretKey: secretKey,
         );
+        final newMedals =
+            await AchievementService().checkAndUnlockAchievements(secretKey);
+        if (newMedals.isNotEmpty && mounted) {
+          _showNewMedalSnackbar(newMedals);
+        }
       }
 
       await WidgetService.updateWidgetData(
@@ -758,6 +766,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   Future<void> _openProfilePage(SecretKey? secretKey) async {
+    List<UnlockedAchievement> earned = [];
+    if (secretKey != null) {
+      earned = await AchievementService().fetchUnlocked(secretKey);
+    }
+    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ProfilePage(
@@ -767,9 +780,38 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           onSync: () => _syncEncryptedVault(secretKey),
           onPull: () => _pullEncryptedVault(secretKey),
           onDeleteData: () => _promptDeleteData(secretKey),
+          earnedMedals: earned,
+          onViewAllMedals: () => context.push('/achievements'),
         ),
       ),
     );
+  }
+
+  void _showNewMedalSnackbar(List<String> ids) {
+    final definitions = ids
+        .map((id) => kAllAchievements.where((d) => d.id == id).firstOrNull)
+        .whereType<AchievementDefinition>()
+        .take(3)
+        .toList();
+    for (final def in definitions) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Medal unlocked: ${def.name}!',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   Future<void> _syncEncryptedVault(SecretKey? secretKey) async {
@@ -894,6 +936,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       }
     }
 
+    final achievements = await LocalVault().fetchAchievements(secretKey);
+
     return {
       'version': 2,
       'synced_at': DateTime.now().toUtc().toIso8601String(),
@@ -908,6 +952,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         'total': _heartPointsTotal,
         'records': heartRecords,
       },
+      'achievements': achievements,
     };
   }
 
@@ -1117,6 +1162,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       await LocalVault().replaceWorkouts(restoredEncryptedRows, secretKey);
       final pulledDailyMetrics = _buildDailyMetricsFromPayload(payload);
       await LocalVault().replaceDailyMetrics(pulledDailyMetrics, secretKey);
+
+      final achievementsRaw = payload['achievements'];
+      if (achievementsRaw is List) {
+        for (final item in achievementsRaw) {
+          if (item is! Map) continue;
+          final id = item['id']?.toString();
+          final tsRaw = item['unlocked_at']?.toString();
+          if (id == null || tsRaw == null) continue;
+          final unlockedAt =
+              DateTime.tryParse(tsRaw) ?? DateTime.now().toUtc();
+          await LocalVault()
+              .insertAchievementIfAbsent(id, unlockedAt, secretKey);
+        }
+      }
 
       var pulledHeartTotal = 0;
       final heartPointsRaw = payload['heart_points'];
