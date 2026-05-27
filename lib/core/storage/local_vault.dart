@@ -354,6 +354,53 @@ class LocalVault {
     return value.toInt();
   }
 
+  Future<void> mergeDailyMetrics({
+    required String dateKey,
+    required Map<String, num> incoming,
+    required SecretKey secretKey,
+  }) async {
+    await _openWithKey(secretKey);
+
+    final rows = await _executor!.runSelect(
+      'SELECT metrics_json FROM daily_metrics WHERE date_key = ?',
+      [dateKey],
+    );
+    final existing = rows.isEmpty
+        ? <String, num>{}
+        : _parseMetricsJson(rows.first['metrics_json']?.toString());
+
+    const additiveKeys = {
+      'steps',
+      'heart_points',
+      'sleep_asleep_min',
+      'sleep_light_min',
+      'sleep_deep_min',
+      'sleep_rem_min',
+      'water_l',
+      'nutrition_entries',
+    };
+
+    final merged = Map<String, num>.from(existing);
+    for (final entry in incoming.entries) {
+      if (additiveKeys.contains(entry.key)) {
+        merged[entry.key] = (merged[entry.key] ?? 0) + entry.value;
+      } else if (entry.value != 0) {
+        merged[entry.key] = entry.value;
+      }
+    }
+
+    final normalized = _normalizeMetrics(merged);
+    await _executor!.runInsert(
+      'INSERT OR REPLACE INTO daily_metrics (date_key, metrics_json, updated_at)'
+      ' VALUES (?, ?, ?)',
+      [
+        dateKey,
+        jsonEncode(normalized),
+        DateTime.now().toUtc().toIso8601String(),
+      ],
+    );
+  }
+
   Future<void> close() async {
     await _executor?.close();
     _executor = null;

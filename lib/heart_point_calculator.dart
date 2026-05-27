@@ -26,4 +26,17 @@ class HeartPointCalculator {
     }
     return 0;
   }
+
+  // Maps intensity 1–10 to Google Fit heart point zones:
+  // 1–3 = light (0 pts), 4–6 = moderate (1 pt/min), 7–10 = vigorous (2 pts/min)
+  static int calculateFromManualWorkout({
+    required String activityType,
+    required int durationMinutes,
+    required int intensity,
+  }) {
+    if (durationMinutes <= 0) return 0;
+    if (intensity <= 3) return 0;
+    if (intensity <= 6) return durationMinutes;
+    return durationMinutes * 2;
+  }
 }

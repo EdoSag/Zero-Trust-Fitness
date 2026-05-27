@@ -648,14 +648,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   Future<void> _showManualIngestion(
       BuildContext context, SecretKey? secretKey) async {
-    await showModalBottomSheet(
+    final newMedals = await showModalBottomSheet<List<String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ManualIngestionBottomSheet(secretKey: secretKey),
     );
 
-    await _loadRecentActivities();
+    if (newMedals != null) {
+      await _loadRecentActivities();
+      await _loadDailyMetrics();
+      if (newMedals.isNotEmpty && mounted) {
+        _showNewMedalSnackbar(newMedals);
+      }
+    }
   }
 
   // Changed dynamic ref to WidgetRef for type safety
@@ -2185,8 +2191,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     if (type.contains('walk')) return Icons.directions_walk;
     if (type.contains('cycl')) return Icons.directions_bike;
     if (type.contains('swim')) return Icons.pool;
+    if (type.contains('strength')) return Icons.fitness_center;
+    if (type.contains('hiit')) return Icons.bolt;
+    if (type.contains('yoga') || type.contains('stretch')) {
+      return Icons.self_improvement;
+    }
     if (type.contains('heart')) return Icons.favorite;
     if (type.contains('step')) return Icons.hiking;
-    return Icons.bolt;
+    return Icons.sports_gymnastics;
   }
 }
