@@ -5,7 +5,11 @@
       "Bash(Select-Object Name, PSIsContainer)",
       "Bash(Format-Table -AutoSize)",
       "Bash(flutter analyze *)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(flutter pub *)",
+      "Bash(python -c \"import sys,json; data=json.loads\\(sys.stdin.read\\(\\)\\); hw=data.get\\('packages',{}\\).get\\('home_widget',{}\\); print\\(list\\(hw.keys\\(\\)\\)\\)\")",
+      "Bash(dir \"C:\\\\Users\\\\Edo\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\\" | findstr home_widget)",
+      "Bash(flutter --version)"
     ]
   }
 }

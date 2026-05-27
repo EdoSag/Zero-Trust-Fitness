@@ -106,7 +106,7 @@ class _AchievementDetailSheet extends StatelessWidget {
               definition.name,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: theme.colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
