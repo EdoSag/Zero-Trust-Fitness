@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:zerotrust_fitness/features/achievements/presentation/achievements_page.dart';
 import 'package:zerotrust_fitness/pages/home_page.dart';
 import 'package:zerotrust_fitness/pages/dashboard_page.dart';
 import 'package:zerotrust_fitness/pages/onboarding_page.dart';
@@ -97,6 +98,10 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/dashboard',
       builder: (context, state) => const DashboardPage(),
+    ),
+    GoRoute(
+      path: '/achievements',
+      builder: (context, state) => const AchievementsPage(),
     ),
   ],
 );

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zerotrust_fitness/core/services/supabase_service.dart';
+import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
+import 'package:zerotrust_fitness/features/achievements/presentation/medal_chip.dart';
 import 'package:zerotrust_fitness/globals/router.dart';
 
 @NowaGenerated()
@@ -15,6 +17,8 @@ class ProfilePage extends StatefulWidget {
     required this.onSync,
     required this.onPull,
     required this.onDeleteData,
+    required this.earnedMedals,
+    required this.onViewAllMedals,
   });
 
   final bool isSyncing;
@@ -23,6 +27,8 @@ class ProfilePage extends StatefulWidget {
   final Future<void> Function() onSync;
   final Future<void> Function() onPull;
   final Future<void> Function() onDeleteData;
+  final List<UnlockedAchievement> earnedMedals;
+  final VoidCallback onViewAllMedals;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -67,6 +73,78 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Widget _buildMedalsCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final medals = widget.earnedMedals.take(10).toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.emoji_events_outlined, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Medals',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: widget.onViewAllMedals,
+                style: TextButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'View All (${widget.earnedMedals.length})',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (medals.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No medals yet — keep moving!',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.hintColor,
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 72,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: medals.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, i) => MedalChip(
+                  definition: medals[i].definition,
+                  size: 64,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
@@ -86,6 +164,8 @@ class _ProfilePageState extends State<ProfilePage> {
               subtitle: Text(email),
             ),
           ),
+          const SizedBox(height: 16),
+          _buildMedalsCard(context),
           const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: widget.isSyncing ? null : widget.onSync,
@@ -120,7 +200,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.delete_outline),
-            label: Text(widget.isDeletingData ? 'Deleting...' : 'Delete Data'),
+            label: Text(
+                widget.isDeletingData ? 'Deleting...' : 'Delete Data'),
           ),
           const SizedBox(height: 28),
           FilledButton.icon(
