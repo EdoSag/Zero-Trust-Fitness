@@ -19,6 +19,16 @@ class LocalVault {
   QueryExecutor? _executor;
   String? _activeKeyFingerprint;
 
+  // Metrics that accumulate across sources (HC total + manual additions).
+  static const _sumAdditiveKeys = <String>{
+    'steps', 'heart_points', 'water_l', 'nutrition_entries',
+  };
+
+  // Sleep metrics: per-night, so we take max(HC, manual) to avoid double-count.
+  static const _sleepKeys = <String>{
+    'sleep_asleep_min', 'sleep_light_min', 'sleep_deep_min', 'sleep_rem_min',
+  };
+
   Future<String> _buildKeyFingerprint(SecretKey secretKey) async {
     final keyBytes = await secretKey.extractBytes();
     final digest = await Sha256().hash(keyBytes);
@@ -354,6 +364,9 @@ class LocalVault {
     return value.toInt();
   }
 
+  /// Merges manually-entered values into a daily_metrics row.
+  /// Uses shadow keys (`_hc` / `_manual`) so that a subsequent
+  /// [syncFromHealthConnect] call can preserve manual additions.
   Future<void> mergeDailyMetrics({
     required String dateKey,
     required Map<String, num> incoming,
@@ -369,23 +382,39 @@ class LocalVault {
         ? <String, num>{}
         : _parseMetricsJson(rows.first['metrics_json']?.toString());
 
-    const additiveKeys = {
-      'steps',
-      'heart_points',
-      'sleep_asleep_min',
-      'sleep_light_min',
-      'sleep_deep_min',
-      'sleep_rem_min',
-      'water_l',
-      'nutrition_entries',
-    };
-
     final merged = Map<String, num>.from(existing);
+
     for (final entry in incoming.entries) {
-      if (additiveKeys.contains(entry.key)) {
-        merged[entry.key] = (merged[entry.key] ?? 0) + entry.value;
-      } else if (entry.value != 0) {
-        merged[entry.key] = entry.value;
+      final key = entry.key;
+      final value = entry.value;
+      if (key.endsWith('_hc') || key.endsWith('_manual')) continue;
+
+      if (_sumAdditiveKeys.contains(key)) {
+        // Migration: if no shadow key yet, treat existing display value as HC base.
+        final hcBase = existing.containsKey('${key}_hc')
+            ? existing['${key}_hc'] ?? 0
+            : existing[key] ?? 0;
+        final prevManual = existing['${key}_manual'] ?? 0;
+        merged['${key}_hc'] = hcBase;
+        merged['${key}_manual'] = prevManual + value;
+        merged[key] = hcBase + prevManual + value;
+      } else if (_sleepKeys.contains(key)) {
+        // Sleep is per-night: manual override replaces previous manual entry.
+        final hcBase = existing.containsKey('${key}_hc')
+            ? existing['${key}_hc'] ?? 0
+            : existing[key] ?? 0;
+        merged['${key}_hc'] = hcBase;
+        merged['${key}_manual'] = value;
+        // Display: take the larger value to avoid double-counting.
+        merged[key] = hcBase >= value ? hcBase : value;
+      } else {
+        // Vitals / body: latest manual reading wins; HC reading takes priority
+        // if available.
+        if (value != 0) {
+          merged['${key}_manual'] = value;
+          final hcVal = existing['${key}_hc'] ?? 0;
+          merged[key] = hcVal != 0 ? hcVal : value;
+        }
       }
     }
 
@@ -393,11 +422,82 @@ class LocalVault {
     await _executor!.runInsert(
       'INSERT OR REPLACE INTO daily_metrics (date_key, metrics_json, updated_at)'
       ' VALUES (?, ?, ?)',
-      [
-        dateKey,
-        jsonEncode(normalized),
-        DateTime.now().toUtc().toIso8601String(),
-      ],
+      [dateKey, jsonEncode(normalized), DateTime.now().toUtc().toIso8601String()],
+    );
+  }
+
+  /// Syncs Health Connect data into the vault while preserving manual entries.
+  ///
+  /// For each metric key the vault stores three values:
+  ///   `{key}`         – displayed combined value
+  ///   `{key}_hc`      – last value reported by Health Connect
+  ///   `{key}_manual`  – manually-entered contribution (never touched by HC)
+  ///
+  /// [manualContributions] lets the caller override specific manual values
+  /// (e.g. after deduplicating heart points against HC workout timestamps).
+  Future<void> syncFromHealthConnect({
+    required String dateKey,
+    required Map<String, num> hcMetrics,
+    Map<String, num> manualContributions = const {},
+    required SecretKey secretKey,
+  }) async {
+    await _openWithKey(secretKey);
+
+    final rows = await _executor!.runSelect(
+      'SELECT metrics_json FROM daily_metrics WHERE date_key = ?',
+      [dateKey],
+    );
+    final existing = rows.isEmpty
+        ? <String, num>{}
+        : _parseMetricsJson(rows.first['metrics_json']?.toString());
+
+    final merged = Map<String, num>.from(existing);
+
+    // Sum-additive: display = HC + manual (manual offset never erased by HC).
+    for (final key in _sumAdditiveKeys) {
+      final hcValue = hcMetrics[key] ?? 0;
+      final manualValue = manualContributions.containsKey(key)
+          ? manualContributions[key]!
+          : existing['${key}_manual'] ?? 0;
+      merged['${key}_hc'] = hcValue;
+      merged['${key}_manual'] = manualValue;
+      merged[key] = hcValue + manualValue;
+    }
+
+    // Sleep: display = max(HC, manual) — same night, avoid double-count.
+    for (final key in _sleepKeys) {
+      final hcValue = hcMetrics[key] ?? 0;
+      final manualValue = existing['${key}_manual'] ?? 0;
+      merged['${key}_hc'] = hcValue;
+      merged[key] = hcValue >= manualValue ? hcValue : manualValue;
+    }
+
+    // Vitals / body: HC wins if non-zero; otherwise preserve whatever is
+    // already stored (previous HC reading or manual entry).
+    for (final entry in hcMetrics.entries) {
+      final key = entry.key;
+      if (_sumAdditiveKeys.contains(key) || _sleepKeys.contains(key)) continue;
+      if (key.endsWith('_hc') || key.endsWith('_manual')) continue;
+      final hcValue = entry.value;
+      merged['${key}_hc'] = hcValue;
+      if (hcValue != 0) {
+        merged[key] = hcValue;
+      } else {
+        // HC has nothing today. Keep existing non-zero display value (from a prior
+        // HC sync or manual entry). Only apply manual fallback if display is empty.
+        final existingDisplay = merged[key] ?? 0;
+        if (existingDisplay == 0) {
+          final manualFallback = existing['${key}_manual'] ?? 0;
+          if (manualFallback != 0) merged[key] = manualFallback;
+        }
+      }
+    }
+
+    final normalized = _normalizeMetrics(merged);
+    await _executor!.runInsert(
+      'INSERT OR REPLACE INTO daily_metrics (date_key, metrics_json, updated_at)'
+      ' VALUES (?, ?, ?)',
+      [dateKey, jsonEncode(normalized), DateTime.now().toUtc().toIso8601String()],
     );
   }
 

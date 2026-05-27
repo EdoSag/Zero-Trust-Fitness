@@ -248,21 +248,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         debugPrint(
           'Health Connect is unavailable. Install/enable it before syncing.',
         );
-        setState(() {
-          _healthData = [];
-          _todayMetrics = const <String, num>{};
-        });
+        if (mounted) setState(() => _healthData = []);
+        await _loadDailyMetrics();
         return;
       }
 
       final readableTypes = await _getReadableHealthTypes();
       if (readableTypes.isEmpty) {
         debugPrint('Health permissions not granted.');
-        setState(() {
-          _healthData = [];
-          _heartPointsTotal = 0;
-          _todayMetrics = const <String, num>{};
-        });
+        if (mounted) {
+          setState(() {
+            _healthData = [];
+            _heartPointsTotal = 0;
+          });
+        }
+        await _loadDailyMetrics();
         return;
       }
 
@@ -306,11 +306,43 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
       final secretKey = ref.read(securityEnclaveProvider);
       if (secretKey != null) {
-        await LocalVault().upsertDailyMetrics(
+        // Find manual workouts logged today that HC didn't capture.
+        final hcWorkoutPoints = todayPoints
+            .where((p) => p.type == HealthDataType.WORKOUT)
+            .toList(growable: false);
+        final manualWorkoutsToday =
+            await _loadTodayManualWorkouts(secretKey);
+        final unmatchedManualHp = _computeUnmatchedManualHeartPoints(
+          hcWorkoutPoints: hcWorkoutPoints,
+          manualWorkouts: manualWorkoutsToday,
+        );
+
+        // Only pass manual heart_points when we actually found manual workouts.
+        // Passing 0 would overwrite the stored _manual shadow key with 0.
+        final Map<String, num> manualOverrides = {};
+        if (manualWorkoutsToday.isNotEmpty) {
+          manualOverrides['heart_points'] = unmatchedManualHp;
+        }
+
+        // Sync HC data without overwriting manual entries.
+        await LocalVault().syncFromHealthConnect(
           dateKey: _dateKey(DateTime.now()),
-          metrics: todayMetrics,
+          hcMetrics: todayMetrics,
+          manualContributions: manualOverrides,
           secretKey: secretKey,
         );
+
+        // Read back the combined (HC + manual) values to update the UI.
+        final vaultRows = await LocalVault().fetchDailyMetrics(secretKey);
+        final combinedToday = _metricsForDate(DateTime.now(), vaultRows);
+        if (mounted && combinedToday.isNotEmpty) {
+          setState(() {
+            _todayMetrics = combinedToday;
+            _heartPointsTotal =
+                (combinedToday['heart_points'] ?? heartPoints).toInt();
+          });
+        }
+
         final newMedals =
             await AchievementService().checkAndUnlockAchievements(secretKey);
         if (newMedals.isNotEmpty && mounted) {
@@ -320,7 +352,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
       await WidgetService.updateWidgetData(
         steps: totalSteps,
-        heartPoints: heartPoints,
+        heartPoints: _heartPointsTotal,
         isLocked: secretKey == null,
       );
       await _loadRecentActivities();
@@ -348,6 +380,71 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       }
     }
     return readableTypes;
+  }
+
+  /// Returns manual workout entries logged for today, decrypted from the vault.
+  /// Scans up to 200 most-recent entries (workouts table is newest-first).
+  Future<List<Map<String, dynamic>>> _loadTodayManualWorkouts(
+      SecretKey secretKey) async {
+    final encryptedRows = await LocalVault().fetchWorkouts(secretKey);
+    final result = <Map<String, dynamic>>[];
+    final todayKey = _dateKey(DateTime.now());
+    var scanned = 0;
+
+    for (final encrypted in encryptedRows) {
+      if (++scanned > 200) break;
+      try {
+        final decrypted =
+            await EncryptionService().decryptString(encrypted, secretKey);
+        final decoded = jsonDecode(decrypted);
+        if (decoded is! Map<String, dynamic>) continue;
+        // Manual entries carry a 'duration' field; auto-synced HC entries don't.
+        if (!decoded.containsKey('duration')) continue;
+        final ts = decoded['timestamp']?.toString() ?? '';
+        final entryDate = DateTime.tryParse(ts)?.toLocal();
+        if (entryDate == null) continue;
+        if (_dateKey(entryDate) != todayKey) continue;
+        result.add(decoded);
+      } catch (_) {}
+    }
+    return result;
+  }
+
+  /// Returns the heart-point total from manual workouts that have no
+  /// overlapping Health Connect WORKOUT entry (within a 15-minute window).
+  /// These are workouts HC genuinely missed, so their contribution should
+  /// be added on top of what HC already reported.
+  int _computeUnmatchedManualHeartPoints({
+    required List<HealthDataPoint> hcWorkoutPoints,
+    required List<Map<String, dynamic>> manualWorkouts,
+  }) {
+    var total = 0;
+    const tolerance = Duration(minutes: 15);
+
+    for (final manual in manualWorkouts) {
+      final ts = DateTime.tryParse(manual['timestamp']?.toString() ?? '');
+      final dur = (manual['duration'] as num?)?.toInt() ?? 0;
+      if (ts == null || dur <= 0) continue;
+
+      final manualEnd = ts.add(Duration(minutes: dur));
+
+      final matchedByHC = hcWorkoutPoints.any((hcPoint) {
+        final hcStart = hcPoint.dateFrom.subtract(tolerance);
+        final hcEnd = hcPoint.dateTo.add(tolerance);
+        // Two intervals overlap when neither ends before the other starts.
+        return ts.isBefore(hcEnd) && hcStart.isBefore(manualEnd);
+      });
+
+      if (!matchedByHC) {
+        final intensity = (manual['intensity'] as num?)?.toInt() ?? 5;
+        total += HeartPointCalculator.calculateFromManualWorkout(
+          activityType: manual['type']?.toString() ?? 'Other',
+          durationMinutes: dur,
+          intensity: intensity,
+        );
+      }
+    }
+    return total;
   }
 
   Future<void> _loadRecentActivities() async {
