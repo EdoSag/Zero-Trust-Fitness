@@ -16,6 +16,8 @@ import 'package:zerotrust_fitness/core/security/key_derivation_service.dart';
 
 part 'onboarding_notifier.g.dart';
 
+enum BiometricSetupResult { success, cancelled, unavailable }
+
 @riverpod
 class OnboardingNotifier extends _$OnboardingNotifier {
   final _supabaseService = SupabaseService();
@@ -40,8 +42,6 @@ class OnboardingNotifier extends _$OnboardingNotifier {
       if (masterPassword.trim().length < 12) {
         throw Exception('Master password must be at least 12 characters long');
       }
-
-      await _guardBiometricSetup(enableBiometrics);
 
       final authResponse = await _supabaseService.signUp(email, masterPassword);
       if (authResponse.session == null) {
@@ -75,8 +75,6 @@ class OnboardingNotifier extends _$OnboardingNotifier {
         throw Exception('Master password is required.');
       }
 
-      await _guardBiometricSetup(enableBiometrics);
-
       final authResponse = await _supabaseService.signIn(email, masterPassword);
       if (authResponse.session == null) {
         throw Exception('Unable to establish an authenticated session.');
@@ -103,25 +101,22 @@ class OnboardingNotifier extends _$OnboardingNotifier {
     });
   }
 
-  Future<void> _guardBiometricSetup(bool enableBiometrics) async {
-    if (!enableBiometrics) {
-      return;
-    }
-
+  /// Call this from the biometrics wizard step. Returns the outcome so the
+  /// UI can offer "Continue without biometrics" without failing account creation.
+  Future<BiometricSetupResult> setupBiometrics() async {
     final bool canCheck = await _localAuth.canCheckBiometrics ||
         await _localAuth.isDeviceSupported();
-    if (!canCheck) {
-      throw Exception('Biometrics not available on this device');
-    }
+    if (!canCheck) return BiometricSetupResult.unavailable;
 
     final authenticated = await _localAuth.authenticate(
       localizedReason: 'Secure your Zero-Trust Vault',
       options:
           const AuthenticationOptions(stickyAuth: true, biometricOnly: true),
     );
-    if (!authenticated) {
-      throw Exception('Biometric setup cancelled.');
-    }
+    if (!authenticated) return BiometricSetupResult.cancelled;
+
+    await _secureStorage.write(key: 'biometric_enabled', value: 'true');
+    return BiometricSetupResult.success;
   }
 
   Future<void> _persistLocalMetadata(

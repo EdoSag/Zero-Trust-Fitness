@@ -145,6 +145,27 @@ class SupabaseService {
     });
   }
 
+  /// Returns both the blob and its remote `updated_at` timestamp.
+  Future<({String blob, DateTime updatedAt})?> fetchEncryptedVaultWithTimestamp() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) throw Exception('No authenticated user found.');
+
+    final rows = await Supabase.instance.client
+        .from('encrypted_vault')
+        .select('data_blob, updated_at')
+        .eq('user_id', user.id)
+        .order('updated_at', ascending: false)
+        .limit(1);
+
+    if (rows.isEmpty) return null;
+    final row = rows.first;
+    final blob = row['data_blob'];
+    final tsRaw = row['updated_at'];
+    if (blob is! String) return null;
+    final ts = DateTime.tryParse(tsRaw?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+    return (blob: blob, updatedAt: ts.toUtc());
+  }
+
   Future<String?> fetchEncryptedVaultBlobForCurrentUser() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {

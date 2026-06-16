@@ -16,16 +16,25 @@ class MedalCard extends StatelessWidget {
     required this.isEarned,
     this.unlockedAt,
     required this.onTap,
+    this.allMetrics = const [],
   });
 
   final AchievementDefinition definition;
   final bool isEarned;
   final DateTime? unlockedAt;
   final VoidCallback onTap;
+  final List<Map<String, dynamic>> allMetrics;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final showProgress = !isEarned &&
+        definition.progressType != AchievementProgressType.none &&
+        allMetrics.isNotEmpty;
+    final progress = showProgress
+        ? computeAchievementProgress(definition, allMetrics)
+        : 0.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -117,6 +126,32 @@ class MedalCard extends StatelessWidget {
                 formatMedalDate(unlockedAt!.toLocal()),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: Colors.grey[400],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            if (showProgress) ...[
+              const SizedBox(height: 6),
+              Semantics(
+                label:
+                    '${(progress * 100).round()}% toward ${definition.name}',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 4,
+                    backgroundColor: Colors.grey[700],
+                    color: definition.gradientColors.first
+                        .withValues(alpha: 0.7),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${(progress * 100).round()}%',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: Colors.grey[500],
+                  fontSize: 9,
                 ),
                 textAlign: TextAlign.center,
               ),

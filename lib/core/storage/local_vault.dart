@@ -93,6 +93,23 @@ class LocalVault {
           "metadata_json TEXT NOT NULL DEFAULT '{}'"
           ');',
         );
+        database.execute(
+          'CREATE TABLE IF NOT EXISTS user_goals ('
+          'metric_key TEXT PRIMARY KEY,'
+          'target_value REAL NOT NULL,'
+          'period TEXT NOT NULL,'
+          'updated_at TEXT NOT NULL'
+          ');',
+        );
+        database.execute(
+          'CREATE TABLE IF NOT EXISTS backup_history ('
+          'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+          'backup_type TEXT NOT NULL,'
+          'status TEXT NOT NULL,'
+          'created_at TEXT NOT NULL,'
+          'details TEXT'
+          ');',
+        );
         _migrateLegacyDailyMetrics(database);
       },
     );
@@ -499,6 +516,181 @@ class LocalVault {
       ' VALUES (?, ?, ?)',
       [dateKey, jsonEncode(normalized), DateTime.now().toUtc().toIso8601String()],
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Workout CRUD with IDs (Phase 2 — edit / delete)
+  // ---------------------------------------------------------------------------
+
+  Future<List<({int id, String encryptedData})>> fetchWorkoutsWithIds(
+    SecretKey secretKey,
+  ) async {
+    await _openWithKey(secretKey);
+    final rows = await _executor!.runSelect(
+      'SELECT id, encrypted_data FROM workouts ORDER BY id DESC',
+      const [],
+    );
+    return rows.map((row) {
+      final id = row['id'];
+      final data = row['encrypted_data'];
+      return (
+        id: (id is int ? id : int.tryParse('$id') ?? 0),
+        encryptedData: data?.toString() ?? '',
+      );
+    }).where((r) => r.encryptedData.isNotEmpty).toList(growable: false);
+  }
+
+  Future<void> updateWorkout(
+    int id,
+    String encryptedData,
+    SecretKey secretKey,
+  ) async {
+    await _openWithKey(secretKey);
+    await _executor!.runUpdate(
+      'UPDATE workouts SET encrypted_data = ? WHERE id = ?',
+      [encryptedData, id],
+    );
+  }
+
+  Future<void> deleteWorkout(int id, SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    await _executor!.runUpdate(
+      'DELETE FROM workouts WHERE id = ?',
+      [id],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Manual metric override (Phase 2 — edit manual metric entries)
+  // ---------------------------------------------------------------------------
+
+  /// Replaces the manual contribution for a single metric key on a given day
+  /// and recomputes the combined display value using the same merge rules as
+  /// [mergeDailyMetrics] / [syncFromHealthConnect].
+  Future<void> setManualMetricValue({
+    required String dateKey,
+    required String metricKey,
+    required num value,
+    required SecretKey secretKey,
+  }) async {
+    await _openWithKey(secretKey);
+
+    final rows = await _executor!.runSelect(
+      'SELECT metrics_json FROM daily_metrics WHERE date_key = ?',
+      [dateKey],
+    );
+    final existing = rows.isEmpty
+        ? <String, num>{}
+        : _parseMetricsJson(rows.first['metrics_json']?.toString());
+
+    final merged = Map<String, num>.from(existing);
+
+    if (_sumAdditiveKeys.contains(metricKey)) {
+      final hcBase = existing.containsKey('${metricKey}_hc')
+          ? existing['${metricKey}_hc'] ?? 0
+          : existing[metricKey] ?? 0;
+      merged['${metricKey}_hc'] = hcBase;
+      merged['${metricKey}_manual'] = value;
+      merged[metricKey] = hcBase + value;
+    } else if (_sleepKeys.contains(metricKey)) {
+      final hcBase = existing.containsKey('${metricKey}_hc')
+          ? existing['${metricKey}_hc'] ?? 0
+          : existing[metricKey] ?? 0;
+      merged['${metricKey}_hc'] = hcBase;
+      merged['${metricKey}_manual'] = value;
+      merged[metricKey] = hcBase >= value ? hcBase : value;
+    } else {
+      merged['${metricKey}_manual'] = value;
+      final hcVal = existing['${metricKey}_hc'] ?? 0;
+      merged[metricKey] = hcVal != 0 ? hcVal : value;
+    }
+
+    final normalized = _normalizeMetrics(merged);
+    await _executor!.runInsert(
+      'INSERT OR REPLACE INTO daily_metrics (date_key, metrics_json, updated_at)'
+      ' VALUES (?, ?, ?)',
+      [dateKey, jsonEncode(normalized), DateTime.now().toUtc().toIso8601String()],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Goals CRUD (Phase 2)
+  // ---------------------------------------------------------------------------
+
+  Future<void> upsertGoal({
+    required String metricKey,
+    required num targetValue,
+    required String period,
+    required SecretKey secretKey,
+  }) async {
+    await _openWithKey(secretKey);
+    await _executor!.runInsert(
+      'INSERT OR REPLACE INTO user_goals (metric_key, target_value, period, updated_at)'
+      ' VALUES (?, ?, ?, ?)',
+      [metricKey, targetValue, period, DateTime.now().toUtc().toIso8601String()],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> fetchGoals(SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    final rows = await _executor!.runSelect(
+      'SELECT metric_key, target_value, period, updated_at FROM user_goals',
+      const [],
+    );
+    return rows
+        .map((r) => <String, dynamic>{
+              'metric_key': r['metric_key'],
+              'target_value': r['target_value'],
+              'period': r['period'],
+              'updated_at': r['updated_at'],
+            })
+        .toList(growable: false);
+  }
+
+  Future<void> deleteGoal(String metricKey, SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    await _executor!.runUpdate(
+      'DELETE FROM user_goals WHERE metric_key = ?',
+      [metricKey],
+    );
+  }
+
+  Future<void> insertBackupHistory({
+    required String backupType,
+    required String status,
+    String? details,
+    required SecretKey secretKey,
+  }) async {
+    await _openWithKey(secretKey);
+    await _executor!.runInsert(
+      'INSERT INTO backup_history (backup_type, status, created_at, details) VALUES (?, ?, ?, ?)',
+      [
+        backupType,
+        status,
+        DateTime.now().toUtc().toIso8601String(),
+        details,
+      ],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> fetchBackupHistory(
+      SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    final rows = await _executor!.runSelect(
+      'SELECT * FROM backup_history ORDER BY id DESC LIMIT 50',
+      const [],
+    );
+    return rows.map((r) => Map<String, dynamic>.from(r)).toList();
+  }
+
+  Future<Map<String, dynamic>?> fetchLatestBackup(
+      SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    final rows = await _executor!.runSelect(
+      "SELECT * FROM backup_history WHERE status = 'success' ORDER BY id DESC LIMIT 1",
+      const [],
+    );
+    return rows.isEmpty ? null : Map<String, dynamic>.from(rows.first);
   }
 
   Future<void> close() async {

@@ -213,9 +213,25 @@ const _metricSections = <String, List<_MetricSpec>>{
 @NowaGenerated()
 class ManualIngestionBottomSheet extends StatefulWidget {
   @NowaGenerated({'loader': 'auto-constructor'})
-  const ManualIngestionBottomSheet({super.key, required this.secretKey});
+  const ManualIngestionBottomSheet({
+    super.key,
+    required this.secretKey,
+    this.existingWorkoutId,
+    this.initialActivityType,
+    this.initialDurationMinutes,
+    this.initialIntensity,
+    this.initialTimestamp,
+  });
 
   final SecretKey? secretKey;
+
+  /// When non-null, the sheet is in edit mode: it pre-fills from the values
+  /// below and calls updateWorkout instead of saveWorkout.
+  final int? existingWorkoutId;
+  final String? initialActivityType;
+  final int? initialDurationMinutes;
+  final double? initialIntensity;
+  final DateTime? initialTimestamp;
 
   @override
   State<ManualIngestionBottomSheet> createState() {
@@ -248,6 +264,21 @@ class _ManualIngestionBottomSheetState
     for (final specs in _metricSections.values) {
       for (final spec in specs) {
         _metricControllers[spec.key] = TextEditingController();
+      }
+    }
+    // Pre-fill for edit mode.
+    if (widget.existingWorkoutId != null) {
+      if (widget.initialActivityType != null) {
+        _activityType = widget.initialActivityType!;
+      }
+      if (widget.initialDurationMinutes != null) {
+        _durationController.text = '${widget.initialDurationMinutes}';
+      }
+      if (widget.initialIntensity != null) {
+        _intensitySlider = widget.initialIntensity!;
+      }
+      if (widget.initialTimestamp != null) {
+        _selectedDateTime = widget.initialTimestamp!;
       }
     }
   }
@@ -385,7 +416,12 @@ class _ManualIngestionBottomSheetState
           jsonEncode(workoutData),
           secretKey,
         );
-        await LocalVault().saveWorkout(encryptedBlob, secretKey);
+        final existingId = widget.existingWorkoutId;
+        if (existingId != null) {
+          await LocalVault().updateWorkout(existingId, encryptedBlob, secretKey);
+        } else {
+          await LocalVault().saveWorkout(encryptedBlob, secretKey);
+        }
 
         if (heartPts > 0) {
           await LocalVault().mergeDailyMetrics(

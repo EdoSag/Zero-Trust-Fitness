@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_definition.dart';
+import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/achievement_detail_bottom_sheet.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/medal_card.dart';
@@ -17,6 +18,7 @@ class AchievementsPage extends ConsumerStatefulWidget {
 
 class _AchievementsPageState extends ConsumerState<AchievementsPage> {
   List<UnlockedAchievement> _unlocked = [];
+  List<Map<String, dynamic>> _allMetrics = [];
   _AchievementFilter _filter = _AchievementFilter.all;
   bool _isLoading = true;
 
@@ -32,10 +34,14 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
-    final unlocked = await AchievementService().fetchUnlocked(secretKey);
+    final results = await Future.wait([
+      AchievementService().fetchUnlocked(secretKey),
+      LocalVault().fetchDailyMetrics(secretKey),
+    ]);
     if (!mounted) return;
     setState(() {
-      _unlocked = unlocked;
+      _unlocked = results[0] as List<UnlockedAchievement>;
+      _allMetrics = results[1] as List<Map<String, dynamic>>;
       _isLoading = false;
     });
   }
@@ -160,6 +166,7 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
                                 definition: def,
                                 isEarned: earned,
                                 unlockedAt: unlock?.unlockedAt,
+                                allMetrics: _allMetrics,
                                 onTap: () => showAchievementDetail(
                                   context,
                                   def,

@@ -1,3 +1,4 @@
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -5,6 +6,8 @@ import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/medal_chip.dart';
 import 'package:zerotrust_fitness/globals/router.dart';
+import 'package:zerotrust_fitness/pages/export_restore_page.dart';
+import 'package:zerotrust_fitness/pages/goals_page.dart';
 
 @NowaGenerated()
 class ProfilePage extends StatefulWidget {
@@ -19,6 +22,9 @@ class ProfilePage extends StatefulWidget {
     required this.onDeleteData,
     required this.earnedMedals,
     required this.onViewAllMedals,
+    required this.autoLockMinutes,
+    required this.onAutoLockChanged,
+    this.secretKey,
   });
 
   final bool isSyncing;
@@ -29,6 +35,9 @@ class ProfilePage extends StatefulWidget {
   final Future<void> Function() onDeleteData;
   final List<UnlockedAchievement> earnedMedals;
   final VoidCallback onViewAllMedals;
+  final int autoLockMinutes;
+  final void Function(int minutes) onAutoLockChanged;
+  final SecretKey? secretKey;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -39,9 +48,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _exitToOnboarding() {
     appRouter.go('/onboarding');
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
   }
 
   Future<void> _signOut() async {
@@ -71,6 +77,44 @@ class _ProfilePageState extends State<ProfilePage> {
     } finally {
       if (mounted) setState(() => _isSigningOut = false);
     }
+  }
+
+  static const _autoLockOptions = [0, 1, 5, 15];
+
+  String _autoLockLabel(int minutes) => switch (minutes) {
+        0 => 'Never',
+        1 => 'After 1 minute',
+        5 => 'After 5 minutes',
+        15 => 'After 15 minutes',
+        _ => 'After $minutes minutes',
+      };
+
+  Future<void> _showAutoLockPicker(BuildContext context) async {
+    final chosen = await showModalBottomSheet<int>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Text('Auto-lock vault',
+                style: Theme.of(ctx).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            ..._autoLockOptions.map(
+              (m) => ListTile(
+                title: Text(_autoLockLabel(m)),
+                trailing: m == widget.autoLockMinutes
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.pop(ctx, m),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (chosen != null) widget.onAutoLockChanged(chosen);
   }
 
   Widget _buildMedalsCard(BuildContext context) {
@@ -162,6 +206,45 @@ class _ProfilePageState extends State<ProfilePage> {
               leading: const CircleAvatar(child: Icon(Icons.person_outline)),
               title: const Text('Account'),
               subtitle: Text(email),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Goals'),
+              subtitle: const Text('Set daily and weekly targets'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const GoalsPage()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.lock_clock_outlined),
+              title: const Text('Auto-lock'),
+              subtitle: Text(_autoLockLabel(widget.autoLockMinutes)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showAutoLockPicker(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.import_export_outlined),
+              title: const Text('Export & Restore'),
+              subtitle: const Text('Back up or restore your health data'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: widget.secretKey == null
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => ExportRestorePage(
+                              secretKey: widget.secretKey!),
+                        ),
+                      ),
             ),
           ),
           const SizedBox(height: 16),

@@ -5,11 +5,13 @@ import 'package:workmanager/workmanager.dart'; // Added this import
 import 'package:cryptography/cryptography.dart';
 import 'package:zerotrust_fitness/core/security/key_derivation_service.dart';
 import 'package:zerotrust_fitness/core/security/security_repository.dart';
+import 'package:zerotrust_fitness/core/services/background_backup_service.dart';
 import 'package:zerotrust_fitness/features/health/domain/integration_service.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 
 @NowaGenerated()
 const String syncTask = 'syncTask';
+const String vaultBackupTask = 'vaultBackupTask';
 
 Future<bool> _isVaultLocked() async {
   const storage = FlutterSecureStorage();
@@ -34,23 +36,30 @@ Future<SecretKey?> _resolveBackgroundSecretKey() async {
 @NowaGenerated()
 void callbackDispatcher() {
   Workmanager().executeTask((task, _) async {
+    if (await _isVaultLocked()) {
+      await WidgetService.redactWidget();
+      return true;
+    }
+
+    final secretKey = await _resolveBackgroundSecretKey();
+    if (secretKey == null) {
+      await WidgetService.redactWidget();
+      return true;
+    }
+
     if (task == syncTask) {
       try {
-        if (await _isVaultLocked()) {
-          await WidgetService.redactWidget();
-          return true;
-        }
-
-        final secretKey = await _resolveBackgroundSecretKey();
-        if (secretKey == null) {
-          await WidgetService.redactWidget();
-          return true;
-        }
-
         await IntegrationService().syncHealthToVault(secretKey);
       } catch (e) {
         debugPrint('Background sync failed: $e');
-        return false; // Task failed, OS may retry later
+        return false;
+      }
+    } else if (task == vaultBackupTask) {
+      try {
+        await BackgroundBackupService().performVaultBackup(secretKey);
+      } catch (e) {
+        debugPrint('Background vault backup failed: $e');
+        return false;
       }
     }
     return true;

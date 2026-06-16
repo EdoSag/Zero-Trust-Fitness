@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/achievements_page.dart';
 import 'package:zerotrust_fitness/pages/home_page.dart';
-import 'package:zerotrust_fitness/pages/dashboard_page.dart';
+import 'package:zerotrust_fitness/components/bottom_nav_shell.dart';
 import 'package:zerotrust_fitness/pages/onboarding_page.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 
@@ -97,7 +97,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/dashboard',
-      builder: (context, state) => const DashboardPage(),
+      builder: (context, state) => const BottomNavShell(initialIndex: 0),
     ),
     GoRoute(
       path: '/achievements',
