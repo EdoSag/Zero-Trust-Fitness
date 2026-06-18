@@ -14,6 +14,7 @@ enum AchievementProgressType {
   totalHeartPoints,
   totalDays,
   activeWeekHeartPoints,
+  longestDailyStreak,
 }
 
 class AchievementDefinition {
@@ -126,9 +127,35 @@ double computeAchievementProgress(
       }
       return (best / def.progressTarget).clamp(0.0, 1.0).toDouble();
 
+    case AchievementProgressType.longestDailyStreak:
+      final streak = _longestConsecutiveDays(allMetrics);
+      return (streak / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
     case AchievementProgressType.none:
       return 0;
   }
+}
+
+int _longestConsecutiveDays(List<Map<String, dynamic>> allMetrics) {
+  final dates = allMetrics
+      .map((r) => r['date_key']?.toString())
+      .whereType<String>()
+      .map((d) => DateTime.tryParse(d))
+      .whereType<DateTime>()
+      .toSet()
+      .toList()
+    ..sort();
+  if (dates.isEmpty) return 0;
+  int longest = 1, run = 1;
+  for (int i = 1; i < dates.length; i++) {
+    if (dates[i].difference(dates[i - 1]).inDays == 1) {
+      run++;
+      if (run > longest) longest = run;
+    } else {
+      run = 1;
+    }
+  }
+  return longest;
 }
 
 const kAllAchievements = <AchievementDefinition>[
@@ -325,5 +352,36 @@ const kAllAchievements = <AchievementDefinition>[
     category: AchievementCategory.milestones,
     progressType: AchievementProgressType.totalHeartPoints,
     progressTarget: 1000,
+  ),
+  // Streak achievements
+  AchievementDefinition(
+    id: 'streak_3',
+    name: 'Consistent',
+    description: 'Log your health data 3 days in a row.',
+    icon: Icons.local_fire_department,
+    gradientColors: [Color(0xFFF97316), Color(0xFFEA580C)],
+    category: AchievementCategory.milestones,
+    progressType: AchievementProgressType.longestDailyStreak,
+    progressTarget: 3,
+  ),
+  AchievementDefinition(
+    id: 'streak_7',
+    name: 'Week Streak',
+    description: 'Log your health data every day for a week.',
+    icon: Icons.whatshot,
+    gradientColors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+    category: AchievementCategory.milestones,
+    progressType: AchievementProgressType.longestDailyStreak,
+    progressTarget: 7,
+  ),
+  AchievementDefinition(
+    id: 'streak_30',
+    name: 'Iron Habit',
+    description: 'Log your health data every day for 30 days.',
+    icon: Icons.workspace_premium,
+    gradientColors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+    category: AchievementCategory.milestones,
+    progressType: AchievementProgressType.longestDailyStreak,
+    progressTarget: 30,
   ),
 ];

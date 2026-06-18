@@ -210,6 +210,19 @@ const _metricSections = <String, List<_MetricSpec>>{
   ],
 };
 
+class _TemplateData {
+  const _TemplateData({
+    required this.name,
+    required this.activityType,
+    required this.durationMinutes,
+    required this.intensity,
+  });
+  final String name;
+  final String activityType;
+  final int durationMinutes;
+  final int intensity;
+}
+
 @NowaGenerated()
 class ManualIngestionBottomSheet extends StatefulWidget {
   @NowaGenerated({'loader': 'auto-constructor'})
@@ -255,6 +268,7 @@ class _ManualIngestionBottomSheetState
   final Map<String, TextEditingController> _metricControllers = {};
 
   bool _isSaving = false;
+  List<_TemplateData> _availableTemplates = [];
 
   @override
   void initState() {
@@ -266,21 +280,20 @@ class _ManualIngestionBottomSheetState
         _metricControllers[spec.key] = TextEditingController();
       }
     }
-    // Pre-fill for edit mode.
-    if (widget.existingWorkoutId != null) {
-      if (widget.initialActivityType != null) {
-        _activityType = widget.initialActivityType!;
-      }
-      if (widget.initialDurationMinutes != null) {
-        _durationController.text = '${widget.initialDurationMinutes}';
-      }
-      if (widget.initialIntensity != null) {
-        _intensitySlider = widget.initialIntensity!;
-      }
-      if (widget.initialTimestamp != null) {
-        _selectedDateTime = widget.initialTimestamp!;
-      }
+    // Pre-fill initial values (edit mode or template pre-fill).
+    if (widget.initialActivityType != null) {
+      _activityType = widget.initialActivityType!;
     }
+    if (widget.initialDurationMinutes != null) {
+      _durationController.text = '${widget.initialDurationMinutes}';
+    }
+    if (widget.initialIntensity != null) {
+      _intensitySlider = widget.initialIntensity!;
+    }
+    if (widget.initialTimestamp != null) {
+      _selectedDateTime = widget.initialTimestamp!;
+    }
+    _loadAvailableTemplates();
   }
 
   @override
@@ -291,6 +304,75 @@ class _ManualIngestionBottomSheetState
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _loadAvailableTemplates() async {
+    final sk = widget.secretKey;
+    if (sk == null) return;
+    try {
+      final rows = await LocalVault().fetchTemplates(sk);
+      final list = <_TemplateData>[];
+      for (final row in rows) {
+        try {
+          final dec = await EncryptionService()
+              .decryptString(row['encrypted_data'] as String, sk);
+          final data = jsonDecode(dec) as Map<String, dynamic>;
+          list.add(_TemplateData(
+            name: row['name'] as String,
+            activityType: row['activity_type'] as String,
+            durationMinutes:
+                (data['duration_minutes'] as num?)?.toInt() ?? 30,
+            intensity: (data['intensity'] as num?)?.toInt() ?? 5,
+          ));
+        } catch (_) {}
+      }
+      if (mounted) setState(() => _availableTemplates = list);
+    } catch (_) {}
+  }
+
+  void _applyTemplate(_TemplateData t) {
+    setState(() {
+      _activityType = t.activityType;
+      _durationController.text = '${t.durationMinutes}';
+      _intensitySlider = t.intensity.toDouble();
+    });
+  }
+
+  Future<void> _pickTemplate() async {
+    if (_availableTemplates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'No templates yet. Create one in Profile → Workout Templates.'),
+        ),
+      );
+      return;
+    }
+    final picked = await showModalBottomSheet<_TemplateData>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Text('Choose a template',
+                style: Theme.of(ctx).textTheme.titleMedium),
+            const SizedBox(height: 4),
+            ..._availableTemplates.map(
+              (t) => ListTile(
+                leading: const Icon(Icons.fitness_center_outlined),
+                title: Text(t.name),
+                subtitle: Text(
+                    '${t.activityType} · ${t.durationMinutes} min · intensity ${t.intensity}/10'),
+                onTap: () => Navigator.pop(ctx, t),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) _applyTemplate(picked);
   }
 
   // Live heart points preview based on current workout tab values.
@@ -637,6 +719,21 @@ class _ManualIngestionBottomSheetState
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
       children: [
+        if (widget.secretKey != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: OutlinedButton.icon(
+              onPressed: _pickTemplate,
+              icon: const Icon(Icons.library_books_outlined, size: 18),
+              label: const Text('Use template'),
+              style: OutlinedButton.styleFrom(
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
         Text('Activity Type',
             style: theme.textTheme.labelLarge
                 ?.copyWith(color: theme.hintColor)),

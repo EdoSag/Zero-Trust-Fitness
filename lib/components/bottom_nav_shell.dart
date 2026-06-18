@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ import 'package:zerotrust_fitness/features/achievements/domain/achievement_defin
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/features/app/providers.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
+import 'package:zerotrust_fitness/core/services/insights_service.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
@@ -66,6 +68,10 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   Set<String> _unreadableMetricKeys = const {};
   List<UnlockedAchievement> _earnedMedals = [];
   DateTime? _lastBackupAt;
+  StreakResult? _streaks;
+  WeeklyComparison? _weeklySteps;
+  Map<String, double> _baselines = {};
+  double? _sleepStepsCorrelation;
 
   // --- auto-lock ---
   static const String _kAutoLockKey = 'auto_lock_minutes';
@@ -420,6 +426,25 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     }
     await _loadHealthData();
     await _loadLastBackupAt(secretKey);
+    _computeInsights();
+  }
+
+  void _computeInsights() {
+    final goalsState = ref.read(goalsProvider).asData?.value;
+    if (goalsState == null || _dailyMetrics.isEmpty) return;
+    final streaks = InsightsService().computeStreaks(goalsState, _dailyMetrics);
+    final weekly = InsightsService().weeklyComparison(_dailyMetrics, 'steps');
+    final baselines = InsightsService().computeBaselines(_dailyMetrics);
+    final corr = InsightsService()
+        .computeCorrelation(_dailyMetrics, 'sleep_asleep_min', 'steps');
+    if (mounted) {
+      setState(() {
+        _streaks = streaks;
+        _weeklySteps = weekly;
+        _baselines = baselines;
+        _sleepStepsCorrelation = corr;
+      });
+    }
   }
 
   Future<void> _loadLastBackupAt(SecretKey secretKey) async {
@@ -875,6 +900,8 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     }
 
     HapticFeedback.mediumImpact();
+    final sk = ref.read(securityEnclaveProvider);
+    if (sk != null) unawaited(LocalVault().logAccess(sk));
     await _loadHealthData();
   }
 
@@ -1493,6 +1520,8 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
               },
               goalsState: goalsState,
               lastBackupAt: _lastBackupAt,
+              streaks: _streaks,
+              weeklySteps: _weeklySteps,
             ),
             TrendsPage(
               hourlyTrendPoints: _buildHourlyTrendPoints(),
@@ -1504,6 +1533,8 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
               onTrendMetricChanged: (value) =>
                   setState(() => _selectedTrendMetricKey = value),
               onRefresh: _refreshDashboardData,
+              baselines: _baselines,
+              sleepStepsCorrelation: _sleepStepsCorrelation,
             ),
             ActivitiesPage(
               recentActivities: _recentActivities,

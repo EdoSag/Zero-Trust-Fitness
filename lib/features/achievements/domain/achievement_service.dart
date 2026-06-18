@@ -154,7 +154,35 @@ class AchievementService {
       if (total >= 1000) await unlock('elite');
     }
 
+    // Streak achievements
+    final streak = _longestConsecutiveDays(allMetrics);
+    if (!already.contains('streak_3') && streak >= 3) await unlock('streak_3');
+    if (!already.contains('streak_7') && streak >= 7) await unlock('streak_7');
+    if (!already.contains('streak_30') && streak >= 30) await unlock('streak_30');
+
     return nowUnlocked;
+  }
+
+  int _longestConsecutiveDays(List<Map<String, dynamic>> allMetrics) {
+    final dates = allMetrics
+        .map((r) => r['date_key']?.toString())
+        .whereType<String>()
+        .map((d) => DateTime.tryParse(d))
+        .whereType<DateTime>()
+        .toSet()
+        .toList()
+      ..sort();
+    if (dates.isEmpty) return 0;
+    int longest = 1, run = 1;
+    for (int i = 1; i < dates.length; i++) {
+      if (dates[i].difference(dates[i - 1]).inDays == 1) {
+        run++;
+        if (run > longest) longest = run;
+      } else {
+        run = 1;
+      }
+    }
+    return longest;
   }
 
   bool _hasActiveWeek(

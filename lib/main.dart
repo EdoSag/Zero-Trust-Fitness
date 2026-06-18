@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'; // Added this
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zerotrust_fitness/core/services/reminder_service.dart';
+import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/globals/app_state.dart';
 import 'package:zerotrust_fitness/globals/router.dart';
@@ -23,6 +25,8 @@ main() async {
   if (sharedPrefs.getBool('bg_tasks_initialized') ?? false) {
     await appState.initializeBackgroundTasks();
   }
+  await ReminderService().initialize();
+  await UnitsFormatter().load();
 
   // Wrap the entire app in ProviderScope for Riverpod 3.0 support
   runApp(

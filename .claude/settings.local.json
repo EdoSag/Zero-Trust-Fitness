@@ -9,7 +9,12 @@
       "Bash(flutter pub *)",
       "Bash(python -c \"import sys,json; data=json.loads\\(sys.stdin.read\\(\\)\\); hw=data.get\\('packages',{}\\).get\\('home_widget',{}\\); print\\(list\\(hw.keys\\(\\)\\)\\)\")",
       "Bash(dir \"C:\\\\Users\\\\Edo\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\\" | findstr home_widget)",
-      "Bash(flutter --version)"
+      "Bash(flutter --version)",
+      "Bash(grep -rn \"class SharePlus\\\\|ShareParams\\\\|Future.*share\\\\b\\\\|static.*share\\\\b\" \"C:/Users/Edo/AppData/Local/Pub/Cache/hosted/pub.dev/share_plus-10.1.4/lib/\" 2>/dev/null | grep -v \".g.dart\\\\|test\" | head -20)",
+      "Read(//c/Users/Edo/AppData/Local/Pub/Cache/hosted/pub.dev/share_plus-10.1.4/lib/**)",
+      "Bash(grep -n \"pickFiles\\\\|FilePickerResult\\\\|class FilePicker\" \"C:/Users/Edo/AppData/Local/Pub/Cache/hosted/pub.dev/file_picker-8.1.7/lib/file_picker.dart\" 2>/dev/null | head -15 || find \"C:/Users/Edo/AppData/Local/Pub/Cache/hosted/pub.dev/\" -name \"file_picker.dart\" -path \"*/file_picker-8*\" 2>/dev/null | head -3)",
+      "Read(//c/Users/Edo/AppData/Local/Pub/Cache/hosted/pub.dev/file_picker-8.1.7/lib/**)",
+      "Read(//c/Users/Edo/AppData/Local/Pub/Cache/hosted/pub.dev/**)"
     ]
   }
 }

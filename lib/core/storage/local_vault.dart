@@ -110,6 +110,21 @@ class LocalVault {
           'details TEXT'
           ');',
         );
+        database.execute(
+          'CREATE TABLE IF NOT EXISTS workout_templates ('
+          'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+          'name TEXT NOT NULL,'
+          'activity_type TEXT NOT NULL,'
+          'encrypted_data TEXT NOT NULL,'
+          'created_at TEXT NOT NULL'
+          ');',
+        );
+        database.execute(
+          'CREATE TABLE IF NOT EXISTS access_log ('
+          'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+          'accessed_at TEXT NOT NULL'
+          ');',
+        );
         _migrateLegacyDailyMetrics(database);
       },
     );
@@ -691,6 +706,87 @@ class LocalVault {
       const [],
     );
     return rows.isEmpty ? null : Map<String, dynamic>.from(rows.first);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Workout templates
+  // ---------------------------------------------------------------------------
+
+  Future<void> saveTemplate({
+    required String name,
+    required String activityType,
+    required String encryptedData,
+    required SecretKey secretKey,
+  }) async {
+    await _openWithKey(secretKey);
+    await _executor!.runInsert(
+      'INSERT INTO workout_templates (name, activity_type, encrypted_data, created_at) VALUES (?, ?, ?, ?)',
+      [name, activityType, encryptedData, DateTime.now().toUtc().toIso8601String()],
+    );
+  }
+
+  Future<void> updateTemplate({
+    required int id,
+    required String name,
+    required String activityType,
+    required String encryptedData,
+    required SecretKey secretKey,
+  }) async {
+    await _openWithKey(secretKey);
+    await _executor!.runUpdate(
+      'UPDATE workout_templates SET name = ?, activity_type = ?, encrypted_data = ? WHERE id = ?',
+      [name, activityType, encryptedData, id],
+    );
+  }
+
+  Future<void> deleteTemplate(int id, SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    await _executor!.runDelete(
+      'DELETE FROM workout_templates WHERE id = ?',
+      [id],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> fetchTemplates(SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    final rows = await _executor!.runSelect(
+      'SELECT id, name, activity_type, encrypted_data, created_at FROM workout_templates ORDER BY id DESC',
+      const [],
+    );
+    return rows.map((r) => Map<String, dynamic>.from(r)).toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Access log (4.8)
+  // ---------------------------------------------------------------------------
+
+  Future<void> logAccess(SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    await _executor!.runInsert(
+      'INSERT INTO access_log (accessed_at) VALUES (?)',
+      [DateTime.now().toUtc().toIso8601String()],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAccessLog(SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    final rows = await _executor!.runSelect(
+      'SELECT accessed_at FROM access_log ORDER BY id DESC LIMIT 20',
+      const [],
+    );
+    return rows.map((r) => Map<String, dynamic>.from(r)).toList();
+  }
+
+  Future<Map<String, int>> fetchTableRowCounts(SecretKey secretKey) async {
+    await _openWithKey(secretKey);
+    final tables = ['workouts', 'daily_metrics', 'achievements', 'user_goals',
+        'backup_history', 'workout_templates', 'access_log'];
+    final counts = <String, int>{};
+    for (final t in tables) {
+      final rows = await _executor!.runSelect('SELECT COUNT(*) AS c FROM $t', const []);
+      counts[t] = (rows.first['c'] as int?) ?? 0;
+    }
+    return counts;
   }
 
   Future<void> close() async {

@@ -8,6 +8,11 @@ import 'package:zerotrust_fitness/features/achievements/presentation/medal_chip.
 import 'package:zerotrust_fitness/globals/router.dart';
 import 'package:zerotrust_fitness/pages/export_restore_page.dart';
 import 'package:zerotrust_fitness/pages/goals_page.dart';
+import 'package:zerotrust_fitness/pages/reminders_page.dart';
+import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
+import 'package:zerotrust_fitness/pages/privacy_dashboard_page.dart';
+import 'package:zerotrust_fitness/pages/share_report_page.dart';
+import 'package:zerotrust_fitness/pages/templates_page.dart';
 
 @NowaGenerated()
 class ProfilePage extends StatefulWidget {
@@ -45,6 +50,8 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _isSigningOut = false;
+  DistanceUnit _distanceUnit = UnitsFormatter().distanceUnit;
+  TimeFormat _timeFormat = UnitsFormatter().timeFormat;
 
   void _exitToOnboarding() {
     appRouter.go('/onboarding');
@@ -77,6 +84,80 @@ class _ProfilePageState extends State<ProfilePage> {
     } finally {
       if (mounted) setState(() => _isSigningOut = false);
     }
+  }
+
+  Future<void> _showUnitsPicker(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Units & Format',
+                    style: Theme.of(ctx).textTheme.titleMedium),
+                const SizedBox(height: 12),
+                Text('Distance',
+                    style: Theme.of(ctx)
+                        .textTheme
+                        .labelLarge
+                        ?.copyWith(color: Theme.of(ctx).hintColor)),
+                RadioListTile<DistanceUnit>(
+                  title: const Text('Metric (km, kg)'),
+                  value: DistanceUnit.metric,
+                  groupValue: _distanceUnit,
+                  onChanged: (v) async {
+                    await UnitsFormatter().setDistanceUnit(v!);
+                    setSheet(() {});
+                    if (mounted) setState(() => _distanceUnit = v);
+                  },
+                ),
+                RadioListTile<DistanceUnit>(
+                  title: const Text('Imperial (mi, lbs)'),
+                  value: DistanceUnit.imperial,
+                  groupValue: _distanceUnit,
+                  onChanged: (v) async {
+                    await UnitsFormatter().setDistanceUnit(v!);
+                    setSheet(() {});
+                    if (mounted) setState(() => _distanceUnit = v);
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text('Time format',
+                    style: Theme.of(ctx)
+                        .textTheme
+                        .labelLarge
+                        ?.copyWith(color: Theme.of(ctx).hintColor)),
+                RadioListTile<TimeFormat>(
+                  title: const Text('24-hour'),
+                  value: TimeFormat.h24,
+                  groupValue: _timeFormat,
+                  onChanged: (v) async {
+                    await UnitsFormatter().setTimeFormat(v!);
+                    setSheet(() {});
+                    if (mounted) setState(() => _timeFormat = v);
+                  },
+                ),
+                RadioListTile<TimeFormat>(
+                  title: const Text('12-hour (AM/PM)'),
+                  value: TimeFormat.h12,
+                  groupValue: _timeFormat,
+                  onChanged: (v) async {
+                    await UnitsFormatter().setTimeFormat(v!);
+                    setSheet(() {});
+                    if (mounted) setState(() => _timeFormat = v);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   static const _autoLockOptions = [0, 1, 5, 15];
@@ -223,11 +304,87 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 12),
           Card(
             child: ListTile(
+              leading: const Icon(Icons.notifications_outlined),
+              title: const Text('Reminders'),
+              subtitle: const Text('Movement, hydration, workout & sleep'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                    builder: (_) => const RemindersPage()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.library_books_outlined),
+              title: const Text('Workout Templates'),
+              subtitle: const Text('Create and reuse workout routines'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: widget.secretKey == null
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              TemplatesPage(secretKey: widget.secretKey!),
+                        ),
+                      ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Privacy Dashboard'),
+              subtitle: const Text('Storage summary, encryption status & access log'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: widget.secretKey == null
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => PrivacyDashboardPage(
+                              secretKey: widget.secretKey!),
+                        ),
+                      ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.straighten_outlined),
+              title: const Text('Units & Format'),
+              subtitle: Text(
+                  '${_distanceUnit == DistanceUnit.metric ? 'Metric' : 'Imperial'} · '
+                  '${_timeFormat == TimeFormat.h24 ? '24h' : '12h'}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showUnitsPicker(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
               leading: const Icon(Icons.lock_clock_outlined),
               title: const Text('Auto-lock'),
               subtitle: Text(_autoLockLabel(widget.autoLockMinutes)),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _showAutoLockPicker(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Share Report'),
+              subtitle: const Text('Generate a scoped health report to share'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: widget.secretKey == null
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              ShareReportPage(secretKey: widget.secretKey!),
+                        ),
+                      ),
             ),
           ),
           const SizedBox(height: 12),

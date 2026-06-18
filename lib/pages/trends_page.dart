@@ -17,6 +17,8 @@ class TrendsPage extends StatefulWidget {
     required this.selectedTrendMetricKey,
     required this.onTrendMetricChanged,
     required this.onRefresh,
+    this.baselines = const {},
+    this.sleepStepsCorrelation,
   });
 
   final List<DualMetricPoint> hourlyTrendPoints;
@@ -27,6 +29,8 @@ class TrendsPage extends StatefulWidget {
   final String selectedTrendMetricKey;
   final ValueChanged<String> onTrendMetricChanged;
   final Future<void> Function() onRefresh;
+  final Map<String, double> baselines;
+  final double? sleepStepsCorrelation;
 
   @override
   State<TrendsPage> createState() => _TrendsPageState();
@@ -34,6 +38,8 @@ class TrendsPage extends StatefulWidget {
 
 class _TrendsPageState extends State<TrendsPage> {
   ChartRange _range = ChartRange.week;
+  bool _baselineCardDismissed = false;
+  bool _correlationCardDismissed = false;
 
   Widget _buildDualMetricBarChart({
     required List<DualMetricPoint> points,
@@ -263,6 +269,48 @@ class _TrendsPageState extends State<TrendsPage> {
     );
   }
 
+  List<Widget> _buildInsightCards(ThemeData theme) {
+    final cards = <Widget>[];
+
+    final hrBaseline = widget.baselines['resting_hr_bpm_avg'];
+    final stepsBaseline = widget.baselines['steps'];
+    if (!_baselineCardDismissed && (hrBaseline != null || stepsBaseline != null)) {
+      final parts = <String>[
+        if (hrBaseline != null && hrBaseline > 0)
+          'Resting HR avg: ${hrBaseline.toStringAsFixed(0)} bpm',
+        if (stepsBaseline != null && stepsBaseline > 0)
+          'Daily steps avg: ${stepsBaseline.toStringAsFixed(0)}',
+      ];
+      cards.add(_InsightCard(
+        theme: theme,
+        icon: Icons.analytics_outlined,
+        title: '30-Day Baselines',
+        body: parts.join('  ·  '),
+        onDismiss: () => setState(() => _baselineCardDismissed = true),
+      ));
+      cards.add(const SizedBox(height: 12));
+    }
+
+    final corr = widget.sleepStepsCorrelation;
+    if (!_correlationCardDismissed && corr != null) {
+      final strength =
+          corr.abs() >= 0.5 ? 'strong' : corr.abs() >= 0.3 ? 'moderate' : 'weak';
+      final direction = corr >= 0 ? 'positive' : 'negative';
+      cards.add(_InsightCard(
+        theme: theme,
+        icon: Icons.link_outlined,
+        title: 'Sleep & Steps',
+        body:
+            'Your sleep duration shows a $strength $direction correlation '
+            'with your daily step count.',
+        onDismiss: () => setState(() => _correlationCardDismissed = true),
+      ));
+      cards.add(const SizedBox(height: 12));
+    }
+
+    return cards;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -312,6 +360,7 @@ class _TrendsPageState extends State<TrendsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                ..._buildInsightCards(theme),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -390,6 +439,84 @@ class _TrendsPageState extends State<TrendsPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _InsightCard extends StatelessWidget {
+  const _InsightCard({
+    required this.theme,
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.onDismiss,
+  });
+
+  final ThemeData theme;
+  final IconData icon;
+  final String title;
+  final String body;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(title,
+                        style: theme.textTheme.labelLarge
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondaryContainer
+                            .withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('Informational',
+                          style: theme.textTheme.labelSmall
+                              ?.copyWith(fontSize: 9)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(body,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.hintColor)),
+                const SizedBox(height: 2),
+                Text('Not medical advice · based on your logged data',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                        fontSize: 9,
+                        color: theme.hintColor.withValues(alpha: 0.6))),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.close, size: 16, color: theme.hintColor),
+            onPressed: onDismiss,
+            tooltip: 'Dismiss',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          ),
+        ],
       ),
     );
   }

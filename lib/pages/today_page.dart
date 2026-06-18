@@ -6,6 +6,8 @@ import 'package:zerotrust_fitness/components/empty_state_widget.dart';
 import 'package:zerotrust_fitness/components/shimmer_loader.dart';
 import 'package:zerotrust_fitness/components/status_indicator.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
+import 'package:zerotrust_fitness/components/insights_summary_card.dart';
+import 'package:zerotrust_fitness/core/services/insights_service.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/pages/all_metrics_page.dart';
@@ -31,6 +33,8 @@ class TodayPage extends StatelessWidget {
     required this.onLock,
     this.goalsState,
     this.lastBackupAt,
+    this.streaks,
+    this.weeklySteps,
   });
 
   final Map<String, num> todayMetrics;
@@ -50,6 +54,8 @@ class TodayPage extends StatelessWidget {
   final VoidCallback onLock;
   final GoalsState? goalsState;
   final DateTime? lastBackupAt;
+  final StreakResult? streaks;
+  final WeeklyComparison? weeklySteps;
 
   String _formatBackupAge(DateTime backupAt) {
     final diff = DateTime.now().difference(backupAt);
@@ -330,6 +336,13 @@ class TodayPage extends StatelessWidget {
                   children: [
                     _buildStatusRow(context),
                     const SizedBox(height: 16),
+                    if (streaks != null && weeklySteps != null) ...[
+                      InsightsSummaryCard(
+                        streaks: streaks!,
+                        weeklySteps: weeklySteps!,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     _buildMetricHighlights(theme),
                     const SizedBox(height: 16),
                     _buildPriorityMetrics(context),
