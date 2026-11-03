@@ -20,6 +20,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:zerotrust_fitness/features/health/domain/heart_points_engine.dart';
 import 'package:zerotrust_fitness/features/health/domain/heart_points_service.dart';
+import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
@@ -303,6 +304,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           metrics: todayMetrics,
           secretKey: secretKey,
         );
+        await _backfillRecentDays(deduplicated, secretKey);
         final newMedals =
             await AchievementService().checkAndUnlockAchievements(secretKey);
         if (newMedals.isNotEmpty && mounted) {
@@ -321,6 +323,39 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       debugPrint('Error loading health data: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// Health data is fetched with a short lookback, so also score those past
+  /// days. Otherwise a day the app wasn't opened has no record and counts as
+  /// zero toward Momentum. Stored values are only ever raised, so revoked
+  /// permissions or a partial fetch can never wipe history.
+  Future<void> _backfillRecentDays(
+    List<HealthDataPoint> points,
+    SecretKey secretKey,
+  ) async {
+    final vault = LocalVault();
+    final rows = await vault.fetchDailyMetrics(secretKey);
+    final now = DateTime.now();
+    for (var back = 1; back <= HealthService.defaultLookbackDays; back++) {
+      final day = DateTime(now.year, now.month, now.day - back);
+      final steps = points
+          .where((p) =>
+              p.type == HealthDataType.STEPS && _isSameLocalDay(p.dateFrom, day))
+          .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
+      final heartPoints = HeartPointsService.forDay(points, day).total;
+
+      final metrics = Map<String, num>.from(_metricsForDate(day, rows));
+      final storedSteps = metrics['steps'] ?? 0;
+      final storedHeart = metrics['heart_points'] ?? 0;
+      if (steps <= storedSteps && heartPoints <= storedHeart) continue;
+      if (steps > storedSteps) metrics['steps'] = steps;
+      if (heartPoints > storedHeart) metrics['heart_points'] = heartPoints;
+      await vault.upsertDailyMetrics(
+        dateKey: _dateKey(day),
+        metrics: metrics,
+        secretKey: secretKey,
+      );
     }
   }
 
@@ -1383,6 +1418,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     children: [
                       _buildMetricHighlights(theme),
                       const SizedBox(height: 16),
+                      _buildMomentumCard(theme),
+                      const SizedBox(height: 16),
                       _buildAllMetricsSection(theme),
                       const SizedBox(height: 20),
                       _buildAnalyticsSection(theme),
@@ -1863,6 +1900,144 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
         ),
       ],
+    );
+  }
+
+  MomentumResult _computeMomentum() {
+    final history = <DateTime, int>{};
+    for (final row in _dailyMetrics) {
+      final date = DateTime.tryParse(row['date_key']?.toString() ?? '');
+      if (date == null) continue;
+      history[date] = _metricFromRow(row, 'heart_points').toInt();
+    }
+    final todayPoints =
+        (_todayMetrics['heart_points'] ?? _heartPointsTotal).toInt();
+    return MomentumEngine.calculate(
+      history: history,
+      today: DateTime.now(),
+      todayPoints: todayPoints,
+    );
+  }
+
+  Widget _buildMomentumCard(ThemeData theme) {
+    final momentum = _computeMomentum();
+    const accent = Color(0xFFF59E0B);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final status = momentum.targetHit
+        ? 'Target hit! Tomorrow\'s target grows 5%.'
+        : '${momentum.pointsToTarget} more Heart Points to hit today\'s target.';
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bolt_rounded, color: accent),
+              const SizedBox(width: 8),
+              Text(
+                'Momentum',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              if (momentum.gainedToday > 0)
+                Text(
+                  '+${momentum.gainedToday} today',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: accent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              IconButton(
+                icon: Icon(Icons.info_outline_rounded, size: 20, color: muted),
+                tooltip: 'How Momentum works',
+                visualDensity: VisualDensity.compact,
+                onPressed: _showMomentumInfo,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${momentum.momentum}',
+                style: theme.textTheme.displaySmall
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    '/ 100 · ${momentum.label}',
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Today\'s target', style: theme.textTheme.bodyMedium),
+              Text(
+                '${momentum.todayPoints} / ${momentum.target} pts',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: momentum.todayProgress,
+              minHeight: 8,
+              color: accent,
+              backgroundColor: accent.withValues(alpha: 0.18),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            status,
+            style: theme.textTheme.bodySmall?.copyWith(color: muted),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showMomentumInfo() {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('How Momentum works'),
+        content: const Text(
+          'Your daily target starts at ${MomentumEngine.defaultTarget} Heart '
+          'Points (about 150 a week, the WHO activity guideline) and adapts to '
+          'you: hit it and it grows 5%; fall below half of it and it eases 3%.'
+          '\n\n'
+          'Momentum (0-100) is how close you came to your target over the last '
+          '7 days, with recent days counting most. Missing a day lowers it a '
+          'little instead of resetting it, and today can only push it up.'
+          '\n\n'
+          'Everything is calculated on this device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
     );
   }
 
