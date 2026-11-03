@@ -1,9 +1,12 @@
 import 'package:nowa_runtime/nowa_runtime.dart';
+import 'package:zerotrust_fitness/features/health/domain/heart_points_engine.dart';
 
+/// Legacy facade kept for existing callers. All thresholds live in
+/// [HeartPointsEngine]; prefer `HeartPointsService.forDay` for daily totals.
 @NowaGenerated()
 class HeartPointCalculator {
   static double calculateMaxHeartRate(int age) {
-    return 206.9 - (0.67 * age);
+    return HeartPointsEngine.maxHeartRate(age);
   }
 
   static int calculatePoints(
@@ -11,19 +14,16 @@ class HeartPointCalculator {
     double maxHeartRate,
     int minutes,
   ) {
-    double percentage = heartRate / maxHeartRate;
-    if (percentage >= 0.7) {
+    final percentage = maxHeartRate <= 0 ? 0 : heartRate / maxHeartRate;
+    if (percentage >= HeartPointsEngine.vigorousHrMaxFraction) {
       return minutes * 2;
-    } else if (percentage >= 0.5) {
+    } else if (percentage >= HeartPointsEngine.moderateHrMaxFraction) {
       return minutes;
     }
     return 0;
   }
 
   static int calculateBriskWalkPoints(int stepsPerMinute, int minutes) {
-    if (stepsPerMinute > 100) {
-      return minutes;
-    }
-    return 0;
+    return HeartPointsEngine.cadenceIntensity(stepsPerMinute).points * minutes;
   }
 }

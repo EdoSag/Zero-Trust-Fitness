@@ -18,7 +18,8 @@ import 'package:zerotrust_fitness/main.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:zerotrust_fitness/heart_point_calculator.dart';
+import 'package:zerotrust_fitness/features/health/domain/heart_points_engine.dart';
+import 'package:zerotrust_fitness/features/health/domain/heart_points_service.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
@@ -279,20 +280,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           .where((p) => p.type == HealthDataType.STEPS)
           .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
 
-      var heartPoints = todayPoints
-          .where((p) =>
-              p.type == HealthDataType.EXERCISE_TIME ||
-              p.type == HealthDataType.WORKOUT)
-          .fold<int>(0, (sum, p) => sum + _extractExerciseMinutes(p));
-
-      if (heartPoints == 0) {
-        heartPoints = todayPoints
-            .where((p) => p.type == HealthDataType.HEART_RATE)
-            .fold<int>(0, (sum, p) {
-          final bpm = _extractNumericValue(p);
-          return sum + _calculateHeartPointsFromHeartRate(bpm, 1);
-        });
-      }
+      // Heart Points are scored per minute from heart rate, step cadence and
+      // logged workouts (whichever is highest). Pass all fetched points so
+      // records that started yesterday but overlap today are clipped in.
+      final heartPoints =
+          HeartPointsService.forDay(deduplicated, DateTime.now()).total;
       final todayMetrics = _buildTodayMetricsMap(
         todayPoints,
         steps: totalSteps,
@@ -455,9 +447,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   int _calculateHeartPointsFromHeartRate(double bpm, int minutes) {
     // Fallback profile assumption when user age is not captured in state.
-    const assumedAge = 30;
-    final maxHeartRate = HeartPointCalculator.calculateMaxHeartRate(assumedAge);
-    return HeartPointCalculator.calculatePoints(bpm, maxHeartRate, minutes);
+    return HeartPointsEngine.heartRateIntensity(bpm).points * minutes;
   }
 
   int _extractExerciseMinutes(HealthDataPoint point) {
@@ -1516,26 +1506,18 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         .toList(growable: false);
     if (todayData.isEmpty) return const [];
 
-    final hasExerciseTime = todayData.any((point) =>
-        point.type == HealthDataType.EXERCISE_TIME ||
-        point.type == HealthDataType.WORKOUT);
     final byHour = <int, Map<String, double>>{};
     for (final point in todayData) {
+      if (point.type != HealthDataType.STEPS) continue;
       final hour = point.dateFrom.toLocal().hour;
       final bucket = byHour.putIfAbsent(hour, () => {'steps': 0, 'heart': 0});
-      if (point.type == HealthDataType.STEPS) {
-        bucket['steps'] = (bucket['steps'] ?? 0) + _extractNumericValue(point);
-      } else if (hasExerciseTime &&
-          (point.type == HealthDataType.EXERCISE_TIME ||
-              point.type == HealthDataType.WORKOUT)) {
-        bucket['heart'] =
-            (bucket['heart'] ?? 0) + _extractExerciseMinutes(point);
-      } else if (!hasExerciseTime && point.type == HealthDataType.HEART_RATE) {
-        final bpm = _extractNumericValue(point);
-        bucket['heart'] =
-            (bucket['heart'] ?? 0) + _calculateHeartPointsFromHeartRate(bpm, 1);
-      }
+      bucket['steps'] = (bucket['steps'] ?? 0) + _extractNumericValue(point);
     }
+    final heartByHour = HeartPointsService.forDay(_healthData, now).pointsByHour;
+    heartByHour.forEach((hour, points) {
+      final bucket = byHour.putIfAbsent(hour, () => {'steps': 0, 'heart': 0});
+      bucket['heart'] = points.toDouble();
+    });
 
     final hours = byHour.keys.toList()..sort();
     return hours
