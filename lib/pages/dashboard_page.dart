@@ -21,6 +21,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:zerotrust_fitness/features/health/domain/heart_points_engine.dart';
 import 'package:zerotrust_fitness/features/health/domain/heart_points_service.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
+import 'package:zerotrust_fitness/features/health/domain/momentum_service.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
@@ -312,10 +313,19 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         }
       }
 
+      final momentum = secretKey == null
+          ? null
+          : await MomentumService.forToday(
+              secretKey,
+              todayPoints: heartPoints,
+            );
       await WidgetService.updateWidgetData(
         steps: totalSteps,
         heartPoints: heartPoints,
         isLocked: secretKey == null,
+        momentum: momentum?.momentum ?? 0,
+        momentumLabel: momentum?.label ?? '',
+        heartTarget: momentum?.target ?? 0,
       );
       await _loadRecentActivities();
       await _loadDailyMetrics();
@@ -1904,12 +1914,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   MomentumResult _computeMomentum() {
-    final history = <DateTime, int>{};
-    for (final row in _dailyMetrics) {
-      final date = DateTime.tryParse(row['date_key']?.toString() ?? '');
-      if (date == null) continue;
-      history[date] = _metricFromRow(row, 'heart_points').toInt();
-    }
+    final history = MomentumService.historyFromDailyRows(_dailyMetrics);
     final todayPoints =
         (_todayMetrics['heart_points'] ?? _heartPointsTotal).toInt();
     return MomentumEngine.calculate(

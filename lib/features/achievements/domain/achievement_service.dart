@@ -1,6 +1,9 @@
 import 'package:cryptography/cryptography.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_definition.dart';
+import 'package:zerotrust_fitness/features/achievements/domain/momentum_medals.dart';
+import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
+import 'package:zerotrust_fitness/features/health/domain/momentum_service.dart';
 
 class UnlockedAchievement {
   const UnlockedAchievement({
@@ -96,6 +99,21 @@ class AchievementService {
     }
     if (!already.contains('active_week') && _hasActiveWeek(allMetrics, m)) {
       await unlock('active_week');
+    }
+
+    // Momentum
+    if (MomentumMedals.all.any((id) => !already.contains(id)) &&
+        allMetrics.isNotEmpty) {
+      final now = DateTime.now();
+      final timeline = MomentumEngine.timeline(
+        history: MomentumService.historyFromDailyRows(allMetrics),
+        today: now,
+        todayPoints: MomentumService.pointsForDay(allMetrics, now),
+      );
+      final earned = MomentumMedals.earned(timeline);
+      for (final id in MomentumMedals.all) {
+        if (!already.contains(id) && earned.contains(id)) await unlock(id);
+      }
     }
 
     // Sleep

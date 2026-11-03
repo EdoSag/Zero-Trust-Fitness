@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum AchievementCategory { fitness, sleep, health, milestones }
+enum AchievementCategory { fitness, momentum, sleep, health, milestones }
 
 class AchievementDefinition {
   const AchievementDefinition({
@@ -85,6 +85,71 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.bolt,
     gradientColors: [Color(0xFFF97316), Color(0xFFEA580C)],
     category: AchievementCategory.fitness,
+  ),
+  // Momentum (rules in momentum_medals.dart)
+  AchievementDefinition(
+    id: 'on_target',
+    name: 'On Target',
+    description: 'Hit your daily Heart Points target for the first time.',
+    icon: Icons.track_changes,
+    gradientColors: [Color(0xFFF59E0B), Color(0xFFF97316)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'target_streak_3',
+    name: 'Hat Trick',
+    description: 'Hit your daily target 3 days in a row.',
+    icon: Icons.looks_3,
+    gradientColors: [Color(0xFFF59E0B), Color(0xFFEA580C)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'target_streak_7',
+    name: 'Locked In',
+    description: 'Hit your daily target 7 days in a row.',
+    icon: Icons.lock_clock,
+    gradientColors: [Color(0xFFEA580C), Color(0xFFC2410C)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'comeback',
+    name: 'Comeback',
+    description: 'Hit your target after 3 or more days without hitting it.',
+    icon: Icons.replay,
+    gradientColors: [Color(0xFF10B981), Color(0xFF059669)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'target_40',
+    name: 'Raising the Bar',
+    description: 'Grow your daily target to 40 Heart Points.',
+    icon: Icons.trending_up,
+    gradientColors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'momentum_50',
+    name: 'Steady',
+    description: 'Reach a Momentum score of 50.',
+    icon: Icons.bolt,
+    gradientColors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'momentum_75',
+    name: 'Unstoppable',
+    description: 'Reach a Momentum score of 75.',
+    icon: Icons.flash_on,
+    gradientColors: [Color(0xFFF59E0B), Color(0xFFDC2626)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'momentum_week_75',
+    name: 'Perpetual Motion',
+    description: 'End 7 days in a row with Momentum of 75 or higher.',
+    icon: Icons.all_inclusive,
+    gradientColors: [Color(0xFFDC2626), Color(0xFF7C3AED)],
+    category: AchievementCategory.momentum,
   ),
   // Sleep
   AchievementDefinition(

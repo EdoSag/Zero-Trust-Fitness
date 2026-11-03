@@ -7,6 +7,7 @@ import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
 import 'package:zerotrust_fitness/features/health/domain/heart_points_service.dart';
+import 'package:zerotrust_fitness/features/health/domain/momentum_service.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 
@@ -68,10 +69,17 @@ class IntegrationService {
     }
     final totalHeartPoints = HeartPointsService.forDay(deduplicated, now).total;
 
+    final momentum = await MomentumService.forToday(
+      secretKey,
+      todayPoints: totalHeartPoints,
+    );
     await WidgetService.updateWidgetData(
       steps: totalSteps,
       heartPoints: totalHeartPoints,
       isLocked: false,
+      momentum: momentum.momentum,
+      momentumLabel: momentum.label,
+      heartTarget: momentum.target,
     );
 
     await AchievementService().checkAndUnlockAchievements(secretKey);

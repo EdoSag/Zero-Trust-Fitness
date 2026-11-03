@@ -55,6 +55,7 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
 
   String _categoryLabel(AchievementCategory cat) => switch (cat) {
         AchievementCategory.fitness => 'Fitness',
+        AchievementCategory.momentum => 'Momentum',
         AchievementCategory.sleep => 'Sleep',
         AchievementCategory.health => 'Health',
         AchievementCategory.milestones => 'Milestones',

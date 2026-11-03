@@ -63,6 +63,31 @@ class MomentumResult {
   }
 }
 
+/// One day in a Momentum timeline.
+class MomentumDay {
+  const MomentumDay({
+    required this.date,
+    required this.points,
+    required this.target,
+    required this.momentum,
+    required this.isComplete,
+  });
+
+  final DateTime date;
+  final int points;
+
+  /// The target in force on [date].
+  final int target;
+
+  /// End-of-day Momentum for completed days; the live value for today.
+  final int momentum;
+
+  /// False only for today, which is still in progress.
+  final bool isComplete;
+
+  bool get targetHit => points >= target;
+}
+
 class MomentumEngine {
   const MomentumEngine._();
 
@@ -83,6 +108,7 @@ class MomentumEngine {
     required Map<DateTime, int> history,
     required DateTime today,
     required int todayPoints,
+    bool dayComplete = false,
   }) {
     final todayDate = _dateOnly(today);
     final pointsByDay = <DateTime, int>{};
@@ -137,7 +163,9 @@ class MomentumEngine {
 
     final withToday = momentumEnding(todayDate)!;
     final yesterday = momentumEnding(_addDays(todayDate, -1));
-    final score = yesterday == null
+    // While a day is in progress it can only raise Momentum; once it is
+    // over ([dayComplete]) it counts at face value.
+    final score = (dayComplete || yesterday == null)
         ? withToday
         : math.max(withToday, yesterday);
     final momentum = (score * 100).round();
@@ -150,6 +178,51 @@ class MomentumEngine {
       gainedToday: math.max(0, momentum - previous),
       daysTracked: todayDate.difference(firstDay).inDays + 1,
     );
+  }
+
+  /// Rebuilds target and Momentum for each day from the first recorded day
+  /// (at most [maxDays] back) through [today]. Used for medals.
+  static List<MomentumDay> timeline({
+    required Map<DateTime, int> history,
+    required DateTime today,
+    required int todayPoints,
+    int maxDays = 90,
+  }) {
+    final todayDate = _dateOnly(today);
+    final pointsByDay = <DateTime, int>{};
+    history.forEach((day, points) {
+      final date = _dateOnly(day);
+      if (date.isBefore(todayDate)) pointsByDay[date] = points;
+    });
+
+    var start = _addDays(todayDate, -(maxDays - 1));
+    if (pointsByDay.isNotEmpty) {
+      final first = pointsByDay.keys.reduce((a, b) => a.isBefore(b) ? a : b);
+      if (first.isAfter(start)) start = first;
+    } else {
+      start = todayDate;
+    }
+
+    final days = <MomentumDay>[];
+    for (var day = start; !day.isAfter(todayDate); day = _addDays(day, 1)) {
+      final isToday = day == todayDate;
+      final result = calculate(
+        history: pointsByDay,
+        today: day,
+        todayPoints: isToday ? todayPoints : (pointsByDay[day] ?? 0),
+        dayComplete: !isToday,
+      );
+      days.add(
+        MomentumDay(
+          date: day,
+          points: result.todayPoints,
+          target: result.target,
+          momentum: result.momentum,
+          isComplete: !isToday,
+        ),
+      );
+    }
+    return days;
   }
 
   static DateTime _dateOnly(DateTime d) {

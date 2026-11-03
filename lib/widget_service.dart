@@ -9,11 +9,23 @@ class WidgetService {
     required int steps,
     required int heartPoints,
     required bool isLocked,
+    int momentum = 0,
+    String momentumLabel = '',
+    int heartTarget = 0,
   }) async {
     await HomeWidget.saveWidgetData<int>('steps', isLocked ? 0 : steps);
     await HomeWidget.saveWidgetData<int>(
       'heartPoints',
       isLocked ? 0 : heartPoints,
+    );
+    await HomeWidget.saveWidgetData<int>('momentum', isLocked ? 0 : momentum);
+    await HomeWidget.saveWidgetData<String>(
+      'momentumLabel',
+      isLocked ? '' : momentumLabel,
+    );
+    await HomeWidget.saveWidgetData<int>(
+      'heartTarget',
+      isLocked ? 0 : heartTarget,
     );
     await HomeWidget.saveWidgetData<bool>('isLocked', isLocked);
     await HomeWidget.updateWidget(
