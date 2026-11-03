@@ -135,6 +135,48 @@ const _healthPermissionConfigs = <_HealthPermissionConfig>[
   ),
 ];
 
+class _PermissionCategory {
+  const _PermissionCategory({
+    required this.title,
+    required this.icon,
+    required this.keys,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<String> keys;
+}
+
+const _healthPermissionCategories = <_PermissionCategory>[
+  _PermissionCategory(
+    title: 'Activity',
+    icon: Icons.directions_run,
+    keys: ['steps', 'heart_rate', 'exercise', 'water', 'nutrition'],
+  ),
+  _PermissionCategory(
+    title: 'Sleep',
+    icon: Icons.bedtime_outlined,
+    keys: ['sleep_asleep', 'sleep_light', 'sleep_deep', 'sleep_rem'],
+  ),
+  _PermissionCategory(
+    title: 'Vitals',
+    icon: Icons.monitor_heart_outlined,
+    keys: [
+      'resting_hr',
+      'respiratory_rate',
+      'blood_oxygen',
+      'bp_systolic',
+      'bp_diastolic',
+      'blood_glucose',
+    ],
+  ),
+  _PermissionCategory(
+    title: 'Body',
+    icon: Icons.accessibility_new_outlined,
+    keys: ['weight', 'bmi', 'body_fat'],
+  ),
+];
+
 @NowaGenerated()
 class PermissionsPage extends StatefulWidget {
   @NowaGenerated({'loader': 'auto-constructor'})
@@ -297,6 +339,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
+            tooltip: 'Refresh permission states',
             onPressed: _permissionsBusy ? null : _refreshPermissionStates,
           ),
         ],
@@ -341,39 +384,8 @@ class _PermissionsPageState extends State<PermissionsPage> {
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 16),
-              ..._healthPermissionConfigs.map((config) {
-                return _buildPermissionRow(
-                  title: config.title,
-                  description: config.description,
-                  granted: _healthPermissionStates[config.key],
-                  onEnable: () => _handlePermissionAction(
-                    () => _grantHealthType(config),
-                  ),
-                  onDisable: () =>
-                      _handlePermissionAction(_disableHealthPermissions),
-                );
-              }),
-              _buildPermissionRow(
-                title: 'Location',
-                description: 'Enable real-time GPS run/cycle tracking.',
-                granted: _locationPermission,
-                onEnable: () =>
-                    _handlePermissionAction(_grantLocationPermission),
-                onDisable: () =>
-                    _handlePermissionAction(_disableLocationPermission),
-              ),
-              if (defaultTargetPlatform == TargetPlatform.android)
-                _buildPermissionRow(
-                  title: 'Background Health Sync',
-                  description: 'Allow periodic background health data reads.',
-                  granted: _backgroundHealthPermission,
-                  onEnable: () => _handlePermissionAction(
-                    _grantBackgroundHealthPermission,
-                  ),
-                  onDisable: () => _handlePermissionAction(
-                    _disableBackgroundHealthPermission,
-                  ),
-                ),
+              ..._healthPermissionCategories.map(_buildCategorySection),
+              _buildLocationCategorySection(),
               if (defaultTargetPlatform == TargetPlatform.android &&
                   !_healthConnectAvailable)
                 Align(
@@ -391,6 +403,92 @@ class _PermissionsPageState extends State<PermissionsPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCategorySection(_PermissionCategory category) {
+    final configs = _healthPermissionConfigs
+        .where((c) => category.keys.contains(c.key))
+        .toList();
+    final grantedCount =
+        configs.where((c) => _healthPermissionStates[c.key] == true).length;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ExpansionTile(
+        leading: Icon(category.icon),
+        title: Text(
+          category.title,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text('$grantedCount / ${configs.length} granted'),
+        children: configs
+            .map(
+              (config) => Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: _buildPermissionRow(
+                  title: config.title,
+                  description: config.description,
+                  granted: _healthPermissionStates[config.key],
+                  onEnable: () => _handlePermissionAction(
+                    () => _grantHealthType(config),
+                  ),
+                  onDisable: () =>
+                      _handlePermissionAction(_disableHealthPermissions),
+                ),
+              ),
+            )
+            .toList(growable: false),
+      ),
+    );
+  }
+
+  Widget _buildLocationCategorySection() {
+    final locationGranted = _locationPermission == true;
+    final bgGranted = _backgroundHealthPermission == true;
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+    final total = isAndroid ? 2 : 1;
+    final granted = (locationGranted ? 1 : 0) + (isAndroid && bgGranted ? 1 : 0);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ExpansionTile(
+        leading: const Icon(Icons.location_on_outlined),
+        title: const Text(
+          'Location',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text('$granted / $total granted'),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: _buildPermissionRow(
+              title: 'Location',
+              description: 'Enable real-time GPS run/cycle tracking.',
+              granted: _locationPermission,
+              onEnable: () =>
+                  _handlePermissionAction(_grantLocationPermission),
+              onDisable: () =>
+                  _handlePermissionAction(_disableLocationPermission),
+            ),
+          ),
+          if (isAndroid)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: _buildPermissionRow(
+                title: 'Background Health Sync',
+                description: 'Allow periodic background health data reads.',
+                granted: _backgroundHealthPermission,
+                onEnable: () => _handlePermissionAction(
+                  _grantBackgroundHealthPermission,
+                ),
+                onDisable: () => _handlePermissionAction(
+                  _disableBackgroundHealthPermission,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

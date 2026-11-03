@@ -43,10 +43,17 @@ class StepSample {
 }
 
 class ActiveInterval {
-  const ActiveInterval(this.start, this.end);
+  const ActiveInterval(
+    this.start,
+    this.end, {
+    this.level = IntensityLevel.moderate,
+  });
 
   final DateTime start;
   final DateTime end;
+
+  /// Minimum intensity credited for each minute inside the interval.
+  final IntensityLevel level;
 }
 
 enum IntensityLevel { none, moderate, vigorous }
@@ -123,6 +130,14 @@ class HeartPointsEngine {
     }
     if (bpm >= vigorous) return IntensityLevel.vigorous;
     if (bpm >= moderate) return IntensityLevel.moderate;
+    return IntensityLevel.none;
+  }
+
+  /// Maps a manual workout's 1-10 intensity rating to a level:
+  /// 1-3 light (none), 4-6 moderate, 7-10 vigorous.
+  static IntensityLevel manualIntensity(int intensity) {
+    if (intensity >= 7) return IntensityLevel.vigorous;
+    if (intensity >= 4) return IntensityLevel.moderate;
     return IntensityLevel.none;
   }
 
@@ -208,7 +223,8 @@ class HeartPointsEngine {
       raise(minute, cadenceIntensity(count.round()));
     });
 
-    // 3. Exercise sessions: every minute inside counts as at least moderate.
+    // 3. Exercise sessions: every minute inside counts at least at the
+    //    interval's level (moderate for synced workouts).
     for (final interval in exercise) {
       final s = interval.start.millisecondsSinceEpoch;
       final e = interval.end.millisecondsSinceEpoch;
@@ -223,7 +239,7 @@ class HeartPointsEngine {
       if (first < 0) first = 0;
       if (last > minuteCount) last = minuteCount;
       for (var m = first; m < last; m++) {
-        raise(m, IntensityLevel.moderate);
+        raise(m, interval.level);
       }
     }
 

@@ -26,4 +26,16 @@ class HeartPointCalculator {
   static int calculateBriskWalkPoints(int stepsPerMinute, int minutes) {
     return HeartPointsEngine.cadenceIntensity(stepsPerMinute).points * minutes;
   }
+
+  // Maps intensity 1–10 to Google Fit heart point zones:
+  // 1–3 = light (0 pts), 4–6 = moderate (1 pt/min), 7–10 = vigorous (2 pts/min)
+  static int calculateFromManualWorkout({
+    required String activityType,
+    required int durationMinutes,
+    required int intensity,
+  }) {
+    if (durationMinutes <= 0) return 0;
+    return HeartPointsEngine.manualIntensity(intensity).points *
+        durationMinutes;
+  }
 }

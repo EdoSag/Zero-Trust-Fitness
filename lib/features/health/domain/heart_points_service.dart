@@ -12,6 +12,7 @@ class HeartPointsService {
     Iterable<HealthDataPoint> points,
     DateTime day, {
     int age = HeartPointsEngine.defaultAge,
+    Iterable<ActiveInterval> extraExercise = const [],
   }) {
     final local = day.toLocal();
     final dayStart = DateTime(local.year, local.month, local.day);
@@ -19,7 +20,7 @@ class HeartPointsService {
 
     final heartRate = <HeartRateSample>[];
     final steps = <StepSample>[];
-    final exercise = <ActiveInterval>[];
+    final exercise = <ActiveInterval>[...extraExercise];
     final resting = <double>[];
 
     for (final point in points) {

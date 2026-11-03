@@ -94,6 +94,36 @@ void main() {
     expect(result.total, 10);
   });
 
+  test('manual intensity maps to levels', () {
+    expect(HeartPointsEngine.manualIntensity(3), IntensityLevel.none);
+    expect(HeartPointsEngine.manualIntensity(5), IntensityLevel.moderate);
+    expect(HeartPointsEngine.manualIntensity(8), IntensityLevel.vigorous);
+  });
+
+  test('vigorous manual workout earns 2 points per minute', () {
+    final result = run(
+      exercise: [
+        ActiveInterval(at(7, 0), at(7, 30), level: IntensityLevel.vigorous),
+      ],
+    );
+    expect(result.total, 60);
+  });
+
+  test('manual workout does not double count running cadence', () {
+    final cadence = [
+      StepSample(start: at(7, 0), end: at(7, 30), count: 4800), // 160 spm
+    ];
+    final sensorsOnly = run(steps: cadence).total;
+    final withManual = run(
+      steps: cadence,
+      exercise: [
+        ActiveInterval(at(7, 0), at(7, 30), level: IntensityLevel.vigorous),
+      ],
+    ).total;
+    expect(sensorsOnly, 60);
+    expect(withManual, 60); // same minutes, so nothing extra
+  });
+
   test('no data yields zero', () {
     expect(run().total, 0);
   });
