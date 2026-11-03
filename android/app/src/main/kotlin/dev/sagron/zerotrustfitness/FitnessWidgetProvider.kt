@@ -18,19 +18,32 @@ class FitnessWidgetProvider : HomeWidgetProvider() {
                     setTextViewText(R.id.widget_steps, "---")
                     setTextViewText(R.id.widget_points, "---")
                     setTextViewText(R.id.widget_status, "Vault Locked")
-                    setTextViewText(R.id.widget_hint, "Unlock in app to reveal your latest stats.")
+                    setTextViewText(R.id.widget_momentum, "---")
+                    setTextViewText(R.id.widget_momentum_label, "")
+                    setTextViewText(R.id.widget_target, "Unlock to view")
+                    setProgressBar(R.id.widget_target_progress, 100, 0, false)
                     setInt(R.id.widget_status, "setTextColor", Color.parseColor("#F8FAFC"))
-                    setInt(R.id.widget_hint, "setTextColor", Color.parseColor("#CBD5E1"))
                 } else {
                     val steps = widgetData.getInt("steps", 0)
                     val points = widgetData.getInt("heartPoints", 0)
+                    val momentum = widgetData.getInt("momentum", 0)
+                    val momentumLabel = widgetData.getString("momentumLabel", "") ?: ""
+                    val target = widgetData.getInt("heartTarget", 0)
 
                     setTextViewText(R.id.widget_steps, steps.toString())
                     setTextViewText(R.id.widget_points, points.toString())
                     setTextViewText(R.id.widget_status, "Securely Synced")
-                    setTextViewText(R.id.widget_hint, "Encrypted sync is active.")
+                    setTextViewText(R.id.widget_momentum, momentum.toString())
+                    setTextViewText(R.id.widget_momentum_label, momentumLabel)
+                    if (target > 0) {
+                        setTextViewText(R.id.widget_target, "$points / $target pts")
+                        val progress = (points * 100 / target).coerceIn(0, 100)
+                        setProgressBar(R.id.widget_target_progress, 100, progress, false)
+                    } else {
+                        setTextViewText(R.id.widget_target, "")
+                        setProgressBar(R.id.widget_target_progress, 100, 0, false)
+                    }
                     setInt(R.id.widget_status, "setTextColor", Color.parseColor("#D1FAE5"))
-                    setInt(R.id.widget_hint, "setTextColor", Color.parseColor("#E2E8F0"))
                 }
             }
             appWidgetManager.updateAppWidget(appWidgetId, views)

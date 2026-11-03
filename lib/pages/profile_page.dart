@@ -1,3 +1,4 @@
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -5,6 +6,13 @@ import 'package:zerotrust_fitness/core/services/supabase_service.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/medal_chip.dart';
 import 'package:zerotrust_fitness/globals/router.dart';
+import 'package:zerotrust_fitness/pages/export_restore_page.dart';
+import 'package:zerotrust_fitness/pages/goals_page.dart';
+import 'package:zerotrust_fitness/pages/reminders_page.dart';
+import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
+import 'package:zerotrust_fitness/pages/privacy_dashboard_page.dart';
+import 'package:zerotrust_fitness/pages/share_report_page.dart';
+import 'package:zerotrust_fitness/pages/templates_page.dart';
 
 @NowaGenerated()
 class ProfilePage extends StatefulWidget {
@@ -19,6 +27,9 @@ class ProfilePage extends StatefulWidget {
     required this.onDeleteData,
     required this.earnedMedals,
     required this.onViewAllMedals,
+    required this.autoLockMinutes,
+    required this.onAutoLockChanged,
+    this.secretKey,
   });
 
   final bool isSyncing;
@@ -29,6 +40,9 @@ class ProfilePage extends StatefulWidget {
   final Future<void> Function() onDeleteData;
   final List<UnlockedAchievement> earnedMedals;
   final VoidCallback onViewAllMedals;
+  final int autoLockMinutes;
+  final void Function(int minutes) onAutoLockChanged;
+  final SecretKey? secretKey;
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -36,12 +50,11 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   bool _isSigningOut = false;
+  DistanceUnit _distanceUnit = UnitsFormatter().distanceUnit;
+  TimeFormat _timeFormat = UnitsFormatter().timeFormat;
 
   void _exitToOnboarding() {
     appRouter.go('/onboarding');
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
   }
 
   Future<void> _signOut() async {
@@ -71,6 +84,118 @@ class _ProfilePageState extends State<ProfilePage> {
     } finally {
       if (mounted) setState(() => _isSigningOut = false);
     }
+  }
+
+  Future<void> _showUnitsPicker(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Units & Format',
+                    style: Theme.of(ctx).textTheme.titleMedium),
+                const SizedBox(height: 12),
+                Text('Distance',
+                    style: Theme.of(ctx)
+                        .textTheme
+                        .labelLarge
+                        ?.copyWith(color: Theme.of(ctx).hintColor)),
+                RadioListTile<DistanceUnit>(
+                  title: const Text('Metric (km, kg)'),
+                  value: DistanceUnit.metric,
+                  groupValue: _distanceUnit,
+                  onChanged: (v) async {
+                    await UnitsFormatter().setDistanceUnit(v!);
+                    setSheet(() {});
+                    if (mounted) setState(() => _distanceUnit = v);
+                  },
+                ),
+                RadioListTile<DistanceUnit>(
+                  title: const Text('Imperial (mi, lbs)'),
+                  value: DistanceUnit.imperial,
+                  groupValue: _distanceUnit,
+                  onChanged: (v) async {
+                    await UnitsFormatter().setDistanceUnit(v!);
+                    setSheet(() {});
+                    if (mounted) setState(() => _distanceUnit = v);
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text('Time format',
+                    style: Theme.of(ctx)
+                        .textTheme
+                        .labelLarge
+                        ?.copyWith(color: Theme.of(ctx).hintColor)),
+                RadioListTile<TimeFormat>(
+                  title: const Text('24-hour'),
+                  value: TimeFormat.h24,
+                  groupValue: _timeFormat,
+                  onChanged: (v) async {
+                    await UnitsFormatter().setTimeFormat(v!);
+                    setSheet(() {});
+                    if (mounted) setState(() => _timeFormat = v);
+                  },
+                ),
+                RadioListTile<TimeFormat>(
+                  title: const Text('12-hour (AM/PM)'),
+                  value: TimeFormat.h12,
+                  groupValue: _timeFormat,
+                  onChanged: (v) async {
+                    await UnitsFormatter().setTimeFormat(v!);
+                    setSheet(() {});
+                    if (mounted) setState(() => _timeFormat = v);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  static const _autoLockOptions = [0, 1, 5, 15];
+
+  String _autoLockLabel(int minutes) => switch (minutes) {
+        0 => 'Never',
+        1 => 'After 1 minute',
+        5 => 'After 5 minutes',
+        15 => 'After 15 minutes',
+        _ => 'After $minutes minutes',
+      };
+
+  Future<void> _showAutoLockPicker(BuildContext context) async {
+    final chosen = await showModalBottomSheet<int>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Text('Auto-lock vault',
+                style: Theme.of(ctx).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            ..._autoLockOptions.map(
+              (m) => ListTile(
+                title: Text(_autoLockLabel(m)),
+                trailing: m == widget.autoLockMinutes
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.pop(ctx, m),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (chosen != null) widget.onAutoLockChanged(chosen);
   }
 
   Widget _buildMedalsCard(BuildContext context) {
@@ -162,6 +287,121 @@ class _ProfilePageState extends State<ProfilePage> {
               leading: const CircleAvatar(child: Icon(Icons.person_outline)),
               title: const Text('Account'),
               subtitle: Text(email),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: const Text('Goals'),
+              subtitle: const Text('Set daily and weekly targets'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const GoalsPage()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.notifications_outlined),
+              title: const Text('Reminders'),
+              subtitle: const Text('Movement, hydration, workout & sleep'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                    builder: (_) => const RemindersPage()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.library_books_outlined),
+              title: const Text('Workout Templates'),
+              subtitle: const Text('Create and reuse workout routines'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: widget.secretKey == null
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              TemplatesPage(secretKey: widget.secretKey!),
+                        ),
+                      ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: const Text('Privacy Dashboard'),
+              subtitle: const Text('Storage summary, encryption status & access log'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: widget.secretKey == null
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => PrivacyDashboardPage(
+                              secretKey: widget.secretKey!),
+                        ),
+                      ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.straighten_outlined),
+              title: const Text('Units & Format'),
+              subtitle: Text(
+                  '${_distanceUnit == DistanceUnit.metric ? 'Metric' : 'Imperial'} · '
+                  '${_timeFormat == TimeFormat.h24 ? '24h' : '12h'}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showUnitsPicker(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.lock_clock_outlined),
+              title: const Text('Auto-lock'),
+              subtitle: Text(_autoLockLabel(widget.autoLockMinutes)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showAutoLockPicker(context),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Share Report'),
+              subtitle: const Text('Generate a scoped health report to share'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: widget.secretKey == null
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              ShareReportPage(secretKey: widget.secretKey!),
+                        ),
+                      ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.import_export_outlined),
+              title: const Text('Export & Restore'),
+              subtitle: const Text('Back up or restore your health data'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: widget.secretKey == null
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => ExportRestorePage(
+                              secretKey: widget.secretKey!),
+                        ),
+                      ),
             ),
           ),
           const SizedBox(height: 16),

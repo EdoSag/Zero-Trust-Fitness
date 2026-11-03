@@ -1,6 +1,21 @@
 import 'package:flutter/material.dart';
 
-enum AchievementCategory { fitness, sleep, health, milestones }
+enum AchievementCategory { fitness, momentum, sleep, health, milestones }
+
+/// Describes what value to track for progress toward an achievement.
+enum AchievementProgressType {
+  none,
+  bestDailySteps,
+  bestDailyHeartPoints,
+  bestDailySleepAsleepMin,
+  bestDailySleepDeepMin,
+  bestDailyWaterL,
+  totalSteps,
+  totalHeartPoints,
+  totalDays,
+  activeWeekHeartPoints,
+  longestDailyStreak,
+}
 
 class AchievementDefinition {
   const AchievementDefinition({
@@ -10,6 +25,8 @@ class AchievementDefinition {
     required this.icon,
     required this.gradientColors,
     required this.category,
+    this.progressType = AchievementProgressType.none,
+    this.progressTarget = 1,
   });
 
   final String id;
@@ -18,6 +35,127 @@ class AchievementDefinition {
   final IconData icon;
   final List<Color> gradientColors;
   final AchievementCategory category;
+  final AchievementProgressType progressType;
+  final num progressTarget;
+}
+
+/// Computes a 0.0–1.0 progress fraction for [def] using [allMetrics].
+/// Returns 1.0 if the achievement is already unlocked (caller responsibility).
+double computeAchievementProgress(
+  AchievementDefinition def,
+  List<Map<String, dynamic>> allMetrics,
+) {
+  if (def.progressType == AchievementProgressType.none) return 0;
+  if (def.progressTarget <= 0) return 0;
+
+  num m(Map<String, dynamic> row, String key) {
+    final metrics = row['metrics'];
+    if (metrics is Map) {
+      final v = metrics[key];
+      if (v is num) return v;
+      if (v is String) return num.tryParse(v) ?? 0;
+    }
+    return 0;
+  }
+
+  switch (def.progressType) {
+    case AchievementProgressType.bestDailySteps:
+      final best = allMetrics.fold<num>(
+          0, (best, r) => m(r, 'steps') > best ? m(r, 'steps') : best);
+      return (best / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
+    case AchievementProgressType.bestDailyHeartPoints:
+      final best = allMetrics.fold<num>(0,
+          (best, r) => m(r, 'heart_points') > best ? m(r, 'heart_points') : best);
+      return (best / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
+    case AchievementProgressType.bestDailySleepAsleepMin:
+      final best = allMetrics.fold<num>(0,
+          (best, r) => m(r, 'sleep_asleep_min') > best ? m(r, 'sleep_asleep_min') : best);
+      return (best / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
+    case AchievementProgressType.bestDailySleepDeepMin:
+      final best = allMetrics.fold<num>(0,
+          (best, r) => m(r, 'sleep_deep_min') > best ? m(r, 'sleep_deep_min') : best);
+      return (best / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
+    case AchievementProgressType.bestDailyWaterL:
+      final best = allMetrics.fold<num>(
+          0, (best, r) => m(r, 'water_l') > best ? m(r, 'water_l') : best);
+      return (best / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
+    case AchievementProgressType.totalSteps:
+      final total =
+          allMetrics.fold<num>(0, (s, r) => s + m(r, 'steps'));
+      return (total / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
+    case AchievementProgressType.totalHeartPoints:
+      final total =
+          allMetrics.fold<num>(0, (s, r) => s + m(r, 'heart_points'));
+      return (total / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
+    case AchievementProgressType.totalDays:
+      return (allMetrics.length / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
+    case AchievementProgressType.activeWeekHeartPoints:
+      if (allMetrics.length < 7) {
+        final total =
+            allMetrics.fold<num>(0, (s, r) => s + m(r, 'heart_points'));
+        return (total / def.progressTarget).clamp(0.0, 1.0).toDouble();
+      }
+      final dated = <DateTime, num>{};
+      for (final row in allMetrics) {
+        final dateKey = row['date_key']?.toString();
+        if (dateKey == null) continue;
+        final date = DateTime.tryParse(dateKey);
+        if (date == null) continue;
+        dated[date] = m(row, 'heart_points');
+      }
+      final dates = dated.keys.toList()..sort();
+      num best = 0;
+      for (var i = 0; i <= dates.length - 7; i++) {
+        var windowSum = 0.0;
+        var valid = true;
+        for (var j = 0; j < 7; j++) {
+          if (j > 0 && dates[i + j].difference(dates[i + j - 1]).inDays > 1) {
+            valid = false;
+            break;
+          }
+          windowSum += (dated[dates[i + j]] ?? 0).toDouble();
+        }
+        if (valid && windowSum > best) best = windowSum;
+      }
+      return (best / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
+    case AchievementProgressType.longestDailyStreak:
+      final streak = _longestConsecutiveDays(allMetrics);
+      return (streak / def.progressTarget).clamp(0.0, 1.0).toDouble();
+
+    case AchievementProgressType.none:
+      return 0;
+  }
+}
+
+int _longestConsecutiveDays(List<Map<String, dynamic>> allMetrics) {
+  final dates = allMetrics
+      .map((r) => r['date_key']?.toString())
+      .whereType<String>()
+      .map((d) => DateTime.tryParse(d))
+      .whereType<DateTime>()
+      .toSet()
+      .toList()
+    ..sort();
+  if (dates.isEmpty) return 0;
+  int longest = 1, run = 1;
+  for (int i = 1; i < dates.length; i++) {
+    if (dates[i].difference(dates[i - 1]).inDays == 1) {
+      run++;
+      if (run > longest) longest = run;
+    } else {
+      run = 1;
+    }
+  }
+  return longest;
 }
 
 const kAllAchievements = <AchievementDefinition>[
@@ -37,6 +175,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.directions_walk,
     gradientColors: [Color(0xFF3B82F6), Color(0xFF6366F1)],
     category: AchievementCategory.fitness,
+    progressType: AchievementProgressType.bestDailySteps,
+    progressTarget: 5000,
   ),
   AchievementDefinition(
     id: 'step_champion',
@@ -45,6 +185,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.emoji_events,
     gradientColors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
     category: AchievementCategory.fitness,
+    progressType: AchievementProgressType.bestDailySteps,
+    progressTarget: 10000,
   ),
   AchievementDefinition(
     id: 'step_legend',
@@ -53,6 +195,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.military_tech,
     gradientColors: [Color(0xFFF59E0B), Color(0xFFD97706)],
     category: AchievementCategory.fitness,
+    progressType: AchievementProgressType.bestDailySteps,
+    progressTarget: 20000,
   ),
   AchievementDefinition(
     id: 'heart_starter',
@@ -61,6 +205,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.favorite,
     gradientColors: [Color(0xFFF43F5E), Color(0xFFFB7185)],
     category: AchievementCategory.fitness,
+    progressType: AchievementProgressType.bestDailyHeartPoints,
+    progressTarget: 10,
   ),
   AchievementDefinition(
     id: 'heart_warrior',
@@ -69,6 +215,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.favorite,
     gradientColors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
     category: AchievementCategory.fitness,
+    progressType: AchievementProgressType.bestDailyHeartPoints,
+    progressTarget: 25,
   ),
   AchievementDefinition(
     id: 'heart_legend',
@@ -77,6 +225,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.local_fire_department,
     gradientColors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
     category: AchievementCategory.fitness,
+    progressType: AchievementProgressType.bestDailyHeartPoints,
+    progressTarget: 50,
   ),
   AchievementDefinition(
     id: 'active_week',
@@ -85,6 +235,73 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.bolt,
     gradientColors: [Color(0xFFF97316), Color(0xFFEA580C)],
     category: AchievementCategory.fitness,
+    progressType: AchievementProgressType.activeWeekHeartPoints,
+    progressTarget: 150,
+  ),
+  // Momentum (rules in momentum_medals.dart)
+  AchievementDefinition(
+    id: 'on_target',
+    name: 'On Target',
+    description: 'Hit your daily Heart Points target for the first time.',
+    icon: Icons.track_changes,
+    gradientColors: [Color(0xFFF59E0B), Color(0xFFF97316)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'target_streak_3',
+    name: 'Hat Trick',
+    description: 'Hit your daily target 3 days in a row.',
+    icon: Icons.looks_3,
+    gradientColors: [Color(0xFFF59E0B), Color(0xFFEA580C)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'target_streak_7',
+    name: 'Locked In',
+    description: 'Hit your daily target 7 days in a row.',
+    icon: Icons.lock_clock,
+    gradientColors: [Color(0xFFEA580C), Color(0xFFC2410C)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'comeback',
+    name: 'Comeback',
+    description: 'Hit your target after 3 or more days without hitting it.',
+    icon: Icons.replay,
+    gradientColors: [Color(0xFF10B981), Color(0xFF059669)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'target_40',
+    name: 'Raising the Bar',
+    description: 'Grow your daily target to 40 Heart Points.',
+    icon: Icons.trending_up,
+    gradientColors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'momentum_50',
+    name: 'Steady',
+    description: 'Reach a Momentum score of 50.',
+    icon: Icons.bolt,
+    gradientColors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'momentum_75',
+    name: 'Unstoppable',
+    description: 'Reach a Momentum score of 75.',
+    icon: Icons.flash_on,
+    gradientColors: [Color(0xFFF59E0B), Color(0xFFDC2626)],
+    category: AchievementCategory.momentum,
+  ),
+  AchievementDefinition(
+    id: 'momentum_week_75',
+    name: 'Perpetual Motion',
+    description: 'End 7 days in a row with Momentum of 75 or higher.',
+    icon: Icons.all_inclusive,
+    gradientColors: [Color(0xFFDC2626), Color(0xFF7C3AED)],
+    category: AchievementCategory.momentum,
   ),
   // Sleep
   AchievementDefinition(
@@ -102,6 +319,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.bedtime_outlined,
     gradientColors: [Color(0xFF7C3AED), Color(0xFF1D4ED8)],
     category: AchievementCategory.sleep,
+    progressType: AchievementProgressType.bestDailySleepAsleepMin,
+    progressTarget: 420,
   ),
   AchievementDefinition(
     id: 'deep_dreamer',
@@ -110,6 +329,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.hotel_outlined,
     gradientColors: [Color(0xFF1D4ED8), Color(0xFF1E40AF)],
     category: AchievementCategory.sleep,
+    progressType: AchievementProgressType.bestDailySleepDeepMin,
+    progressTarget: 60,
   ),
   AchievementDefinition(
     id: 'sleep_champion',
@@ -118,6 +339,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.star,
     gradientColors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
     category: AchievementCategory.sleep,
+    progressType: AchievementProgressType.bestDailySleepAsleepMin,
+    progressTarget: 480,
   ),
   // Health
   AchievementDefinition(
@@ -127,6 +350,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.water_drop_outlined,
     gradientColors: [Color(0xFF0EA5E9), Color(0xFF2563EB)],
     category: AchievementCategory.health,
+    progressType: AchievementProgressType.bestDailyWaterL,
+    progressTarget: 2.0,
   ),
   AchievementDefinition(
     id: 'healthy_heart',
@@ -160,6 +385,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.calendar_today,
     gradientColors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
     category: AchievementCategory.milestones,
+    progressType: AchievementProgressType.totalDays,
+    progressTarget: 7,
   ),
   AchievementDefinition(
     id: 'committed',
@@ -168,6 +395,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.workspace_premium,
     gradientColors: [Color(0xFFF59E0B), Color(0xFFD97706)],
     category: AchievementCategory.milestones,
+    progressType: AchievementProgressType.totalDays,
+    progressTarget: 30,
   ),
   AchievementDefinition(
     id: 'step_millionaire',
@@ -176,6 +405,8 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.military_tech,
     gradientColors: [Color(0xFFF59E0B), Color(0xFFD97706)],
     category: AchievementCategory.milestones,
+    progressType: AchievementProgressType.totalSteps,
+    progressTarget: 1000000,
   ),
   AchievementDefinition(
     id: 'elite',
@@ -184,5 +415,38 @@ const kAllAchievements = <AchievementDefinition>[
     icon: Icons.diamond,
     gradientColors: [Color(0xFF06B6D4), Color(0xFF8B5CF6)],
     category: AchievementCategory.milestones,
+    progressType: AchievementProgressType.totalHeartPoints,
+    progressTarget: 1000,
+  ),
+  // Streak achievements
+  AchievementDefinition(
+    id: 'streak_3',
+    name: 'Consistent',
+    description: 'Log your health data 3 days in a row.',
+    icon: Icons.local_fire_department,
+    gradientColors: [Color(0xFFF97316), Color(0xFFEA580C)],
+    category: AchievementCategory.milestones,
+    progressType: AchievementProgressType.longestDailyStreak,
+    progressTarget: 3,
+  ),
+  AchievementDefinition(
+    id: 'streak_7',
+    name: 'Week Streak',
+    description: 'Log your health data every day for a week.',
+    icon: Icons.whatshot,
+    gradientColors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+    category: AchievementCategory.milestones,
+    progressType: AchievementProgressType.longestDailyStreak,
+    progressTarget: 7,
+  ),
+  AchievementDefinition(
+    id: 'streak_30',
+    name: 'Iron Habit',
+    description: 'Log your health data every day for 30 days.',
+    icon: Icons.workspace_premium,
+    gradientColors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+    category: AchievementCategory.milestones,
+    progressType: AchievementProgressType.longestDailyStreak,
+    progressTarget: 30,
   ),
 ];

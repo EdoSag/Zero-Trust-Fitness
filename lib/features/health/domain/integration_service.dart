@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:cryptography/cryptography.dart';
 import 'package:health/health.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
-import 'package:zerotrust_fitness/heart_point_calculator.dart';
 import 'package:zerotrust_fitness/core/security/encryption_service.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
+import 'package:zerotrust_fitness/features/health/domain/heart_points_service.dart';
+import 'package:zerotrust_fitness/features/health/domain/momentum_service.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 
@@ -45,10 +46,8 @@ class IntegrationService {
     );
     final deduplicated = health.removeDuplicates(healthData);
 
+    final now = DateTime.now();
     var totalSteps = 0;
-    var totalHeartPoints = 0;
-    var hasExerciseMinutes = false;
-    var fallbackHeartRatePoints = 0;
 
     for (final point in deduplicated) {
       final jsonString = jsonEncode({
@@ -63,56 +62,33 @@ class IntegrationService {
       );
       await LocalVault().saveWorkout(encryptedBlob, secretKey);
 
-      final numericValue = _extractNumericValue(point);
-      if (point.type == HealthDataType.STEPS) {
-        totalSteps += numericValue.toInt();
-      } else if (point.type == HealthDataType.EXERCISE_TIME) {
-        hasExerciseMinutes = true;
-        totalHeartPoints += numericValue.toInt();
-      } else if (point.type == HealthDataType.WORKOUT) {
-        final minutes = point.dateTo.difference(point.dateFrom).inMinutes;
-        if (minutes > 0) {
-          hasExerciseMinutes = true;
-          totalHeartPoints += minutes;
-        }
-      } else if (point.type == HealthDataType.HEART_RATE) {
-        fallbackHeartRatePoints += _calculateHeartPointsFromHeartRate(
-          numericValue,
-          1,
-        );
+      // The widget shows today's totals, so only count today's steps.
+      if (point.type == HealthDataType.STEPS && _isToday(point.dateFrom, now)) {
+        totalSteps += HeartPointsService.numericValue(point).toInt();
       }
     }
-    if (!hasExerciseMinutes) {
-      totalHeartPoints = fallbackHeartRatePoints;
-    }
+    final totalHeartPoints = HeartPointsService.forDay(deduplicated, now).total;
 
+    final momentum = await MomentumService.forToday(
+      secretKey,
+      todayPoints: totalHeartPoints,
+    );
     await WidgetService.updateWidgetData(
       steps: totalSteps,
       heartPoints: totalHeartPoints,
       isLocked: false,
+      momentum: momentum.momentum,
+      momentumLabel: momentum.label,
+      heartTarget: momentum.target,
     );
 
     await AchievementService().checkAndUnlockAchievements(secretKey);
   }
 
-  double _extractNumericValue(HealthDataPoint point) {
-    final value = point.value;
-
-    // 1. You MUST check the type first
-    if (value is NumericHealthValue) {
-      // 2. You then access 'numericValue' (which is the actual num/double)
-      // 3. DO NOT call .toDouble() on 'value'. Call it on 'value.numericValue'.
-      return value.numericValue.toDouble();
-    }
-
-    // 4. If it's not a NumericHealthValue, we can't treat it like a number directly.
-    // We have to convert it to a string and try to parse it.
-    return double.tryParse(value.toString()) ?? 0.0;
-  }
-
-  int _calculateHeartPointsFromHeartRate(double bpm, int minutes) {
-    const assumedAge = 30;
-    final maxHeartRate = HeartPointCalculator.calculateMaxHeartRate(assumedAge);
-    return HeartPointCalculator.calculatePoints(bpm, maxHeartRate, minutes);
+  bool _isToday(DateTime time, DateTime now) {
+    final local = time.toLocal();
+    return local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
   }
 }

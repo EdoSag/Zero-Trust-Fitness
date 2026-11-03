@@ -1,6 +1,9 @@
 import 'package:cryptography/cryptography.dart';
 import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_definition.dart';
+import 'package:zerotrust_fitness/features/achievements/domain/momentum_medals.dart';
+import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
+import 'package:zerotrust_fitness/features/health/domain/momentum_service.dart';
 
 class UnlockedAchievement {
   const UnlockedAchievement({
@@ -98,6 +101,21 @@ class AchievementService {
       await unlock('active_week');
     }
 
+    // Momentum
+    if (MomentumMedals.all.any((id) => !already.contains(id)) &&
+        allMetrics.isNotEmpty) {
+      final now = DateTime.now();
+      final timeline = MomentumEngine.timeline(
+        history: MomentumService.historyFromDailyRows(allMetrics),
+        today: now,
+        todayPoints: MomentumService.pointsForDay(allMetrics, now),
+      );
+      final earned = MomentumMedals.earned(timeline);
+      for (final id in MomentumMedals.all) {
+        if (!already.contains(id) && earned.contains(id)) await unlock(id);
+      }
+    }
+
     // Sleep
     if (!already.contains('night_logged') &&
         allMetrics.any((r) => m(r, 'sleep_asleep_min') > 0)) {
@@ -154,7 +172,35 @@ class AchievementService {
       if (total >= 1000) await unlock('elite');
     }
 
+    // Streak achievements
+    final streak = _longestConsecutiveDays(allMetrics);
+    if (!already.contains('streak_3') && streak >= 3) await unlock('streak_3');
+    if (!already.contains('streak_7') && streak >= 7) await unlock('streak_7');
+    if (!already.contains('streak_30') && streak >= 30) await unlock('streak_30');
+
     return nowUnlocked;
+  }
+
+  int _longestConsecutiveDays(List<Map<String, dynamic>> allMetrics) {
+    final dates = allMetrics
+        .map((r) => r['date_key']?.toString())
+        .whereType<String>()
+        .map((d) => DateTime.tryParse(d))
+        .whereType<DateTime>()
+        .toSet()
+        .toList()
+      ..sort();
+    if (dates.isEmpty) return 0;
+    int longest = 1, run = 1;
+    for (int i = 1; i < dates.length; i++) {
+      if (dates[i].difference(dates[i - 1]).inDays == 1) {
+        run++;
+        if (run > longest) longest = run;
+      } else {
+        run = 1;
+      }
+    }
+    return longest;
   }
 
   bool _hasActiveWeek(

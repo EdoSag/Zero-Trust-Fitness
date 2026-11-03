@@ -6,7 +6,8 @@ import 'package:provider/provider.dart' as legacy; // Prefixing to avoid collisi
 import 'package:workmanager/workmanager.dart';
 import 'package:zerotrust_fitness/features/app/providers.dart';
 import 'package:zerotrust_fitness/features/health/domain/integration_service.dart';
-import 'package:zerotrust_fitness/functions/callback_dispatcher.dart';
+import 'package:zerotrust_fitness/functions/callback_dispatcher.dart'
+    show callbackDispatcher, syncTask, vaultBackupTask;
 import 'package:zerotrust_fitness/globals/themes.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 
@@ -34,7 +35,7 @@ class AppState extends ChangeNotifier {
       callbackDispatcher, // This must be the top-level function in callback_dispatcher.dart
       isInDebugMode: kDebugMode,
     );
-    
+
     await Workmanager().registerPeriodicTask(
       '1',
       syncTask,
@@ -42,5 +43,19 @@ class AppState extends ChangeNotifier {
       existingWorkPolicy: ExistingWorkPolicy.replace,
       constraints: Constraints(networkType: NetworkType.connected),
     );
+  }
+
+  Future<void> scheduleVaultBackup(int frequencyDays) async {
+    await Workmanager().registerPeriodicTask(
+      '2',
+      vaultBackupTask,
+      frequency: Duration(days: frequencyDays),
+      existingWorkPolicy: ExistingWorkPolicy.replace,
+      constraints: Constraints(networkType: NetworkType.connected),
+    );
+  }
+
+  Future<void> cancelVaultBackup() async {
+    await Workmanager().cancelByUniqueName('2');
   }
 }

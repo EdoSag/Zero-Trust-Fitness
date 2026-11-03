@@ -11,6 +11,9 @@ class HealthService {
   static final HealthService _instance = HealthService._();
   final Health _health = Health();
 
+  /// Days before today included by [fetchLatestData].
+  static const int defaultLookbackDays = 2;
+
   final List<HealthDataType> types = [
     HealthDataType.STEPS,
     HealthDataType.HEART_RATE,
@@ -41,7 +44,7 @@ class HealthService {
 
   Future<List<HealthDataPoint>> fetchLatestData({
     List<HealthDataType>? requestedTypes,
-    int lookbackDays = 2,
+    int lookbackDays = defaultLookbackDays,
   }) async {
     final now = DateTime.now();
     final startTime = DateTime(

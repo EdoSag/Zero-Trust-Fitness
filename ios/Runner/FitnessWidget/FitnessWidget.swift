@@ -5,14 +5,22 @@ struct FitnessEntry: TimelineEntry {
     let date: Date
     let steps: Int
     let heartPoints: Int
+    let momentum: Int
+    let momentumLabel: String
+    let heartTarget: Int
     let isLocked: Bool
+
+    var targetProgress: Double {
+        guard heartTarget > 0 else { return 0 }
+        return min(1, Double(heartPoints) / Double(heartTarget))
+    }
 }
 
 struct Provider: TimelineProvider {
     private let userDefaults = UserDefaults(suiteName: "group.zerotrustfitness")
 
     func placeholder(in context: Context) -> FitnessEntry {
-        FitnessEntry(date: Date(), steps: 0, heartPoints: 0, isLocked: true)
+        FitnessEntry(date: Date(), steps: 0, heartPoints: 0, momentum: 0, momentumLabel: "", heartTarget: 0, isLocked: true)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (FitnessEntry) -> Void) {
@@ -28,8 +36,19 @@ struct Provider: TimelineProvider {
     private func loadEntry() -> FitnessEntry {
         let steps = userDefaults?.integer(forKey: "steps") ?? 0
         let heartPoints = userDefaults?.integer(forKey: "heartPoints") ?? 0
+        let momentum = userDefaults?.integer(forKey: "momentum") ?? 0
+        let momentumLabel = userDefaults?.string(forKey: "momentumLabel") ?? ""
+        let heartTarget = userDefaults?.integer(forKey: "heartTarget") ?? 0
         let isLocked = userDefaults?.bool(forKey: "isLocked") ?? true
-        return FitnessEntry(date: Date(), steps: steps, heartPoints: heartPoints, isLocked: isLocked)
+        return FitnessEntry(
+            date: Date(),
+            steps: steps,
+            heartPoints: heartPoints,
+            momentum: momentum,
+            momentumLabel: momentumLabel,
+            heartTarget: heartTarget,
+            isLocked: isLocked
+        )
     }
 }
 
@@ -64,7 +83,57 @@ struct StatCard: View {
     }
 }
 
+struct MomentumRow: View {
+    let entry: FitnessEntry
+    let compact: Bool
+
+    private let amber = Color(red: 0.96, green: 0.62, blue: 0.04)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(amber)
+                Text(entry.isLocked ? "---" : "\(entry.momentum)")
+                    .font(.system(size: 13, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
+                if !compact && !entry.isLocked {
+                    Text(entry.momentumLabel)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 4)
+                Text(targetText)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white.opacity(0.9))
+                    .lineLimit(1)
+            }
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.2))
+                    Capsule()
+                        .fill(amber)
+                        .frame(width: proxy.size.width * CGFloat(entry.isLocked ? 0 : entry.targetProgress))
+                }
+            }
+            .frame(height: 4)
+        }
+    }
+
+    private var targetText: String {
+        if entry.isLocked { return compact ? "" : "Unlock to view" }
+        guard entry.heartTarget > 0 else { return "" }
+        return compact
+            ? "\(entry.heartPoints)/\(entry.heartTarget)"
+            : "\(entry.heartPoints) / \(entry.heartTarget) pts"
+    }
+}
+
 struct FitnessWidgetEntryView: View {
+    @Environment(\.widgetFamily) private var family
     var entry: Provider.Entry
 
     var body: some View {
@@ -123,9 +192,7 @@ struct FitnessWidgetEntryView: View {
                     )
                 }
 
-                Text(entry.isLocked ? "Unlock in app to reveal your latest stats." : "Encrypted sync is active.")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.white.opacity(0.85))
+                MomentumRow(entry: entry, compact: family == .systemSmall)
             }
             .padding(12)
         }
@@ -140,7 +207,7 @@ struct FitnessWidget: Widget {
             FitnessWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Zero-Trust Fitness")
-        .description("Displays your secured steps and heart points.")
+        .description("Displays your secured steps, heart points and Momentum.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zerotrust_fitness/components/privacy_info_dialog.dart';
 
 @NowaGenerated()
 class HomePage extends StatelessWidget {
@@ -66,7 +67,7 @@ class HomePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => showPrivacyInfoDialog(context),
                   child: const Text(
                     'Learn more about Zero-Trust',
                     style: TextStyle(color: Colors.white70),

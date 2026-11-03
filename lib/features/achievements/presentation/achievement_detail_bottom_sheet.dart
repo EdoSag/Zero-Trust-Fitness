@@ -35,6 +35,7 @@ class _AchievementDetailSheet extends StatelessWidget {
   String _categoryLabel(AchievementCategory category) {
     return switch (category) {
       AchievementCategory.fitness => 'Fitness',
+      AchievementCategory.momentum => 'Momentum',
       AchievementCategory.sleep => 'Sleep',
       AchievementCategory.health => 'Health',
       AchievementCategory.milestones => 'Milestones',
