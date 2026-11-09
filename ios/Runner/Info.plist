@@ -32,7 +32,7 @@
     <key>NSHealthShareUsageDescription</key>
     <string>We need access to your health data to encrypt and secure your fitness metrics in your private vault.</string>
     <key>NSHealthUpdateUsageDescription</key>
-    <string>We need permission to save workout data to your secure local vault.</string>
+    <string>When you turn it on in Settings, Fitness saves the workouts you log or record to Apple Health so your other apps see them.</string>
     
     <key>NSFaceIDUsageDescription</key>
     <string>Use Face ID to unlock your encrypted fitness vault.</string>
@@ -41,6 +41,8 @@
     <array>
         <string>fetch</string>
         <string>processing</string>
+        <string>location</string>
+        <string>audio</string>
     </array>
     <key>BGTaskSchedulerPermittedIdentifiers</key>
     <array>

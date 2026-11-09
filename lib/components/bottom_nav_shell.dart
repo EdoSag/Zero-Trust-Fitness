@@ -14,12 +14,13 @@ import 'package:zerotrust_fitness/core/services/insights_service.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
+import 'package:zerotrust_fitness/features/health/data/health_writeback.dart';
 import 'package:zerotrust_fitness/features/health/domain/heart_points_engine.dart';
 import 'package:zerotrust_fitness/features/health/domain/heart_points_service.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_service.dart';
 import 'package:zerotrust_fitness/components/manual_ingestion_bottom_sheet.dart';
-import 'package:zerotrust_fitness/pages/activities_page.dart';
+import 'package:zerotrust_fitness/pages/journal_page.dart';
 import 'package:zerotrust_fitness/pages/gps_workout_page.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
 import 'package:zerotrust_fitness/pages/settings_page.dart';
@@ -54,6 +55,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   bool _isLoading = false;
   List<HealthDataPoint> _healthData = [];
   List<Map<String, dynamic>> _recentActivities = [];
+  List<ManualEntry> _manualEntries = [];
   final Health _health = Health();
   final GpsTrackingService _gpsTrackingService = GpsTrackingService();
   int _heartPointsTotal = 0;
@@ -323,7 +325,8 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     final todayKey = _dateKey(DateTime.now());
     return [
       for (final w in (await vault.fetchWorkouts()).take(200))
-        if (w.data.containsKey('duration'))
+        // Logged here (manual or GPS); imported workouts add no points.
+        if (w.data.containsKey('duration') && w.data['source'] == null)
           if (DateTime.tryParse(w.data['timestamp']?.toString() ?? '')
                   ?.toLocal()
               case final at? when _dateKey(at) == todayKey)
@@ -376,15 +379,24 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   Future<void> _loadRecentActivities() async {
     final vault = ref.read(openFitnessVaultProvider);
     if (vault == null) {
-      if (mounted) setState(() => _recentActivities = []);
+      if (mounted) {
+        setState(() {
+          _recentActivities = [];
+          _manualEntries = [];
+        });
+      }
       return;
     }
     try {
       final activities = [
         for (final w in await vault.fetchWorkouts()) {...w.data, '_id': w.id},
       ];
+      final entries = await vault.fetchManualEntries();
       if (!mounted) return;
-      setState(() => _recentActivities = activities);
+      setState(() {
+        _recentActivities = activities;
+        _manualEntries = entries;
+      });
     } catch (e) {
       debugPrint('Error loading recent activities: $e');
       if (!mounted) return;
@@ -748,11 +760,14 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ManualIngestionBottomSheet(vault: vault),
+      builder: (context) => ManualIngestionBottomSheet(
+        vault: vault,
+        onWorkoutSaved: (id) => _writeBack(vault, id),
+      ),
     );
     if (newMedals != null) {
       await _loadRecentActivities();
-      await _loadDailyMetrics();
+      await _loadDailyMetrics(refreshToday: true);
       if (newMedals.isNotEmpty && mounted) {
         _showNewMedalSnackbar(newMedals);
       }
@@ -777,12 +792,13 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
         initialTimestamp: data['timestamp'] is String
             ? DateTime.tryParse(data['timestamp'] as String)
             : null,
+        onWorkoutSaved: (id) => _writeBack(vault, id),
       ),
     );
     if (!mounted) return;
     if (newMedals != null) {
       await _loadRecentActivities();
-      await _loadDailyMetrics();
+      await _loadDailyMetrics(refreshToday: true);
       if (newMedals.isNotEmpty && mounted) {
         _showNewMedalSnackbar(newMedals);
       }
@@ -790,18 +806,42 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   }
 
   Future<void> _deleteActivity(String id, FitnessVault vault) async {
-    await vault.deleteWorkout(id);
+    await vault.removeWorkout(id);
+    await HealthWriteback.instance.remove(id);
     await _loadRecentActivities();
+    await _loadDailyMetrics(refreshToday: true);
+  }
+
+  /// Copies a saved workout to Health Connect / Apple Health when the
+  /// person turned that on.
+  Future<void> _writeBack(FitnessVault? vault, String id) async {
+    final workout = await vault?.getWorkout(id);
+    if (workout != null) {
+      await HealthWriteback.instance.sync(id, workout.data);
+    }
+  }
+
+  Future<void> _editMeasurement(
+      FitnessVault vault, ManualEntry entry, num value) async {
+    await vault.editManualEntry(entry, value);
+    await _loadRecentActivities();
+    await _loadDailyMetrics(refreshToday: true);
+  }
+
+  Future<void> _deleteMeasurement(FitnessVault vault, ManualEntry entry) async {
+    await vault.deleteManualEntry(entry);
+    await _loadRecentActivities();
+    await _loadDailyMetrics(refreshToday: true);
   }
 
   Future<void> _toggleGpsTracking() async {
-    final vault = ref.read(openFitnessVaultProvider);
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => GpsWorkoutPage(vault: vault),
+        builder: (_) => GpsWorkoutPage(onSaved: (vault, id) => _writeBack(vault, id)),
       ),
     );
     await _loadRecentActivities();
+    await _loadDailyMetrics(refreshToday: true);
   }
 
   void _showNewMedalSnackbar(List<String> ids) {
@@ -960,17 +1000,24 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
                   baselines: _baselines,
                   sleepStepsCorrelation: _sleepStepsCorrelation,
                 ),
-                ActivitiesPage(
-                  recentActivities: _recentActivities,
+                JournalPage(
+                  workouts: _recentActivities,
+                  measurements: _manualEntries,
                   isLoading: _isLoading,
-                  onManualEntry: () => _showManualIngestion(vault),
+                  canEdit: vault != null,
+                  onLog: () => _showManualIngestion(vault),
                   onRefresh: _refreshDashboardData,
-                  vault: vault,
-                  onEditActivity: (id, data) => vault != null
+                  onEditWorkout: (id, data) => vault != null
                       ? _editActivity(id, data, vault)
                       : Future.value(),
-                  onDeleteActivity: (id) => vault != null
+                  onDeleteWorkout: (id) => vault != null
                       ? _deleteActivity(id, vault)
+                      : Future.value(),
+                  onEditMeasurement: (entry, value) => vault != null
+                      ? _editMeasurement(vault, entry, value)
+                      : Future.value(),
+                  onDeleteMeasurement: (entry) => vault != null
+                      ? _deleteMeasurement(vault, entry)
                       : Future.value(),
                 ),
                 FitnessSettingsPage(
@@ -978,6 +1025,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
                   onDataDeleted: () {
                     setState(() {
                       _recentActivities = [];
+                      _manualEntries = [];
                       _dailyMetrics = [];
                       _todayMetrics = const <String, num>{};
                     });
@@ -1004,9 +1052,9 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
             label: 'Trends',
           ),
           NavigationDestination(
-            icon: Icon(Icons.local_fire_department_outlined),
-            selectedIcon: Icon(Icons.local_fire_department),
-            label: 'Activities',
+            icon: Icon(Icons.history_outlined),
+            selectedIcon: Icon(Icons.history),
+            label: 'Journal',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

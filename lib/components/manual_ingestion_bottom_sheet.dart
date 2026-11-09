@@ -30,6 +30,7 @@ const _activityTypes = <String>[
   'Cycling',
   'Swimming',
   'Walking',
+  'Hiking',
   'Strength Training',
   'HIIT',
   'Yoga/Stretching',
@@ -46,6 +47,8 @@ IconData _iconForActivity(String type) {
       return Icons.pool;
     case 'Walking':
       return Icons.directions_walk;
+    case 'Hiking':
+      return Icons.terrain;
     case 'Strength Training':
       return Icons.fitness_center;
     case 'HIIT':
@@ -227,12 +230,17 @@ class ManualIngestionBottomSheet extends StatefulWidget {
     this.initialDurationMinutes,
     this.initialIntensity,
     this.initialTimestamp,
+    this.onWorkoutSaved,
   });
 
   final FitnessVault? vault;
 
+  /// Called with the workout's id after it is saved (Health Connect
+  /// write-back uses it).
+  final Future<void> Function(String id)? onWorkoutSaved;
+
   /// When non-null, the sheet is in edit mode: it pre-fills from the values
-  /// below and calls updateWorkout instead of saveWorkout.
+  /// below and edits that workout (keeping fields it doesn't show, such as a GPS route).
   final String? existingWorkoutId;
   final String? initialActivityType;
   final int? initialDurationMinutes;
@@ -468,26 +476,17 @@ class _ManualIngestionBottomSheetState
       // Save workout entry and merge derived heart points.
       if (hasWorkout) {
         final intensity = _intensitySlider.round();
-        final heartPts = HeartPointCalculator.calculateFromManualWorkout(
-          activityType: _activityType,
-          durationMinutes: duration,
-          intensity: intensity,
-        );
-
         final workoutData = {
           'type': _activityType,
           'duration': duration,
           'intensity': intensity,
           'timestamp': _selectedDateTime.toIso8601String(),
         };
-        await vault.saveWorkout(workoutData, id: widget.existingWorkoutId);
-
-        if (heartPts > 0) {
-          await vault.mergeDailyMetrics(
-            dateKey: dateKey,
-            incoming: {'heart_points': heartPts}
-          );
-        }
+        // Adds the workout's Heart Points to its day; an edit moves them
+        // instead of adding them again.
+        final id = await vault.logWorkout(workoutData,
+            id: widget.existingWorkoutId);
+        await widget.onWorkoutSaved?.call(id);
       }
 
       // Merge any filled health metric fields.
@@ -716,7 +715,12 @@ class _ManualIngestionBottomSheetState
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: _activityTypes.map((type) {
+          children: [
+            ..._activityTypes,
+            // An edited workout of a type this list doesn't offer (from an
+            // import, say) keeps it.
+            if (!_activityTypes.contains(_activityType)) _activityType,
+          ].map((type) {
             final selected = _activityType == type;
             return ChoiceChip(
               label: Row(

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
+import 'package:zerotrust_fitness/heart_point_calculator.dart';
 
 /// Writes an item so it is synced to the account's other devices. In the app
 /// this is the core's [SyncController]; tests write straight to a store.
@@ -45,6 +46,20 @@ class FitnessTemplate {
   final String activityType;
   final Map<String, dynamic> data;
   final DateTime createdAt;
+}
+
+/// A metric the person entered by hand on one day, as the journal shows it.
+class ManualEntry {
+  const ManualEntry({
+    required this.dateKey,
+    required this.metricKey,
+    required this.value,
+    required this.updatedAt,
+  });
+  final String dateKey;
+  final String metricKey;
+  final num value;
+  final DateTime updatedAt;
 }
 
 class _Day {
@@ -252,6 +267,8 @@ class FitnessVault {
           ?.toUtc() ??
       DateTime.utc(1970);
 
+  Future<FitnessWorkout?> getWorkout(String id) => workouts.get(store, id);
+
   /// Saves a new workout, or replaces the one with [id].
   Future<String> saveWorkout(Map<String, dynamic> data, {String? id}) async {
     final itemId = id ?? newId();
@@ -260,6 +277,180 @@ class FitnessVault {
   }
 
   Future<void> deleteWorkout(String id) => _writer.delete(id);
+
+  /// The Heart Points a workout added to its day: what it recorded, or for
+  /// workouts saved before that was recorded, what the app credited then
+  /// (manual and GPS workouts were scored from duration and intensity;
+  /// Health Connect and imported workouts added nothing).
+  static int workoutHeartPoints(Map<String, dynamic> data) {
+    final recorded = data['heart_points'];
+    if (recorded is num) return recorded.toInt();
+    if (data['source'] != null) return 0;
+    final duration = data['duration'];
+    if (duration is! num) return 0;
+    return HeartPointCalculator.calculateFromManualWorkout(
+      activityType: data['type']?.toString() ?? '',
+      durationMinutes: duration.toInt(),
+      intensity: (data['intensity'] as num?)?.toInt() ?? 5,
+    );
+  }
+
+  /// The local calendar day (`yyyy-MM-dd`) a workout belongs to.
+  static String? workoutDateKey(Map<String, dynamic> data) {
+    final at = DateTime.tryParse(
+        (data['timestamp'] ?? data['date'] ?? '').toString());
+    return at == null ? null : dateKeyOf(at);
+  }
+
+  static String dateKeyOf(DateTime at) {
+    final d = at.toLocal();
+    return '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Saves a manual or GPS workout and keeps its day's Heart Points in step:
+  /// a new workout adds its points, an edit moves them (new duration,
+  /// intensity or day), so editing never counts a workout twice.
+  ///
+  /// When editing, fields the edit doesn't touch (a GPS route, splits, the
+  /// source) are kept.
+  Future<String> logWorkout(Map<String, dynamic> data, {String? id}) async {
+    final previous = id == null ? null : await workouts.get(store, id);
+    final merged = <String, dynamic>{...?previous?.data, ...data};
+    merged.remove('heart_points');
+    final points = merged['source'] == null
+        ? HeartPointCalculator.calculateFromManualWorkout(
+            activityType: merged['type']?.toString() ?? '',
+            durationMinutes: (merged['duration'] as num?)?.toInt() ?? 0,
+            intensity: (merged['intensity'] as num?)?.toInt() ?? 5,
+          )
+        : 0;
+    merged['heart_points'] = points;
+    final itemId = await saveWorkout(merged, id: id);
+
+    if (previous != null) {
+      final oldDay = workoutDateKey(previous.data);
+      final oldPoints = workoutHeartPoints(previous.data);
+      if (oldDay != null && oldPoints > 0) {
+        await _adjustManual(oldDay, 'heart_points', -oldPoints);
+      }
+    }
+    final day = workoutDateKey(merged);
+    if (day != null && points > 0) {
+      await _adjustManual(day, 'heart_points', points);
+    }
+    return itemId;
+  }
+
+  /// Deletes a workout and takes back the Heart Points it added to its day.
+  Future<void> removeWorkout(String id) async {
+    final existing = await workouts.get(store, id);
+    await _writer.delete(id);
+    if (existing == null) return;
+    final day = workoutDateKey(existing.data);
+    final points = workoutHeartPoints(existing.data);
+    if (day != null && points > 0) {
+      await _adjustManual(day, 'heart_points', -points);
+    }
+  }
+
+  /// Adds [delta] to the manual share of a sum-additive metric, never going
+  /// below zero.
+  Future<void> _adjustManual(String dateKey, String key, num delta) async {
+    final existing = await _metricsFor(dateKey);
+    final manual = existing['${key}_manual'] ?? 0;
+    final next = manual + delta;
+    await setManualMetricValue(
+        dateKey: dateKey, metricKey: key, value: next < 0 ? 0 : next);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Journal
+  // ---------------------------------------------------------------------------
+
+  /// Metrics the person typed in, one entry per day and metric (several
+  /// entries of an additive metric on one day are kept as their sum).
+  ///
+  /// Heart Points that only come from logged workouts are left out: they
+  /// belong to those workouts, and editing the workout moves them.
+  Future<List<ManualEntry>> fetchManualEntries() async {
+    final workoutPoints = <String, int>{};
+    for (final w in await workouts.list(store)) {
+      final day = workoutDateKey(w.data);
+      if (day == null) continue;
+      workoutPoints[day] =
+          (workoutPoints[day] ?? 0) + workoutHeartPoints(w.data);
+    }
+    final entries = <ManualEntry>[];
+    for (final d in await _days.list(store)) {
+      for (final e in d.metrics.entries) {
+        if (!e.key.endsWith('_manual')) continue;
+        final key = e.key.substring(0, e.key.length - '_manual'.length);
+        var value = e.value;
+        if (key == 'heart_points') value -= workoutPoints[d.dateKey] ?? 0;
+        if (value <= 0) continue;
+        entries.add(ManualEntry(
+          dateKey: d.dateKey,
+          metricKey: key,
+          value: value,
+          updatedAt: d.updatedAt,
+        ));
+      }
+    }
+    entries.sort((a, b) {
+      final byDay = b.dateKey.compareTo(a.dateKey);
+      return byDay != 0 ? byDay : a.metricKey.compareTo(b.metricKey);
+    });
+    return entries;
+  }
+
+  /// Changes a manual entry to [value]; Health Connect's share stays.
+  Future<void> editManualEntry(ManualEntry entry, num value) async {
+    var stored = value;
+    if (entry.metricKey == 'heart_points') {
+      // Keep the share that belongs to the day's workouts.
+      final manual =
+          (await _metricsFor(entry.dateKey))['heart_points_manual'] ?? 0;
+      stored = manual - entry.value + value;
+    }
+    await setManualMetricValue(
+        dateKey: entry.dateKey,
+        metricKey: entry.metricKey,
+        value: stored < 0 ? 0 : stored);
+  }
+
+  Future<void> deleteManualEntry(ManualEntry entry) =>
+      editManualEntry(entry, 0);
+
+  /// Adds days from another app's history (a Google Fit export): totals
+  /// that add up (steps, Heart Points) only ever raise a day, so a day that
+  /// Health Connect or this app already counted isn't counted twice; other
+  /// readings (weight) fill days that have none.
+  Future<void> importDayTotals(String dateKey, Map<String, num> metrics) async {
+    final additive = {
+      for (final e in metrics.entries)
+        if (_sumAdditiveKeys.contains(e.key)) e.key: e.value,
+    };
+    if (additive.isNotEmpty) {
+      await raiseHealthConnectTotals(dateKey: dateKey, hcMetrics: additive);
+    }
+    final existing = await _metricsFor(dateKey);
+    final merged = Map<String, num>.from(existing);
+    var changed = false;
+    for (final e in metrics.entries) {
+      if (_sumAdditiveKeys.contains(e.key) || e.value == 0) continue;
+      if ((existing[e.key] ?? 0) != 0) continue;
+      merged[e.key] = e.value;
+      changed = true;
+    }
+    if (changed) await _putDay(dateKey, merged);
+  }
+
+  Future<bool> hasItem(String id) async {
+    final item = await store.get(id);
+    return item != null && !item.deleted;
+  }
 
   // ---------------------------------------------------------------------------
   // Daily metrics
