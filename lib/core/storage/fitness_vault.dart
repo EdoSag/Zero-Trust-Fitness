@@ -428,18 +428,24 @@ class FitnessVault {
   /// Health Connect or this app already counted isn't counted twice; other
   /// readings (weight) fill days that have none.
   Future<void> importDayTotals(String dateKey, Map<String, num> metrics) async {
-    final additive = {
-      for (final e in metrics.entries)
-        if (_sumAdditiveKeys.contains(e.key)) e.key: e.value,
-    };
-    if (additive.isNotEmpty) {
-      await raiseHealthConnectTotals(dateKey: dateKey, hcMetrics: additive);
-    }
     final existing = await _metricsFor(dateKey);
     final merged = Map<String, num>.from(existing);
     var changed = false;
     for (final e in metrics.entries) {
-      if (_sumAdditiveKeys.contains(e.key) || e.value == 0) continue;
+      if (e.value == 0) continue;
+      if (_sumAdditiveKeys.contains(e.key)) {
+        // The export's total already includes whatever was entered by hand
+        // that day, so it is compared with the day's whole total, and only
+        // the missing part is added (as the other-source share).
+        final shown = existing[e.key] ?? 0;
+        if (e.value <= shown) continue;
+        final manual = existing['${e.key}_manual'] ?? 0;
+        merged['${e.key}_hc'] = e.value - manual;
+        merged['${e.key}_manual'] = manual;
+        merged[e.key] = e.value;
+        changed = true;
+        continue;
+      }
       if ((existing[e.key] ?? 0) != 0) continue;
       merged[e.key] = e.value;
       changed = true;

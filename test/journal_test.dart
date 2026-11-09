@@ -155,6 +155,21 @@ void main() {
   });
 
   group('importDayTotals', () {
+    test('an export total that includes hand-entered steps adds only the '
+        'missing part', () async {
+      final v = testVault();
+      await v.mergeDailyMetrics(
+          dateKey: '2026-11-07', incoming: {'steps': 5000});
+      await v.importDayTotals('2026-11-07', {'steps': 5000});
+      expect((await _day(v, '2026-11-07'))['steps'], 5000);
+      await v.importDayTotals('2026-11-07', {'steps': 7000});
+      final m = await _day(v, '2026-11-07');
+      expect(m['steps'], 7000);
+      expect(m['steps_manual'], 5000);
+      expect(m['steps_hc'], 2000);
+    });
+
+
     test('raises additive totals and fills missing readings only', () async {
       final v = testVault();
       await v.syncFromHealthConnect(

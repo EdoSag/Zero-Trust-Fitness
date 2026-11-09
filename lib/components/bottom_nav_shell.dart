@@ -797,8 +797,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     );
     if (!mounted) return;
     if (newMedals != null) {
-      await _loadRecentActivities();
-      await _loadDailyMetrics(refreshToday: true);
+      await _rescoreToday();
       if (newMedals.isNotEmpty && mounted) {
         _showNewMedalSnackbar(newMedals);
       }
@@ -808,6 +807,15 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   Future<void> _deleteActivity(String id, FitnessVault vault) async {
     await vault.removeWorkout(id);
     await HealthWriteback.instance.remove(id);
+    await _rescoreToday();
+  }
+
+  /// After a workout changes: today's manual Heart Points are scored
+  /// against Health Connect (a workout it already has adds nothing), so
+  /// rescore them from the workouts now logged rather than trusting the
+  /// plain subtraction the vault did.
+  Future<void> _rescoreToday() async {
+    await _loadHealthData();
     await _loadRecentActivities();
     await _loadDailyMetrics(refreshToday: true);
   }
