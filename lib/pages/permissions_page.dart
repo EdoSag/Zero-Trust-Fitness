@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:health/health.dart';
-import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
 
@@ -176,17 +175,12 @@ const _healthPermissionCategories = <_PermissionCategory>[
     keys: ['weight', 'bmi', 'body_fat'],
   ),
 ];
-
-@NowaGenerated()
 class PermissionsPage extends StatefulWidget {
-  @NowaGenerated({'loader': 'auto-constructor'})
   const PermissionsPage({super.key});
 
   @override
   State<PermissionsPage> createState() => _PermissionsPageState();
 }
-
-@NowaGenerated()
 class _PermissionsPageState extends State<PermissionsPage> {
   final Health _health = Health();
   final GpsTrackingService _gpsTrackingService = GpsTrackingService();

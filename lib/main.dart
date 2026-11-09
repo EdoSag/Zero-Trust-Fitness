@@ -1,62 +1,56 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // Added this
-import 'package:nowa_runtime/nowa_runtime.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:zero_trust_core/zero_trust_core.dart';
+import 'package:zerotrust_fitness/app/app_gate.dart';
 import 'package:zerotrust_fitness/core/services/reminder_service.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
-import 'package:zerotrust_fitness/core/services/supabase_service.dart';
-import 'package:zerotrust_fitness/globals/app_state.dart';
-import 'package:zerotrust_fitness/globals/router.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
-import 'package:home_widget/home_widget.dart';
 
-@NowaGenerated()
-main() async {
+/// Store name "Zero-Trust Fitness"; on the phone it is "ZT Fitness".
+const fitnessAppConfig =
+    ZtAppConfig(appId: 'fitness', displayName: 'Zero-Trust Fitness');
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  LocalVault().setupSqlCipher(); // Ensure SQLCipher is set up before any database operations
-  sharedPrefs = await SharedPreferences.getInstance();
-  
-  // Note: Ensure your .env file is in pubspec.yaml assets!
-  await SupabaseService().initialize();
-  await HomeWidget.setAppGroupId('group.zerotrustfitness');
 
-  final appState = AppState();
-  if (sharedPrefs.getBool('bg_tasks_initialized') ?? false) {
-    await appState.initializeBackgroundTasks();
+  await dotenv.load(fileName: '.env');
+  final url = dotenv.env['SUPABASE_URL'] ?? '';
+  final key = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+  if (url.isEmpty || key.isEmpty || Uri.tryParse(url)?.scheme != 'https') {
+    throw StateError('Set SUPABASE_URL (https) and SUPABASE_ANON_KEY in .env');
   }
+  await Supabase.initialize(url: url, publishableKey: key);
+
+  await HomeWidget.setAppGroupId('group.zerotrustfitness');
   await ReminderService().initialize();
   await UnitsFormatter().load();
 
-  // Wrap the entire app in ProviderScope for Riverpod 3.0 support
   runApp(
     ProviderScope(
-      child: MyApp(appState: appState),
+      overrides: [ztAppConfigProvider.overrideWithValue(fitnessAppConfig)],
+      child: const ZeroTrustFitnessApp(),
     ),
   );
 }
 
-@NowaGenerated({'visibleInNowa': false})
-class MyApp extends StatelessWidget {
-  @NowaGenerated({'loader': 'auto-constructor'})
-  const MyApp({super.key, required this.appState});
+class ZeroTrustFitnessApp extends StatelessWidget {
+  const ZeroTrustFitnessApp({super.key, this.home = const AppGate()});
 
-  final AppState appState;
+  final Widget home;
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<AppState>.value(value: appState),
-      ],
-      builder: (context, child) => MaterialApp.router(
-        debugShowCheckedModeBanner: false, // Cleaner look
-        theme: AppState.of(context).theme,
-        routerConfig: appRouter,
+    return ZtThemeBuilder(
+      builder: (context, theme, darkTheme, mode) => MaterialApp(
+        title: 'ZT Fitness', // task switcher label; store name stays Zero-Trust Fitness
+        debugShowCheckedModeBanner: false,
+        theme: theme,
+        darkTheme: darkTheme,
+        themeMode: mode,
+        home: home,
       ),
     );
   }
 }
-
-@NowaGenerated()
-late final SharedPreferences sharedPrefs;

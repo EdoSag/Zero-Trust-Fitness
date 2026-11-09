@@ -1,12 +1,12 @@
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/core/services/export_service.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
 
 class ShareReportPage extends StatefulWidget {
-  const ShareReportPage({super.key, required this.secretKey});
+  const ShareReportPage({super.key, required this.vault});
 
-  final SecretKey secretKey;
+  final FitnessVault vault;
 
   @override
   State<ShareReportPage> createState() => _ShareReportPageState();
@@ -40,7 +40,7 @@ class _ShareReportPageState extends State<ShareReportPage> {
     setState(() => _generating = true);
     try {
       await ExportService().generateShareableReport(
-        secretKey: widget.secretKey,
+        vault: widget.vault,
         metricKeys: _selectedKeys.toList(),
         dateRange: _range,
       );

@@ -1,19 +1,16 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:zerotrust_fitness/core/security/encryption_service.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/heart_point_calculator.dart';
 
 class GpsWorkoutPage extends StatefulWidget {
-  const GpsWorkoutPage({super.key, required this.secretKey});
+  const GpsWorkoutPage({super.key, required this.vault});
 
-  final SecretKey? secretKey;
+  final FitnessVault? vault;
 
   @override
   State<GpsWorkoutPage> createState() => _GpsWorkoutPageState();
@@ -86,8 +83,8 @@ class _GpsWorkoutPageState extends State<GpsWorkoutPage> {
       return;
     }
 
-    final sk = widget.secretKey;
-    if (sk == null) {
+    final vault = widget.vault;
+    if (vault == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -120,16 +117,13 @@ class _GpsWorkoutPageState extends State<GpsWorkoutPage> {
             .toList(),
       };
 
-      final encrypted = await EncryptionService()
-          .encryptString(jsonEncode(workoutData), sk);
-      await LocalVault().saveWorkout(encrypted, sk);
+      await vault.saveWorkout(workoutData);
 
       if (heartPts > 0) {
         final dateKey = _dateKey(result.startedAt);
-        await LocalVault().mergeDailyMetrics(
+        await vault.mergeDailyMetrics(
           dateKey: dateKey,
-          incoming: {'heart_points': heartPts},
-          secretKey: sk,
+          incoming: {'heart_points': heartPts}
         );
       }
 

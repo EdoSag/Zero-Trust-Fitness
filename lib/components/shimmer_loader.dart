@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:shimmer/shimmer.dart';
-
-@NowaGenerated()
 class ShimmerLoader extends StatelessWidget {
-  @NowaGenerated({'loader': 'auto-constructor'})
   const ShimmerLoader({super.key});
 
   @override

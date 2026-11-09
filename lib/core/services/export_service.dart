@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart' show Share, XFile;
-import 'package:zerotrust_fitness/core/security/encryption_service.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
+import 'package:share_plus/share_plus.dart' show ShareParams, SharePlus, XFile;
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 
 class ExportPreview {
   const ExportPreview({
@@ -32,25 +30,12 @@ class ExportService {
   // JSON export
   // ---------------------------------------------------------------------------
 
-  Future<void> exportJson(SecretKey secretKey) async {
-    final vault = LocalVault();
-    final encService = EncryptionService();
+  Future<void> exportJson(FitnessVault vault) async {
+    final workouts = [for (final w in await vault.fetchWorkouts()) w.data];
 
-    final workoutRows = await vault.fetchWorkoutsWithIds(secretKey);
-    final workouts = <Map<String, dynamic>>[];
-    for (final row in workoutRows) {
-      try {
-        final plain = await encService.decryptString(row.encryptedData, secretKey);
-        final decoded = jsonDecode(plain);
-        if (decoded is Map) {
-          workouts.add({...decoded.map((k, v) => MapEntry('$k', v))});
-        }
-      } catch (_) {}
-    }
-
-    final metricRows = await vault.fetchDailyMetrics(secretKey);
-    final achievements = await vault.fetchAchievements(secretKey);
-    final goals = await vault.fetchGoals(secretKey);
+    final metricRows = await vault.fetchDailyMetrics();
+    final achievements = await vault.fetchAchievements();
+    final goals = await vault.fetchGoals();
 
     final payload = {
       'version': 1,
@@ -62,19 +47,19 @@ class ExportService {
     };
 
     final json = const JsonEncoder.withIndent('  ').convert(payload);
-    final file = await _writeTemp('zerotrust_health_export.json', json);
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      text: 'Zero-Trust Health — full data export',
-    );
+    final file = await _writeTemp('zerotrust_fitness_export.json', json);
+    await SharePlus.instance.share(ShareParams(
+      files: [XFile(file.path)],
+      text: 'Zero-Trust Fitness — full data export',
+    ));
   }
 
   // ---------------------------------------------------------------------------
   // CSV export (daily_metrics only)
   // ---------------------------------------------------------------------------
 
-  Future<void> exportCsv(SecretKey secretKey) async {
-    final rows = await LocalVault().fetchDailyMetrics(secretKey);
+  Future<void> exportCsv(FitnessVault vault) async {
+    final rows = await vault.fetchDailyMetrics();
     if (rows.isEmpty) return;
 
     // Collect all metric keys across all rows.
@@ -98,10 +83,10 @@ class ExportService {
     }
 
     final file = await _writeTemp('zerotrust_health_metrics.csv', buf.toString());
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      text: 'Zero-Trust Health — daily metrics CSV',
-    );
+    await SharePlus.instance.share(ShareParams(
+      files: [XFile(file.path)],
+      text: 'Zero-Trust Fitness — daily metrics CSV',
+    ));
   }
 
   // ---------------------------------------------------------------------------
@@ -138,36 +123,60 @@ class ExportService {
     }
   }
 
-  /// Restores from [jsonContent], overwriting local vault data.
+  /// Restores from [jsonContent] into the vault (and so every device):
+  /// missing workouts are added, the backup's days replace the same days,
+  /// and goals are set. Nothing else is deleted.
   /// Returns a message describing the result.
   Future<String> restoreFromJson(
-      String jsonContent, SecretKey secretKey) async {
+      String jsonContent, FitnessVault vault) async {
     final decoded = jsonDecode(jsonContent) as Map;
-    final vault = LocalVault();
-    final encService = EncryptionService();
 
-    // Restore workouts.
+    // Workouts: added unless the same workout (type and start) is there,
+    // whatever id it has here.
     final workoutsRaw = decoded['workouts'];
     if (workoutsRaw is List) {
-      final encrypted = <String>[];
+      final present = {
+        for (final w in await vault.fetchWorkouts())
+          await vault.legacyWorkoutId(w.data),
+      };
       for (final item in workoutsRaw) {
         if (item is! Map) continue;
-        final plain = jsonEncode(item.map((k, v) => MapEntry('$k', v)));
-        encrypted.add(await encService.encryptString(plain, secretKey));
+        final data = item.map((k, v) => MapEntry('$k', v));
+        final id = await vault.legacyWorkoutId(data);
+        if (!present.add(id)) continue;
+        await vault.saveWorkout(data, id: id);
       }
-      await vault.replaceWorkouts(encrypted, secretKey);
     }
 
-    // Restore daily_metrics.
+    // Days in the backup replace the same days here; other days stay.
     final metricsRaw = decoded['daily_metrics'];
     if (metricsRaw is List) {
-      final rows = <Map<String, dynamic>>[];
       for (final item in metricsRaw) {
-        if (item is Map) {
-          rows.add(item.map((k, v) => MapEntry('$k', v)));
+        if (item is! Map) continue;
+        final dateKey = item['date_key']?.toString();
+        if (dateKey == null || dateKey.isEmpty) continue;
+        var metrics = FitnessVault.parseMetrics(item['metrics']);
+        if (metrics.isEmpty) {
+          metrics = {
+            'steps': (item['steps'] as num?) ?? 0,
+            'heart_points': (item['heart_points'] as num?) ?? 0,
+          };
         }
+        await vault.upsertDailyMetrics(dateKey: dateKey, metrics: metrics);
       }
-      await vault.replaceDailyMetrics(rows, secretKey);
+    }
+
+    final achievementsRaw = decoded['achievements'];
+    if (achievementsRaw is List) {
+      for (final item in achievementsRaw) {
+        if (item is! Map) continue;
+        final id = item['id']?.toString();
+        if (id == null || id.isEmpty) continue;
+        await vault.insertAchievementIfAbsent(
+          id,
+          DateTime.tryParse('${item['unlocked_at']}') ?? DateTime.now(),
+        );
+      }
     }
 
     // Restore goals (upsert each).
@@ -182,8 +191,7 @@ class ExportService {
           await vault.upsertGoal(
             metricKey: key,
             targetValue: target,
-            period: period,
-            secretKey: secretKey,
+            period: period
           );
         }
       }
@@ -203,15 +211,15 @@ class ExportService {
   /// [dateRange], then shares it. The report is NOT encrypted — it is
   /// intentionally human-readable for sharing with e.g. a physician.
   Future<void> generateShareableReport({
-    required SecretKey secretKey,
+    required FitnessVault vault,
     required List<String> metricKeys,
     required DateTimeRange dateRange,
   }) async {
-    final dailyMetrics = await LocalVault().fetchDailyMetrics(secretKey);
-    final workoutRows = await LocalVault().fetchWorkouts(secretKey);
+    final dailyMetrics = await vault.fetchDailyMetrics();
+    final workoutRows = await vault.fetchWorkouts();
 
     final buf = StringBuffer();
-    buf.writeln('ZERO-TRUST HEALTH — PERSONAL REPORT');
+    buf.writeln('ZERO-TRUST FITNESS — PERSONAL REPORT');
     buf.writeln(
         'Period: ${_fmtDate(dateRange.start)} – ${_fmtDate(dateRange.end)}');
     buf.writeln('Generated: ${_fmtDate(DateTime.now())}');
@@ -241,34 +249,30 @@ class ExportService {
     buf.writeln();
     buf.writeln('── WORKOUTS ────────────────────────────────────');
 
-    for (final encryptedRow in workoutRows) {
-      try {
-        final decrypted =
-            await EncryptionService().decryptString(encryptedRow, secretKey);
-        final data = jsonDecode(decrypted) as Map<String, dynamic>;
-        final ts = data['timestamp']?.toString() ?? data['started_at']?.toString() ?? '';
-        final date = DateTime.tryParse(ts);
-        if (date == null) continue;
-        if (date.isBefore(dateRange.start) || date.isAfter(dateRange.end)) continue;
-        final type = data['activity_type'] ?? data['type'] ?? 'Workout';
-        final dur = data['duration_minutes'] ?? data['duration'] ?? '?';
-        final dist = data['distance_km'] != null
-            ? ' · ${(data['distance_km'] as num).toStringAsFixed(2)} km'
-            : '';
-        buf.writeln('${_fmtDate(date)}  $type  ${dur}min$dist');
-      } catch (_) {}
+    for (final workout in workoutRows) {
+      final data = workout.data;
+      final ts = data['timestamp']?.toString() ?? data['started_at']?.toString() ?? '';
+      final date = DateTime.tryParse(ts);
+      if (date == null) continue;
+      if (date.isBefore(dateRange.start) || date.isAfter(dateRange.end)) continue;
+      final type = data['activity_type'] ?? data['type'] ?? 'Workout';
+      final dur = data['duration_minutes'] ?? data['duration'] ?? '?';
+      final dist = data['distance_km'] != null
+          ? ' · ${(data['distance_km'] as num).toStringAsFixed(2)} km'
+          : '';
+      buf.writeln('${_fmtDate(date)}  $type  ${dur}min$dist');
     }
 
     buf.writeln();
-    buf.writeln('Generated by Zero-Trust Health — data encrypted on device, shared by user request.');
+    buf.writeln('Generated by Zero-Trust Fitness — data encrypted on device, shared by user request.');
 
     final filename =
-        'zt_health_report_${_fmtDate(dateRange.start)}_${_fmtDate(dateRange.end)}.txt';
+        'zt_fitness_report_${_fmtDate(dateRange.start)}_${_fmtDate(dateRange.end)}.txt';
     final file = await _writeTemp(filename, buf.toString());
-    await Share.shareXFiles(
-      [XFile(file.path)],
+    await SharePlus.instance.share(ShareParams(
+      files: [XFile(file.path)],
       subject: 'Health Report ${_fmtDate(dateRange.start)}–${_fmtDate(dateRange.end)}',
-    );
+    ));
   }
 
   String _fmtDate(DateTime dt) {

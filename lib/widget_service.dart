@@ -1,7 +1,4 @@
 import 'package:home_widget/home_widget.dart';
-import 'package:nowa_runtime/nowa_runtime.dart';
-
-@NowaGenerated()
 class WidgetService {
   void test() {}
 

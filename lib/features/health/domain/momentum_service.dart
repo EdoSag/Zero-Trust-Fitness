@@ -1,5 +1,4 @@
-import 'package:cryptography/cryptography.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
 
 /// Bridges the encrypted daily-metrics rows in [LocalVault] to
@@ -38,10 +37,10 @@ class MomentumService {
 
   /// Today's Momentum using stored history plus today's live [todayPoints].
   static Future<MomentumResult> forToday(
-    SecretKey secretKey, {
+    FitnessVault vault, {
     required int todayPoints,
   }) async {
-    final rows = await LocalVault().fetchDailyMetrics(secretKey);
+    final rows = await vault.fetchDailyMetrics();
     return MomentumEngine.calculate(
       history: historyFromDailyRows(rows),
       today: DateTime.now(),

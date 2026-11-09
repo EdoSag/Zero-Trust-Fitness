@@ -1,80 +1,50 @@
 import 'package:flutter/material.dart';
-import 'package:nowa_runtime/nowa_runtime.dart';
-import 'package:go_router/go_router.dart';
+import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/components/privacy_info_dialog.dart';
 
-@NowaGenerated()
+/// The welcome page, shown once on a new install before sign-in.
 class HomePage extends StatelessWidget {
-  @NowaGenerated({'loader': 'auto-constructor'})
-  const HomePage({super.key});
+  const HomePage({super.key, required this.onGetStarted});
+
+  final VoidCallback onGetStarted;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.health_and_safety,
-                  size: 100,
-                  color: Colors.white,
-                ),
-                const SizedBox(height: 32),
-                Text(
-                  'Zero-Trust Health',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Your data, your keys, your privacy. Securely track and sync your health metrics.',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 64),
-                ElevatedButton(
-                  onPressed: () => context.push('/onboarding'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: theme.colorScheme.primary,
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'Get Started',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => showPrivacyInfoDialog(context),
-                  child: const Text(
-                    'Learn more about Zero-Trust',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ),
-              ],
-            ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: ZtSpacing.xl),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const ZtBrandMark(app: ZtSuite.fitness, size: 96),
+              const SizedBox(height: ZtSpacing.xl),
+              Text(
+                ZtSuite.fitness.fullName,
+                style: theme.textTheme.headlineMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: ZtSpacing.md),
+              Text(
+                'Your data, your keys, your privacy. Track activity, workouts '
+                'and health, encrypted on your phone before anything is synced.',
+                style: theme.textTheme.bodyLarge
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 64),
+              FilledButton(
+                onPressed: onGetStarted,
+                child: const Text('Get started'),
+              ),
+              const SizedBox(height: ZtSpacing.md),
+              TextButton(
+                onPressed: () => showPrivacyInfoDialog(context),
+                child: const Text('Learn more about Zero-Trust'),
+              ),
+            ],
           ),
         ),
       ),

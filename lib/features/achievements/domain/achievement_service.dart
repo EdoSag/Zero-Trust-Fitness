@@ -1,5 +1,4 @@
-import 'package:cryptography/cryptography.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_definition.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/momentum_medals.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
@@ -22,13 +21,13 @@ class AchievementService {
 
   static final AchievementService _instance = AchievementService._();
 
-  Future<Set<String>> fetchUnlockedIds(SecretKey secretKey) async {
-    final rows = await LocalVault().fetchAchievements(secretKey);
+  Future<Set<String>> fetchUnlockedIds(FitnessVault vault) async {
+    final rows = await vault.fetchAchievements();
     return rows.map((r) => r['id']?.toString() ?? '').toSet();
   }
 
-  Future<List<UnlockedAchievement>> fetchUnlocked(SecretKey secretKey) async {
-    final rows = await LocalVault().fetchAchievements(secretKey);
+  Future<List<UnlockedAchievement>> fetchUnlocked(FitnessVault vault) async {
+    final rows = await vault.fetchAchievements();
     final result = <UnlockedAchievement>[];
     for (final row in rows) {
       final id = row['id']?.toString();
@@ -44,16 +43,15 @@ class AchievementService {
     return result;
   }
 
-  Future<List<String>> checkAndUnlockAchievements(SecretKey secretKey) async {
-    final already = await fetchUnlockedIds(secretKey);
-    final allMetrics = await LocalVault().fetchDailyMetrics(secretKey);
+  Future<List<String>> checkAndUnlockAchievements(FitnessVault vault) async {
+    final already = await fetchUnlockedIds(vault);
+    final allMetrics = await vault.fetchDailyMetrics();
     final nowUnlocked = <String>[];
 
     Future<void> unlock(String id) async {
-      await LocalVault().insertAchievementIfAbsent(
+      await vault.insertAchievementIfAbsent(
         id,
         DateTime.now().toUtc(),
-        secretKey,
       );
       nowUnlocked.add(id);
     }
