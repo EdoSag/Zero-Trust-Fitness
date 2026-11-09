@@ -392,7 +392,10 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     }
   }
 
-  Future<void> _loadDailyMetrics() async {
+  /// With [refreshToday], today's headline numbers follow the vault too
+  /// (a synced edit or a delete), unless the import failed and Health
+  /// Connect values are only on screen.
+  Future<void> _loadDailyMetrics({bool refreshToday = false}) async {
     final vault = ref.read(openFitnessVaultProvider);
     if (vault == null) {
       if (!mounted) return;
@@ -405,7 +408,10 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       if (!mounted) return;
       setState(() {
         _dailyMetrics = rows;
-        if (_todayMetrics.isEmpty && fallbackToday.isNotEmpty) {
+        if (refreshToday && !widget.legacyImportFailed) {
+          _todayMetrics = fallbackToday;
+          _heartPointsTotal = (fallbackToday['heart_points'])?.toInt() ?? 0;
+        } else if (_todayMetrics.isEmpty && fallbackToday.isNotEmpty) {
           _todayMetrics = fallbackToday;
           _heartPointsTotal =
               (fallbackToday['heart_points'])?.toInt() ?? _heartPointsTotal;
@@ -837,7 +843,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     _reloadDebounce = Timer(const Duration(milliseconds: 400), () async {
       if (!mounted) return;
       await _loadRecentActivities();
-      await _loadDailyMetrics();
+      await _loadDailyMetrics(refreshToday: true);
       final vault = ref.read(openFitnessVaultProvider);
       if (vault != null) {
         final medals = await AchievementService().fetchUnlocked(vault);

@@ -131,14 +131,19 @@ class ExportService {
       String jsonContent, FitnessVault vault) async {
     final decoded = jsonDecode(jsonContent) as Map;
 
-    // Workouts: added unless the same workout (type and start) is there.
+    // Workouts: added unless the same workout (type and start) is there,
+    // whatever id it has here.
     final workoutsRaw = decoded['workouts'];
     if (workoutsRaw is List) {
+      final present = {
+        for (final w in await vault.fetchWorkouts())
+          await vault.legacyWorkoutId(w.data),
+      };
       for (final item in workoutsRaw) {
         if (item is! Map) continue;
         final data = item.map((k, v) => MapEntry('$k', v));
         final id = await vault.legacyWorkoutId(data);
-        if (await FitnessVault.workouts.get(vault.store, id) != null) continue;
+        if (!present.add(id)) continue;
         await vault.saveWorkout(data, id: id);
       }
     }
