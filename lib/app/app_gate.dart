@@ -171,12 +171,24 @@ class _AppGateState extends ConsumerState<AppGate> with WidgetsBindingObserver {
       );
     }
 
-    // Any touch counts as activity for auto-lock.
-    return Listener(
-      onPointerDown: (_) => ref.read(vaultControllerProvider.notifier).touch(),
-      child: const _FitnessHome(),
-    );
+    return const _FitnessHome();
   }
+}
+
+/// Counts any touch as activity for auto-lock. Goes in
+/// `MaterialApp.builder`, above the navigator, so touches on pushed screens
+/// (an editor, Settings) count too and the app doesn't lock mid-edit.
+class AutoLockActivity extends ConsumerWidget {
+  const AutoLockActivity({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Listener(
+        onPointerDown: (_) =>
+            ref.read(vaultControllerProvider.notifier).touch(),
+        child: child,
+      );
 }
 
 /// The dashboard once the vault's store is open and data from earlier
