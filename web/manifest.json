@@ -1,6 +1,6 @@
 {
-    "name": "zerotrust_fitness",
-    "short_name": "zerotrust_fitness",
+    "name": "Zero-Trust Fitness",
+    "short_name": "ZT Fitness",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

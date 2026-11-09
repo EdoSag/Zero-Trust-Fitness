@@ -25,7 +25,7 @@ concurrency:
 
 env:
   APP_SLUG: zero-trust-fitness
-  APP_TITLE: Zero Trust Fitness
+  APP_TITLE: Zero-Trust Fitness
 
 jobs:
   apk:

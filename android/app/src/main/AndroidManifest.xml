@@ -25,7 +25,7 @@
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"/>
 
     <application
-        android:label="Zero-Trust Fitness"
+        android:label="ZT Fitness"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
@@ -56,7 +56,7 @@
         <receiver
             android:name=".FitnessWidgetProvider"
             android:exported="false"
-            android:label="Zero-Trust Fitness">
+            android:label="ZT Fitness">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
