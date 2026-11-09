@@ -38,6 +38,12 @@ class GoalsNotifier extends AsyncNotifier<GoalsState> {
   Future<GoalsState> build() async {
     final vault = ref.watch(openFitnessVaultProvider);
     if (vault == null) return const GoalsState(goals: {});
+    // Goals changed on another device, or by a restore, show up too.
+    ref.listen(fitnessVaultChangesProvider, (_, next) async {
+      if (next is! AsyncData) return;
+      final goals = await _fetch(vault);
+      if (ref.mounted) state = AsyncData(goals);
+    });
     return _fetch(vault);
   }
 
