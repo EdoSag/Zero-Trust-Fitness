@@ -8,6 +8,7 @@ class FakeSink implements HealthWorkoutSink {
   final writes = <(String, DateTime, DateTime, double?)>[];
   final deletes = <(DateTime, DateTime)>[];
   bool grant = true;
+  bool deleteWorks = true;
 
   @override
   Future<bool> requestWriteAccess() async => grant;
@@ -26,7 +27,7 @@ class FakeSink implements HealthWorkoutSink {
   @override
   Future<bool> delete({required DateTime start, required DateTime end}) async {
     deletes.add((start, end));
-    return true;
+    return deleteWorks;
   }
 }
 
@@ -75,6 +76,19 @@ void main() {
     expect(sink.deletes, hasLength(2));
     await wb.remove('a');
     expect(sink.deletes, hasLength(2), reason: 'nothing left to remove');
+  });
+
+  test('a failed delete keeps the record tracked and writes no duplicate',
+      () async {
+    await wb.enable();
+    await wb.sync('a', run);
+    sink.deleteWorks = false;
+    expect(await wb.sync('a', {...run, 'duration': 40}), isFalse);
+    expect(sink.writes, hasLength(1));
+    await wb.remove('a');
+    sink.deleteWorks = true;
+    await wb.remove('a');
+    expect(sink.deletes, hasLength(3), reason: 'still removable later');
   });
 
   test('backfill copies logged workouts once, skipping imported ones',

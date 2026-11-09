@@ -1,7 +1,7 @@
 name: zerotrust_fitness
 description: Zero-Trust Fitness, end-to-end encrypted activity and health tracking.
 publish_to: none
-version: 0.4.0+6
+version: 0.4.1+7
 environment:
   sdk: ^3.8.0
 

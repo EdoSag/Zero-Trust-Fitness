@@ -143,7 +143,13 @@ class HealthWriteback {
       if (!await isEnabled || !isWritable(data)) return false;
       final written = await _written();
       if (written[id] case [final s, final e]) {
-        await _sink.delete(start: DateTime.parse(s), end: DateTime.parse(e));
+        // Writing the edit before the old record is gone would leave two;
+        // keep the old range so a later try can still remove it.
+        final removed = await _sink.delete(
+            start: DateTime.parse(s), end: DateTime.parse(e));
+        if (!removed) return false;
+        written.remove(id);
+        await _save(written);
       }
       final start = DateTime.parse(data['timestamp'].toString());
       final end = start.add(Duration(minutes: (data['duration'] as num).toInt()));
@@ -170,10 +176,13 @@ class HealthWriteback {
   Future<void> remove(String id) async {
     try {
       final written = await _written();
-      final range = written.remove(id);
+      final range = written[id];
       if (range == null) return;
-      await _sink.delete(
+      final removed = await _sink.delete(
           start: DateTime.parse(range[0]), end: DateTime.parse(range[1]));
+      // On failure the range is kept, so the record can still be removed.
+      if (!removed) return;
+      written.remove(id);
       await _save(written);
     } on Object catch (e) {
       debugPrint('Health write-back delete failed: $e');

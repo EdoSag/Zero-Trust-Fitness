@@ -154,7 +154,52 @@ void main() {
     });
   });
 
+  test('typed-in Heart Points are tracked apart from workout points',
+      () async {
+    final v = testVault();
+    await v.mergeDailyMetrics(
+        dateKey: '2026-11-09', incoming: {'heart_points': 5});
+    await v.logWorkout({
+      'type': 'Running',
+      'duration': 10,
+      'intensity': 8,
+      'timestamp': monday,
+    });
+    final m = await _day(v, '2026-11-09');
+    expect(FitnessVault.enteredHeartPoints(m), 5);
+    expect(m['heart_points'], 25);
+    // A rescore that drops the workout's share (Health Connect has it)
+    // keeps what was typed in.
+    await v.syncFromHealthConnect(
+        dateKey: '2026-11-09',
+        hcMetrics: {'heart_points': 20},
+        manualContributions: {
+          'heart_points': 0 + FitnessVault.enteredHeartPoints(m),
+        });
+    expect((await _day(v, '2026-11-09'))['heart_points'], 25);
+    final entry = (await v.fetchManualEntries()).single;
+    expect(entry.value, 5);
+    await v.editManualEntry(entry, 7);
+    expect(
+        FitnessVault.enteredHeartPoints(await _day(v, '2026-11-09')), 7);
+  });
+
   group('importDayTotals', () {
+    test('an export total that includes hand-entered steps adds only the '
+        'missing part', () async {
+      final v = testVault();
+      await v.mergeDailyMetrics(
+          dateKey: '2026-11-07', incoming: {'steps': 5000});
+      await v.importDayTotals('2026-11-07', {'steps': 5000});
+      expect((await _day(v, '2026-11-07'))['steps'], 5000);
+      await v.importDayTotals('2026-11-07', {'steps': 7000});
+      final m = await _day(v, '2026-11-07');
+      expect(m['steps'], 7000);
+      expect(m['steps_manual'], 5000);
+      expect(m['steps_hc'], 2000);
+    });
+
+
     test('raises additive totals and fills missing readings only', () async {
       final v = testVault();
       await v.syncFromHealthConnect(
