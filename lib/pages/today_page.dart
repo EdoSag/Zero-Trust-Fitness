@@ -348,6 +348,8 @@ class TodayPage extends StatelessWidget {
               ),
       ),
       floatingActionButton: FloatingActionButton(
+        // Today and Activities are both kept alive in the tab stack.
+        heroTag: 'fab-today',
         onPressed: onManualEntry,
         tooltip: 'Log a workout or health metric',
         backgroundColor: theme.colorScheme.primary,
