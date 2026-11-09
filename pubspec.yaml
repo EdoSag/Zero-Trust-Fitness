@@ -1,7 +1,7 @@
 name: zerotrust_fitness
 description: Zero-Trust Fitness, end-to-end encrypted activity and health tracking.
 publish_to: none
-version: 0.3.0+4
+version: 0.3.1+5
 environment:
   sdk: ^3.8.0
 
@@ -27,7 +27,6 @@ dependencies:
   supabase_flutter: ^2.10.0
   sqlite3: ^3.7.0
   cryptography: ^2.7.0
-  cryptography_flutter: ^2.3.4
   flutter_secure_storage: ^11.2.0
   shared_preferences: ^2.5.3
   flutter_dotenv: ^5.1.0
