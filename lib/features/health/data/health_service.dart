@@ -54,12 +54,27 @@ class HealthService {
       return const <HealthDataPoint>[];
     }
 
-    return await _health.getHealthDataFromTypes(
+    final points = await _health.getHealthDataFromTypes(
       types: dataTypes,
       startTime: startTime,
       endTime: now,
     );
+    return withoutOwnRecords(points);
   }
+
+  /// This app's package / bundle id, as Health Connect and HealthKit report
+  /// the source of records it wrote.
+  static const ownSourceId = 'dev.sagron.zerotrustfitness';
+
+  /// Drops records this app wrote (workouts copied by Health write-back):
+  /// the vault already has them, so reading them back would count their
+  /// Heart Points twice.
+  static List<HealthDataPoint> withoutOwnRecords(
+          List<HealthDataPoint> points) =>
+      [
+        for (final p in points)
+          if (p.sourceId != ownSourceId) p,
+      ];
 
   /// This checks if Health Connect is installed/available on Android.
   /// On iOS, it will generally return true as HealthKit is a system service.

@@ -7,7 +7,9 @@ import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/achievements_page.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/medal_chip.dart';
+import 'package:zerotrust_fitness/features/health/data/health_writeback.dart';
 import 'package:zerotrust_fitness/pages/export_restore_page.dart';
+import 'package:zerotrust_fitness/pages/google_fit_import_page.dart';
 import 'package:zerotrust_fitness/pages/goals_page.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
 import 'package:zerotrust_fitness/pages/privacy_dashboard_page.dart';
@@ -38,6 +40,66 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
   DistanceUnit _distanceUnit = UnitsFormatter().distanceUnit;
   TimeFormat _timeFormat = UnitsFormatter().timeFormat;
   bool _deleting = false;
+  bool _writeback = false;
+  bool _writebackBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    HealthWriteback.instance.isEnabled.then((on) {
+      if (mounted) setState(() => _writeback = on);
+    });
+  }
+
+  Future<void> _setWriteback(bool on) async {
+    final healthName = Theme.of(context).platform == TargetPlatform.iOS
+        ? 'Apple Health'
+        : 'Health Connect';
+    setState(() => _writebackBusy = true);
+    try {
+      if (!on) {
+        await HealthWriteback.instance.disable();
+        if (mounted) setState(() => _writeback = false);
+        return;
+      }
+      final granted = await ref
+          .read(vaultControllerProvider.notifier)
+          .whileShowingSystemUi(HealthWriteback.instance.enable);
+      if (!mounted) return;
+      setState(() => _writeback = granted);
+      if (!granted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('$healthName didn\'t allow Fitness to save workouts.')));
+        return;
+      }
+      final vault = ref.read(openFitnessVaultProvider);
+      if (vault == null) return;
+      final copyPast = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Copy past workouts too?'),
+          content: Text('New workouts are saved to $healthName from now on. '
+              'Fitness can also copy the workouts already in your journal.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Only new ones')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Copy them')),
+          ],
+        ),
+      );
+      if (copyPast != true) return;
+      final count = await HealthWriteback.instance.backfill(vault);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Copied $count workouts to $healthName.')));
+      }
+    } finally {
+      if (mounted) setState(() => _writebackBusy = false);
+    }
+  }
 
   List<UnlockedAchievement> get _medals => widget.earnedMedals;
 
@@ -287,6 +349,16 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
             MaterialPageRoute<void>(builder: (_) => const PermissionsPage()),
           ),
         ),
+        SwitchListTile(
+          secondary: const Icon(Icons.sync_alt),
+          title: Text(Theme.of(context).platform == TargetPlatform.iOS
+              ? 'Save workouts to Apple Health'
+              : 'Save workouts to Health Connect'),
+          subtitle: const Text(
+              'Workouts you log or record here show up in your other apps'),
+          value: _writeback,
+          onChanged: _writebackBusy || !unlocked ? null : _setWriteback,
+        ),
         ListTile(
           leading: const Icon(Icons.straighten_outlined),
           title: const Text('Units & format'),
@@ -310,6 +382,13 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
           subtitle: const Text('Back up to a file or bring a backup back in'),
           enabled: unlocked,
           onTap: () => _push((v) => ExportRestorePage(vault: v)),
+        ),
+        ListTile(
+          leading: const Icon(Icons.move_to_inbox_outlined),
+          title: const Text('Import from Google Fit'),
+          subtitle: const Text('Your history from a Google Takeout export'),
+          enabled: unlocked,
+          onTap: () => _push((v) => GoogleFitImportPage(vault: v)),
         ),
         ListTile(
           leading: const Icon(Icons.share_outlined),

@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   dynamic_color
   flutter_secure_storage_windows
+  flutter_tts
   geolocator_windows
   local_auth_windows
   share_plus
