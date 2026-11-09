@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_definition.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/achievement_detail_bottom_sheet.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/medal_card.dart';
-import 'package:zerotrust_fitness/features/app/providers.dart';
+import 'package:zerotrust_fitness/app/vault_providers.dart';
 
 enum _AchievementFilter { all, unlocked, locked }
 
@@ -29,14 +28,14 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
   }
 
   Future<void> _loadAchievements() async {
-    final secretKey = ref.read(securityEnclaveProvider);
-    if (secretKey == null) {
+    final vault = ref.read(openFitnessVaultProvider);
+    if (vault == null) {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
     final results = await Future.wait([
-      AchievementService().fetchUnlocked(secretKey),
-      LocalVault().fetchDailyMetrics(secretKey),
+      AchievementService().fetchUnlocked(vault),
+      vault.fetchDailyMetrics(),
     ]);
     if (!mounted) return;
     setState(() {

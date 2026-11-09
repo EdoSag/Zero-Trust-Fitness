@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nowa_runtime/nowa_runtime.dart';
-
-@NowaGenerated()
 class HeroRing extends StatelessWidget {
-  @NowaGenerated({'loader': 'auto-constructor'})
   const HeroRing({
     super.key,
     required this.label,

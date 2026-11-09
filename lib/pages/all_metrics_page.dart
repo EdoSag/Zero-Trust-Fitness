@@ -1,5 +1,5 @@
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/components/compact_metric_card.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
 import 'package:zerotrust_fitness/pages/metric_detail_page.dart';
@@ -9,12 +9,12 @@ class AllMetricsPage extends StatelessWidget {
     super.key,
     required this.todayMetrics,
     required this.onManualEntry,
-    this.secretKey,
+    this.vault,
   });
 
   final Map<String, num> todayMetrics;
   final VoidCallback onManualEntry;
-  final SecretKey? secretKey;
+  final FitnessVault? vault;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class AllMetricsPage extends StatelessWidget {
           runSpacing: 10,
           children: metricCardSpecs.map((spec) {
             final rawValue = todayMetrics[spec.key] ?? 0;
-            final sk = secretKey;
+            final sk = vault;
             return SizedBox(
               width: (MediaQuery.of(context).size.width - 60) / 2,
               child: CompactMetricCard(
@@ -44,7 +44,7 @@ class AllMetricsPage extends StatelessWidget {
                               metricTitle: spec.title,
                               unit: spec.unit,
                               gradientColors: spec.gradientColors,
-                              secretKey: sk,
+                              vault: sk,
                             ),
                           ),
                         ),

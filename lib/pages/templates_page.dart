@@ -1,14 +1,11 @@
-import 'dart:convert';
 
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
-import 'package:zerotrust_fitness/core/security/encryption_service.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 
 class TemplatesPage extends StatefulWidget {
-  const TemplatesPage({super.key, required this.secretKey});
+  const TemplatesPage({super.key, required this.vault});
 
-  final SecretKey secretKey;
+  final FitnessVault vault;
 
   @override
   State<TemplatesPage> createState() => _TemplatesPageState();
@@ -30,23 +27,18 @@ class _TemplatesPageState extends State<TemplatesPage> {
 
   Future<void> _load() async {
     try {
-      final rows = await LocalVault().fetchTemplates(widget.secretKey);
-      final templates = <_Template>[];
-      for (final row in rows) {
-        try {
-          final decrypted = await EncryptionService()
-              .decryptString(row['encrypted_data'] as String, widget.secretKey);
-          final data = jsonDecode(decrypted) as Map<String, dynamic>;
-          templates.add(_Template(
-            id: row['id'] as int,
-            name: row['name'] as String,
-            activityType: row['activity_type'] as String,
-            durationMinutes: (data['duration_minutes'] as num?)?.toInt() ?? 30,
-            intensity: (data['intensity'] as num?)?.toInt() ?? 5,
-            notes: data['notes'] as String? ?? '',
-          ));
-        } catch (_) {}
-      }
+      final rows = await widget.vault.fetchTemplates();
+      final templates = [
+        for (final t in rows)
+          _Template(
+            id: t.id,
+            name: t.name,
+            activityType: t.activityType,
+            durationMinutes: (t.data['duration_minutes'] as num?)?.toInt() ?? 30,
+            intensity: (t.data['intensity'] as num?)?.toInt() ?? 5,
+            notes: t.data['notes'] as String? ?? '',
+          ),
+      ];
       if (mounted) setState(() { _templates = templates; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -184,29 +176,16 @@ class _TemplatesPageState extends State<TemplatesPage> {
     required int intensity,
     required String notes,
   }) async {
-    final data = jsonEncode({
-      'duration_minutes': durationMinutes,
-      'intensity': intensity,
-      'notes': notes,
-    });
-    final encrypted =
-        await EncryptionService().encryptString(data, widget.secretKey);
-    if (existing == null) {
-      await LocalVault().saveTemplate(
-        name: name,
-        activityType: activityType,
-        encryptedData: encrypted,
-        secretKey: widget.secretKey,
-      );
-    } else {
-      await LocalVault().updateTemplate(
-        id: existing.id,
-        name: name,
-        activityType: activityType,
-        encryptedData: encrypted,
-        secretKey: widget.secretKey,
-      );
-    }
+    await widget.vault.saveTemplate(
+      id: existing?.id,
+      name: name,
+      activityType: activityType,
+      data: {
+        'duration_minutes': durationMinutes,
+        'intensity': intensity,
+        'notes': notes,
+      },
+    );
     await _load();
   }
 
@@ -230,7 +209,7 @@ class _TemplatesPageState extends State<TemplatesPage> {
       ),
     );
     if (confirmed == true) {
-      await LocalVault().deleteTemplate(t.id, widget.secretKey);
+      await widget.vault.deleteTemplate(t.id);
       await _load();
     }
   }
@@ -308,7 +287,7 @@ class _Template {
     required this.notes,
   });
 
-  final int id;
+  final String id;
   final String name;
   final String activityType;
   final int durationMinutes;

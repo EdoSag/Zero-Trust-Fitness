@@ -1,9 +1,8 @@
-import 'package:cryptography/cryptography.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zerotrust_fitness/components/empty_state_widget.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
 import 'package:zerotrust_fitness/pages/goals_page.dart';
 
@@ -14,14 +13,14 @@ class MetricDetailPage extends ConsumerStatefulWidget {
     required this.metricTitle,
     required this.unit,
     required this.gradientColors,
-    required this.secretKey,
+    required this.vault,
   });
 
   final String metricKey;
   final String metricTitle;
   final String unit;
   final List<Color> gradientColors;
-  final SecretKey secretKey;
+  final FitnessVault vault;
 
   @override
   ConsumerState<MetricDetailPage> createState() => _MetricDetailPageState();
@@ -39,7 +38,7 @@ class _MetricDetailPageState extends ConsumerState<MetricDetailPage> {
 
   Future<void> _load() async {
     try {
-      final rows = await LocalVault().fetchDailyMetrics(widget.secretKey);
+      final rows = await widget.vault.fetchDailyMetrics();
       if (mounted) setState(() { _dailyMetrics = rows; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);

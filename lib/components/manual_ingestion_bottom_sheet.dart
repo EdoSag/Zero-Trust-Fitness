@@ -1,12 +1,8 @@
-import 'dart:convert';
 import 'dart:ui';
 
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:nowa_runtime/nowa_runtime.dart';
-import 'package:zerotrust_fitness/core/security/encryption_service.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/heart_point_calculator.dart';
 
@@ -222,13 +218,10 @@ class _TemplateData {
   final int durationMinutes;
   final int intensity;
 }
-
-@NowaGenerated()
 class ManualIngestionBottomSheet extends StatefulWidget {
-  @NowaGenerated({'loader': 'auto-constructor'})
   const ManualIngestionBottomSheet({
     super.key,
-    required this.secretKey,
+    required this.vault,
     this.existingWorkoutId,
     this.initialActivityType,
     this.initialDurationMinutes,
@@ -236,11 +229,11 @@ class ManualIngestionBottomSheet extends StatefulWidget {
     this.initialTimestamp,
   });
 
-  final SecretKey? secretKey;
+  final FitnessVault? vault;
 
   /// When non-null, the sheet is in edit mode: it pre-fills from the values
   /// below and calls updateWorkout instead of saveWorkout.
-  final int? existingWorkoutId;
+  final String? existingWorkoutId;
   final String? initialActivityType;
   final int? initialDurationMinutes;
   final double? initialIntensity;
@@ -251,8 +244,6 @@ class ManualIngestionBottomSheet extends StatefulWidget {
     return _ManualIngestionBottomSheetState();
   }
 }
-
-@NowaGenerated()
 class _ManualIngestionBottomSheetState
     extends State<ManualIngestionBottomSheet>
     with SingleTickerProviderStateMixin {
@@ -307,25 +298,20 @@ class _ManualIngestionBottomSheetState
   }
 
   Future<void> _loadAvailableTemplates() async {
-    final sk = widget.secretKey;
-    if (sk == null) return;
+    final vault = widget.vault;
+    if (vault == null) return;
     try {
-      final rows = await LocalVault().fetchTemplates(sk);
-      final list = <_TemplateData>[];
-      for (final row in rows) {
-        try {
-          final dec = await EncryptionService()
-              .decryptString(row['encrypted_data'] as String, sk);
-          final data = jsonDecode(dec) as Map<String, dynamic>;
-          list.add(_TemplateData(
-            name: row['name'] as String,
-            activityType: row['activity_type'] as String,
+      final templates = await vault.fetchTemplates();
+      final list = [
+        for (final t in templates)
+          _TemplateData(
+            name: t.name,
+            activityType: t.activityType,
             durationMinutes:
-                (data['duration_minutes'] as num?)?.toInt() ?? 30,
-            intensity: (data['intensity'] as num?)?.toInt() ?? 5,
-          ));
-        } catch (_) {}
-      }
+                (t.data['duration_minutes'] as num?)?.toInt() ?? 30,
+            intensity: (t.data['intensity'] as num?)?.toInt() ?? 5,
+          ),
+      ];
       if (mounted) setState(() => _availableTemplates = list);
     } catch (_) {}
   }
@@ -472,8 +458,8 @@ class _ManualIngestionBottomSheetState
     HapticFeedback.mediumImpact();
 
     try {
-      final secretKey = widget.secretKey;
-      if (secretKey == null) {
+      final vault = widget.vault;
+      if (vault == null) {
         throw StateError('Vault is locked. Unlock before saving data.');
       }
 
@@ -494,22 +480,12 @@ class _ManualIngestionBottomSheetState
           'intensity': intensity,
           'timestamp': _selectedDateTime.toIso8601String(),
         };
-        final encryptedBlob = await EncryptionService().encryptString(
-          jsonEncode(workoutData),
-          secretKey,
-        );
-        final existingId = widget.existingWorkoutId;
-        if (existingId != null) {
-          await LocalVault().updateWorkout(existingId, encryptedBlob, secretKey);
-        } else {
-          await LocalVault().saveWorkout(encryptedBlob, secretKey);
-        }
+        await vault.saveWorkout(workoutData, id: widget.existingWorkoutId);
 
         if (heartPts > 0) {
-          await LocalVault().mergeDailyMetrics(
+          await vault.mergeDailyMetrics(
             dateKey: dateKey,
-            incoming: {'heart_points': heartPts},
-            secretKey: secretKey,
+            incoming: {'heart_points': heartPts}
           );
         }
       }
@@ -524,16 +500,15 @@ class _ManualIngestionBottomSheetState
           }
         }
         if (incoming.isNotEmpty) {
-          await LocalVault().mergeDailyMetrics(
+          await vault.mergeDailyMetrics(
             dateKey: dateKey,
-            incoming: incoming,
-            secretKey: secretKey,
+            incoming: incoming
           );
         }
       }
 
       final newMedals =
-          await AchievementService().checkAndUnlockAchievements(secretKey);
+          await AchievementService().checkAndUnlockAchievements(vault);
 
       if (mounted) {
         Navigator.pop(context, newMedals);
@@ -719,7 +694,7 @@ class _ManualIngestionBottomSheetState
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
       children: [
-        if (widget.secretKey != null)
+        if (widget.vault != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: OutlinedButton.icon(

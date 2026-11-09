@@ -1,6 +1,7 @@
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:zero_trust_core/zero_trust_core.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/components/compact_metric_card.dart';
 import 'package:zerotrust_fitness/components/empty_state_widget.dart';
 import 'package:zerotrust_fitness/components/shimmer_loader.dart';
@@ -22,20 +23,16 @@ class TodayPage extends StatelessWidget {
     required this.heartPointsTotal,
     this.momentum,
     required this.isLoading,
-    required this.isSyncing,
-    required this.isPulling,
+    required this.syncStatus,
     required this.gpsSnapshot,
-    required this.secretKey,
+    required this.vault,
     required this.unreadableMetricKeys,
     required this.onToggleGps,
     required this.onManualEntry,
     required this.onRefresh,
-    required this.onSync,
-    required this.onPull,
     required this.onOpenPermissions,
     required this.onLock,
     this.goalsState,
-    this.lastBackupAt,
     this.streaks,
     this.weeklySteps,
   });
@@ -46,30 +43,19 @@ class TodayPage extends StatelessWidget {
   /// Null while the vault is locked.
   final MomentumResult? momentum;
   final bool isLoading;
-  final bool isSyncing;
-  final bool isPulling;
+  /// The core's shared sync status.
+  final SyncStatus syncStatus;
   final GpsTrackingSnapshot gpsSnapshot;
-  final SecretKey? secretKey;
+  final FitnessVault? vault;
   final Set<String> unreadableMetricKeys;
   final Future<void> Function() onToggleGps;
   final VoidCallback onManualEntry;
   final Future<void> Function() onRefresh;
-  final Future<void> Function() onSync;
-  final Future<void> Function() onPull;
   final VoidCallback onOpenPermissions;
   final VoidCallback onLock;
   final GoalsState? goalsState;
-  final DateTime? lastBackupAt;
   final StreakResult? streaks;
   final WeeklyComparison? weeklySteps;
-
-  String _formatBackupAge(DateTime backupAt) {
-    final diff = DateTime.now().difference(backupAt);
-    if (diff.inMinutes < 1) return 'Backed up just now';
-    if (diff.inHours < 1) return 'Backed up ${diff.inMinutes}m ago';
-    if (diff.inDays < 1) return 'Backed up ${diff.inHours}h ago';
-    return 'Backed up ${diff.inDays}d ago';
-  }
 
   String _formatElapsed(Duration duration) {
     final mins = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -79,12 +65,16 @@ class TodayPage extends StatelessWidget {
 
   Widget _buildStatusRow(BuildContext context) {
     final theme = Theme.of(context);
-    final isUnlocked = secretKey != null;
-    final syncStatus = isSyncing
-        ? 'Syncing...'
-        : isPulling
-            ? 'Pulling...'
-            : 'Idle';
+    final isUnlocked = vault != null;
+    final syncing = syncStatus.isSyncing;
+    final failed = syncStatus.error != null;
+    final syncLabel = syncing
+        ? 'Syncing…'
+        : failed
+            ? 'Not synced'
+            : syncStatus.lastSyncedAt != null
+                ? 'Synced'
+                : 'Sync pending';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -105,13 +95,17 @@ class TodayPage extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           StatusIndicator(
-            icon: isSyncing || isPulling
+            icon: syncing
                 ? Icons.cloud_sync_outlined
-                : Icons.cloud_done_outlined,
-            label: syncStatus,
-            color: isSyncing || isPulling
+                : failed
+                    ? Icons.cloud_off_outlined
+                    : Icons.cloud_done_outlined,
+            label: syncLabel,
+            color: syncing
                 ? theme.colorScheme.primary
-                : theme.hintColor,
+                : failed
+                    ? theme.colorScheme.error
+                    : theme.hintColor,
           ),
           if (gpsSnapshot.isTracking) ...[
             const SizedBox(width: 16),
@@ -120,15 +114,6 @@ class TodayPage extends StatelessWidget {
               label: 'GPS active',
               color: Colors.green,
               semanticsLabel: 'GPS tracking is active',
-            ),
-          ],
-          if (lastBackupAt != null) ...[
-            const SizedBox(width: 16),
-            StatusIndicator(
-              icon: Icons.cloud_done_outlined,
-              label: _formatBackupAge(lastBackupAt!),
-              color: theme.hintColor,
-              semanticsLabel: 'Last backup ${_formatBackupAge(lastBackupAt!)}',
             ),
           ],
         ],
@@ -182,7 +167,7 @@ class TodayPage extends StatelessWidget {
                   builder: (_) => AllMetricsPage(
                     todayMetrics: todayMetrics,
                     onManualEntry: onManualEntry,
-                    secretKey: secretKey,
+                    vault: vault,
                   ),
                 ),
               ),
@@ -207,7 +192,7 @@ class TodayPage extends StatelessWidget {
               );
             }
             final progress = goalsState?.progressFor(spec.key, rawValue);
-            final sk = secretKey;
+            final sk = vault;
             return SizedBox(
               width: (MediaQuery.of(context).size.width - 60) / 2,
               child: CompactMetricCard(
@@ -225,7 +210,7 @@ class TodayPage extends StatelessWidget {
                               metricTitle: spec.title,
                               unit: spec.unit,
                               gradientColors: spec.gradientColors,
-                              secretKey: sk,
+                              vault: sk,
                             ),
                           ),
                         ),
@@ -308,7 +293,7 @@ class TodayPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Zero-Trust Health'),
+        title: const Text('Zero-Trust Fitness'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),

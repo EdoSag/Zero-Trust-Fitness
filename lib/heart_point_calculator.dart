@@ -1,9 +1,7 @@
-import 'package:nowa_runtime/nowa_runtime.dart';
 import 'package:zerotrust_fitness/features/health/domain/heart_points_engine.dart';
 
 /// Legacy facade kept for existing callers. All thresholds live in
 /// [HeartPointsEngine]; prefer `HeartPointsService.forDay` for daily totals.
-@NowaGenerated()
 class HeartPointCalculator {
   static double calculateMaxHeartRate(int age) {
     return HeartPointsEngine.maxHeartRate(age);

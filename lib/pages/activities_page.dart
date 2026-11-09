@@ -1,5 +1,5 @@
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/components/empty_state_widget.dart';
 
 enum _ActivityFilter { all, manual, auto }
@@ -11,7 +11,7 @@ class ActivitiesPage extends StatefulWidget {
     required this.isLoading,
     required this.onManualEntry,
     required this.onRefresh,
-    required this.secretKey,
+    required this.vault,
     required this.onEditActivity,
     required this.onDeleteActivity,
   });
@@ -20,9 +20,9 @@ class ActivitiesPage extends StatefulWidget {
   final bool isLoading;
   final VoidCallback onManualEntry;
   final Future<void> Function() onRefresh;
-  final SecretKey? secretKey;
-  final Future<void> Function(int id, Map<String, dynamic> data) onEditActivity;
-  final Future<void> Function(int id) onDeleteActivity;
+  final FitnessVault? vault;
+  final Future<void> Function(String id, Map<String, dynamic> data) onEditActivity;
+  final Future<void> Function(String id) onDeleteActivity;
 
   @override
   State<ActivitiesPage> createState() => _ActivitiesPageState();
@@ -132,7 +132,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
     }).toList();
   }
 
-  Future<void> _confirmDelete(int id) async {
+  Future<void> _confirmDelete(String id) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -214,7 +214,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
         ));
       }
       final isManual = _isManual(activity);
-      final id = activity['_id'] as int?;
+      final id = activity['_id'] as String?;
       rows.add(Card(
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
@@ -250,7 +250,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                   ),
                 ),
               ),
-              if (isManual && id != null && widget.secretKey != null) ...[
+              if (isManual && id != null && widget.vault != null) ...[
                 const SizedBox(width: 4),
                 PopupMenuButton<_ActivityMenuAction>(
                   icon: const Icon(Icons.more_vert, size: 18),

@@ -1,7 +1,6 @@
-import 'package:cryptography/cryptography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
-import 'package:zerotrust_fitness/features/app/providers.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
+import 'package:zerotrust_fitness/app/vault_providers.dart';
 
 /// A goal stored by the user. [period] is either 'daily' or 'weekly'.
 class UserGoal {
@@ -37,13 +36,13 @@ class GoalsState {
 class GoalsNotifier extends AsyncNotifier<GoalsState> {
   @override
   Future<GoalsState> build() async {
-    final secretKey = ref.watch(securityEnclaveProvider);
-    if (secretKey == null) return const GoalsState(goals: {});
-    return _fetch(secretKey);
+    final vault = ref.watch(openFitnessVaultProvider);
+    if (vault == null) return const GoalsState(goals: {});
+    return _fetch(vault);
   }
 
-  Future<GoalsState> _fetch(SecretKey secretKey) async {
-    final rows = await LocalVault().fetchGoals(secretKey);
+  Future<GoalsState> _fetch(FitnessVault vault) async {
+    final rows = await vault.fetchGoals();
     final map = <String, UserGoal>{};
     for (final row in rows) {
       final key = row['metric_key']?.toString();
@@ -60,22 +59,21 @@ class GoalsNotifier extends AsyncNotifier<GoalsState> {
   }
 
   Future<void> upsert(String metricKey, num targetValue, String period) async {
-    final secretKey = ref.read(securityEnclaveProvider);
-    if (secretKey == null) return;
-    await LocalVault().upsertGoal(
+    final vault = ref.read(openFitnessVaultProvider);
+    if (vault == null) return;
+    await vault.upsertGoal(
       metricKey: metricKey,
       targetValue: targetValue,
-      period: period,
-      secretKey: secretKey,
+      period: period
     );
-    state = AsyncData(await _fetch(secretKey));
+    state = AsyncData(await _fetch(vault));
   }
 
   Future<void> delete(String metricKey) async {
-    final secretKey = ref.read(securityEnclaveProvider);
-    if (secretKey == null) return;
-    await LocalVault().deleteGoal(metricKey, secretKey);
-    state = AsyncData(await _fetch(secretKey));
+    final vault = ref.read(openFitnessVaultProvider);
+    if (vault == null) return;
+    await vault.deleteGoal(metricKey);
+    state = AsyncData(await _fetch(vault));
   }
 }
 

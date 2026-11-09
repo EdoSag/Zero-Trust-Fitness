@@ -1,51 +1,46 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:health/health.dart';
-import 'package:local_auth/local_auth.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:zerotrust_fitness/components/security_barrier.dart';
-import 'package:zerotrust_fitness/components/error_state_widget.dart';
-import 'package:zerotrust_fitness/core/security/encryption_service.dart';
-import 'package:zerotrust_fitness/core/services/supabase_service.dart';
-import 'package:zerotrust_fitness/core/storage/local_vault.dart';
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_definition.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
-import 'package:zerotrust_fitness/features/app/providers.dart';
+import 'package:zerotrust_fitness/app/vault_providers.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
 import 'package:zerotrust_fitness/core/services/insights_service.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
-import 'package:zerotrust_fitness/globals/app_state.dart';
 import 'package:zerotrust_fitness/features/health/domain/heart_points_engine.dart';
 import 'package:zerotrust_fitness/features/health/domain/heart_points_service.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_service.dart';
 import 'package:zerotrust_fitness/components/manual_ingestion_bottom_sheet.dart';
-import 'package:zerotrust_fitness/main.dart';
 import 'package:zerotrust_fitness/pages/activities_page.dart';
 import 'package:zerotrust_fitness/pages/gps_workout_page.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
-import 'package:zerotrust_fitness/pages/profile_page.dart';
+import 'package:zerotrust_fitness/pages/settings_page.dart';
 import 'package:zerotrust_fitness/pages/today_page.dart';
+import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/pages/trends_page.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 
-enum _DeleteDataScope { cloud, local, all }
-
 class BottomNavShell extends ConsumerStatefulWidget {
-  const BottomNavShell({super.key, this.initialIndex = 0});
+  const BottomNavShell({
+    super.key,
+    this.initialIndex = 0,
+    this.legacyImportFailed = false,
+  });
 
   final int initialIndex;
+
+  /// Bringing over data from the previous version failed (offline, say).
+  /// Health Connect refreshes don't write to the vault until it succeeds,
+  /// so they can't hide older entries for the same days.
+  final bool legacyImportFailed;
 
   @override
   ConsumerState<BottomNavShell> createState() => _BottomNavShellState();
@@ -57,9 +52,6 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
 
   // --- data state (moved from _DashboardPageState) ---
   bool _isLoading = false;
-  bool _isSyncing = false;
-  bool _isPulling = false;
-  bool _isDeletingData = false;
   List<HealthDataPoint> _healthData = [];
   List<Map<String, dynamic>> _recentActivities = [];
   final Health _health = Health();
@@ -70,17 +62,14 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   String _selectedTrendMetricKey = 'sleep_asleep_min';
   Set<String> _unreadableMetricKeys = const {};
   List<UnlockedAchievement> _earnedMedals = [];
-  DateTime? _lastBackupAt;
   StreakResult? _streaks;
   WeeklyComparison? _weeklySteps;
   Map<String, double> _baselines = {};
   double? _sleepStepsCorrelation;
 
-  // --- auto-lock ---
-  static const String _kAutoLockKey = 'auto_lock_minutes';
-  int _autoLockMinutes = 5; // 0 = never
-  DateTime _lastInteractionAt = DateTime.now();
-  bool _isObscured = false; // blur overlay when backgrounded
+  bool _isObscured = false; // privacy cover in the app switcher
+  StreamSubscription<Set<String>>? _changes;
+  Timer? _reloadDebounce;
 
   GpsTrackingSnapshot _gpsSnapshot = GpsTrackingSnapshot(
     distanceMeters: 0,
@@ -100,13 +89,24 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       if (!mounted) return;
       setState(() => _gpsSnapshot = snapshot);
     });
-    _loadAutoLockSetting();
     _loadHealthData();
+    _maybeOfferHealthSetup();
+  }
+
+  @override
+  void didUpdateWidget(BottomNavShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The import finished on a retry: write today's Health Connect data now.
+    if (oldWidget.legacyImportFailed && !widget.legacyImportFailed) {
+      _loadHealthData();
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _changes?.cancel();
+    _reloadDebounce?.cancel();
     super.dispose();
   }
 
@@ -117,31 +117,6 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       if (mounted) setState(() => _isObscured = true);
     } else if (state == AppLifecycleState.resumed) {
       if (mounted) setState(() => _isObscured = false);
-      _checkInactivity();
-    }
-  }
-
-  Future<void> _loadAutoLockSetting() async {
-    final prefs = await SharedPreferences.getInstance();
-    final minutes = prefs.getInt(_kAutoLockKey) ?? 5;
-    if (mounted) setState(() => _autoLockMinutes = minutes);
-  }
-
-  Future<void> saveAutoLockSetting(int minutes) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_kAutoLockKey, minutes);
-    if (mounted) setState(() => _autoLockMinutes = minutes);
-  }
-
-  void _resetInteraction() {
-    _lastInteractionAt = DateTime.now();
-  }
-
-  void _checkInactivity() {
-    if (_autoLockMinutes == 0) return;
-    final idle = DateTime.now().difference(_lastInteractionAt);
-    if (idle.inMinutes >= _autoLockMinutes) {
-      ref.read(securityEnclaveProvider.notifier).lock();
     }
   }
 
@@ -205,13 +180,13 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
         _todayMetrics = todayMetrics;
       });
 
-      final secretKey = ref.read(securityEnclaveProvider);
-      if (secretKey != null) {
+      final vault = ref.read(openFitnessVaultProvider);
+      if (vault != null && !widget.legacyImportFailed) {
         final hcWorkoutPoints = todayPoints
             .where((p) => p.type == HealthDataType.WORKOUT)
             .toList(growable: false);
         final manualWorkoutsToday =
-            await _loadTodayManualWorkouts(secretKey);
+            await _loadTodayManualWorkouts(vault);
         final unmatchedManualHp = _computeUnmatchedManualHeartPoints(
           allPoints: deduplicated,
           hcWorkoutPoints: hcWorkoutPoints,
@@ -222,14 +197,13 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
         if (manualWorkoutsToday.isNotEmpty) {
           manualOverrides['heart_points'] = unmatchedManualHp;
         }
-        await LocalVault().syncFromHealthConnect(
+        await vault.syncFromHealthConnect(
           dateKey: _dateKey(DateTime.now()),
           hcMetrics: todayMetrics,
-          manualContributions: manualOverrides,
-          secretKey: secretKey,
+          manualContributions: manualOverrides
         );
-        await _backfillRecentDays(deduplicated, secretKey);
-        final vaultRows = await LocalVault().fetchDailyMetrics(secretKey);
+        await _backfillRecentDays(deduplicated, vault);
+        final vaultRows = await vault.fetchDailyMetrics();
         final combinedToday = _metricsForDate(DateTime.now(), vaultRows);
         if (mounted && combinedToday.isNotEmpty) {
           setState(() {
@@ -239,23 +213,23 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
           });
         }
         final newMedals =
-            await AchievementService().checkAndUnlockAchievements(secretKey);
+            await AchievementService().checkAndUnlockAchievements(vault);
         if (newMedals.isNotEmpty && mounted) {
           _showNewMedalSnackbar(newMedals);
         }
-        _earnedMedals = await AchievementService().fetchUnlocked(secretKey);
+        _earnedMedals = await AchievementService().fetchUnlocked(vault);
       }
 
-      final momentum = secretKey == null
+      final momentum = vault == null
           ? null
           : await MomentumService.forToday(
-              secretKey,
+              vault,
               todayPoints: _heartPointsTotal,
             );
       await WidgetService.updateWidgetData(
         steps: totalSteps,
         heartPoints: _heartPointsTotal,
-        isLocked: secretKey == null,
+        isLocked: vault == null,
         momentum: momentum?.momentum ?? 0,
         momentumLabel: momentum?.label ?? '',
         heartTarget: momentum?.target ?? 0,
@@ -275,7 +249,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   /// Points is raised; manual entries and other metrics are left alone.
   Future<void> _backfillRecentDays(
     List<HealthDataPoint> points,
-    SecretKey secretKey,
+    FitnessVault vault,
   ) async {
     final now = DateTime.now();
     for (var back = 1; back <= HealthService.defaultLookbackDays; back++) {
@@ -284,13 +258,12 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
           .where((p) =>
               p.type == HealthDataType.STEPS && _isSameLocalDay(p.dateFrom, day))
           .fold<int>(0, (sum, p) => sum + _extractNumericValue(p).toInt());
-      await LocalVault().raiseHealthConnectTotals(
+      await vault.raiseHealthConnectTotals(
         dateKey: _dateKey(day),
         hcMetrics: {
           'steps': steps,
           'heart_points': HeartPointsService.forDay(points, day).total,
-        },
-        secretKey: secretKey,
+        }
       );
     }
   }
@@ -346,27 +319,16 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   }
 
   Future<List<Map<String, dynamic>>> _loadTodayManualWorkouts(
-      SecretKey secretKey) async {
-    final encryptedRows = await LocalVault().fetchWorkouts(secretKey);
-    final result = <Map<String, dynamic>>[];
+      FitnessVault vault) async {
     final todayKey = _dateKey(DateTime.now());
-    var scanned = 0;
-    for (final encrypted in encryptedRows) {
-      if (++scanned > 200) break;
-      try {
-        final decrypted =
-            await EncryptionService().decryptString(encrypted, secretKey);
-        final decoded = jsonDecode(decrypted);
-        if (decoded is! Map<String, dynamic>) continue;
-        if (!decoded.containsKey('duration')) continue;
-        final ts = decoded['timestamp']?.toString() ?? '';
-        final entryDate = DateTime.tryParse(ts)?.toLocal();
-        if (entryDate == null) continue;
-        if (_dateKey(entryDate) != todayKey) continue;
-        result.add(decoded);
-      } catch (_) {}
-    }
-    return result;
+    return [
+      for (final w in (await vault.fetchWorkouts()).take(200))
+        if (w.data.containsKey('duration'))
+          if (DateTime.tryParse(w.data['timestamp']?.toString() ?? '')
+                  ?.toLocal()
+              case final at? when _dateKey(at) == todayKey)
+            w.data,
+    ];
   }
 
   /// Extra Heart Points from manual workouts that Health Connect doesn't
@@ -412,30 +374,15 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   }
 
   Future<void> _loadRecentActivities() async {
-    final secretKey = ref.read(securityEnclaveProvider);
-    if (secretKey == null) {
+    final vault = ref.read(openFitnessVaultProvider);
+    if (vault == null) {
       if (mounted) setState(() => _recentActivities = []);
       return;
     }
     try {
-      final rows = await LocalVault().fetchWorkoutsWithIds(secretKey);
-      final activities = <Map<String, dynamic>>[];
-      for (final row in rows) {
-        try {
-          final decrypted = await EncryptionService()
-              .decryptString(row.encryptedData, secretKey);
-          final decoded = jsonDecode(decrypted);
-          final Map<String, dynamic> map;
-          if (decoded is Map<String, dynamic>) {
-            map = decoded;
-          } else if (decoded is Map) {
-            map = decoded.map((k, v) => MapEntry('$k', v));
-          } else {
-            continue;
-          }
-          activities.add({...map, '_id': row.id});
-        } catch (_) {}
-      }
+      final activities = [
+        for (final w in await vault.fetchWorkouts()) {...w.data, '_id': w.id},
+      ];
       if (!mounted) return;
       setState(() => _recentActivities = activities);
     } catch (e) {
@@ -446,14 +393,14 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   }
 
   Future<void> _loadDailyMetrics() async {
-    final secretKey = ref.read(securityEnclaveProvider);
-    if (secretKey == null) {
+    final vault = ref.read(openFitnessVaultProvider);
+    if (vault == null) {
       if (!mounted) return;
       setState(() => _dailyMetrics = []);
       return;
     }
     try {
-      final rows = await LocalVault().fetchDailyMetrics(secretKey);
+      final rows = await vault.fetchDailyMetrics();
       final fallbackToday = _metricsForDate(DateTime.now(), rows);
       if (!mounted) return;
       setState(() {
@@ -472,15 +419,15 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   }
 
   Future<void> _refreshDashboardData() async {
-    final secretKey = ref.read(securityEnclaveProvider);
-    if (secretKey == null) {
+    final vault = ref.read(openFitnessVaultProvider);
+    if (vault == null) {
       await _loadRecentActivities();
       await _loadDailyMetrics();
       return;
     }
     await _loadHealthData();
-    await _loadLastBackupAt(secretKey);
     _computeInsights();
+    unawaited(ref.read(ztSyncControllerProvider.notifier).syncNow());
   }
 
   void _computeInsights() {
@@ -499,15 +446,6 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
         _sleepStepsCorrelation = corr;
       });
     }
-  }
-
-  Future<void> _loadLastBackupAt(SecretKey secretKey) async {
-    try {
-      final row = await LocalVault().fetchLatestBackup(secretKey);
-      if (row == null || !mounted) return;
-      final ts = DateTime.tryParse(row['created_at']?.toString() ?? '');
-      if (ts != null) setState(() => _lastBackupAt = ts.toLocal());
-    } catch (_) {}
   }
 
   // ---------------------------------------------------------------------------
@@ -531,22 +469,6 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     final value = point.value;
     if (value is NumericHealthValue) return value.numericValue.toDouble();
     return double.tryParse(value.toString()) ?? 0.0;
-  }
-
-  int _calculateHeartPointsFromHeartRate(double bpm, int minutes) {
-    // Fallback profile assumption when user age is not captured in state.
-    return HeartPointsEngine.heartRateIntensity(bpm).points * minutes;
-  }
-
-  int _extractExerciseMinutes(HealthDataPoint point) {
-    if (point.type == HealthDataType.EXERCISE_TIME) {
-      return _extractNumericValue(point).toInt();
-    }
-    if (point.type == HealthDataType.WORKOUT) {
-      final minutes = point.dateTo.difference(point.dateFrom).inMinutes;
-      return minutes < 0 ? 0 : minutes;
-    }
-    return 0;
   }
 
   int _extractSleepMinutes(HealthDataPoint point) {
@@ -815,12 +737,12 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   // Actions (moved from _DashboardPageState)
   // ---------------------------------------------------------------------------
 
-  Future<void> _showManualIngestion(SecretKey? secretKey) async {
+  Future<void> _showManualIngestion(FitnessVault? vault) async {
     final newMedals = await showModalBottomSheet<List<String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ManualIngestionBottomSheet(secretKey: secretKey),
+      builder: (context) => ManualIngestionBottomSheet(vault: vault),
     );
     if (newMedals != null) {
       await _loadRecentActivities();
@@ -832,13 +754,13 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   }
 
   Future<void> _editActivity(
-      int id, Map<String, dynamic> data, SecretKey secretKey) async {
+      String id, Map<String, dynamic> data, FitnessVault vault) async {
     final newMedals = await showModalBottomSheet<List<String>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ManualIngestionBottomSheet(
-        secretKey: secretKey,
+        vault: vault,
         existingWorkoutId: id,
         initialActivityType: data['type']?.toString(),
         initialDurationMinutes:
@@ -861,100 +783,16 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     }
   }
 
-  Future<void> _deleteActivity(int id, SecretKey secretKey) async {
-    await LocalVault().deleteWorkout(id, secretKey);
+  Future<void> _deleteActivity(String id, FitnessVault vault) async {
+    await vault.deleteWorkout(id);
     await _loadRecentActivities();
   }
 
-  Future<void> _unlockVault(WidgetRef ref) async {
-    final LocalAuthentication auth = LocalAuthentication();
-    const storage = FlutterSecureStorage();
-    String? finalPassphrase;
-
-    try {
-      final canBiometrics = await auth.canCheckBiometrics;
-      final isSupported = await auth.isDeviceSupported();
-      if (canBiometrics && isSupported) {
-        final didAuthenticate = await auth.authenticate(
-          localizedReason: 'Scan fingerprint to unlock your health dashboard',
-          options: const AuthenticationOptions(
-            stickyAuth: true,
-            biometricOnly: true,
-          ),
-        );
-        if (didAuthenticate) {
-          finalPassphrase = await storage.read(key: 'vault_passphrase');
-        }
-      }
-    } catch (e) {
-      debugPrint('Biometric authentication error: $e');
-    }
-
-    if (finalPassphrase == null) {
-      if (!mounted) return;
-      final controller = TextEditingController();
-      finalPassphrase = await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Unlock Vault'),
-          content: TextField(
-            controller: controller,
-            obscureText: true,
-            decoration:
-                const InputDecoration(labelText: 'Master Passphrase'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(controller.text),
-              child: const Text('Unlock'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (finalPassphrase == null || finalPassphrase.isEmpty) return;
-
-    final unlocked = await ref
-        .read(securityEnclaveProvider.notifier)
-        .initialize(finalPassphrase);
-
-    if (!unlocked) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Unlock failed. Invalid passphrase.')),
-        );
-      }
-      return;
-    }
-
-    await storage.write(key: 'vault_passphrase', value: finalPassphrase);
-
-    final tasksInitialized =
-        sharedPrefs.getBool('bg_tasks_initialized') ?? false;
-    if (!tasksInitialized) {
-      if (!mounted) return;
-      final appState = AppState.of(context, listen: false);
-      await appState.initializeBackgroundTasks();
-      await sharedPrefs.setBool('bg_tasks_initialized', true);
-    }
-
-    HapticFeedback.mediumImpact();
-    final sk = ref.read(securityEnclaveProvider);
-    if (sk != null) unawaited(LocalVault().logAccess(sk));
-    await _loadHealthData();
-  }
-
   Future<void> _toggleGpsTracking() async {
-    final secretKey = ref.read(securityEnclaveProvider);
+    final vault = ref.read(openFitnessVaultProvider);
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => GpsWorkoutPage(secretKey: secretKey),
+        builder: (_) => GpsWorkoutPage(vault: vault),
       ),
     );
     await _loadRecentActivities();
@@ -988,689 +826,214 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     }
   }
 
-  static const _kLastKnownRemoteTs = 'last_known_remote_updated_at';
-
-  Future<void> _syncEncryptedVault(SecretKey? secretKey) async {
-    if (_isSyncing) return;
-    if (secretKey == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unlock vault before syncing.')),
-      );
-      return;
-    }
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to sync with cloud vault.')),
-      );
-      return;
-    }
-    setState(() => _isSyncing = true);
-    try {
-      // -- Conflict detection (3.5) ------------------------------------------
-      final prefs = await SharedPreferences.getInstance();
-      final lastKnownRaw = prefs.getString(_kLastKnownRemoteTs);
-      final lastKnown = lastKnownRaw != null
-          ? DateTime.tryParse(lastKnownRaw)?.toUtc()
-          : null;
-
-      final remote =
-          await SupabaseService().fetchEncryptedVaultWithTimestamp();
-      if (remote != null && lastKnown != null) {
-        final remoteIsNewer = remote.updatedAt.isAfter(lastKnown);
-        if (remoteIsNewer && mounted) {
-          final choice = await showDialog<_ConflictChoice>(
-            context: context,
-            barrierDismissible: false,
-            builder: (ctx) => AlertDialog(
-              title: const Text('Sync conflict'),
-              content: const Text(
-                'Another device pushed changes after your last sync.\n\n'
-                'Keep cloud version (pull) or overwrite with this device?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () =>
-                      Navigator.pop(ctx, _ConflictChoice.cancel),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () =>
-                      Navigator.pop(ctx, _ConflictChoice.keepCloud),
-                  child: const Text('Keep cloud'),
-                ),
-                FilledButton(
-                  onPressed: () =>
-                      Navigator.pop(ctx, _ConflictChoice.overwrite),
-                  child: const Text('Overwrite'),
-                ),
-              ],
-            ),
-          );
-          if (!mounted) return;
-          if (choice == _ConflictChoice.cancel) return;
-          if (choice == _ConflictChoice.keepCloud) {
-            setState(() => _isSyncing = false);
-            await _pullEncryptedVault(secretKey);
-            return;
-          }
-          // choice == overwrite → fall through to upload
-        }
-      }
-      // -- Upload -------------------------------------------------------------
-      final payload = await _buildCloudVaultPayload(secretKey);
-      final payloadJson = jsonEncode(payload);
-      final encryptedPayload =
-          await EncryptionService().encryptString(payloadJson, secretKey);
-      await SupabaseService()
-          .upsertEncryptedVaultBlobForCurrentUser(encryptedPayload);
-
-      // Record the timestamp we just wrote so the next sync can compare.
-      final now = DateTime.now().toUtc().toIso8601String();
-      await prefs.setString(_kLastKnownRemoteTs, now);
-
-      // Log to backup_history (3.4).
-      await LocalVault().insertBackupHistory(
-        backupType: 'cloud_sync',
-        status: 'success',
-        details:
-            '${payload['workouts_count']} workouts, ${payload['steps_count']} step records',
-        secretKey: secretKey,
-      );
-      setState(() => _lastBackupAt = DateTime.now());
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Sync complete: ${payload['workouts_count']} workouts, ${payload['steps_count']} step records.',
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      showActionableErrorSnackBar(context,
-          error: e, onRetry: () => _syncEncryptedVault(secretKey));
-    } finally {
-      if (mounted) setState(() => _isSyncing = false);
-    }
-  }
-
-  Future<Map<String, dynamic>> _buildCloudVaultPayload(
-      SecretKey secretKey) async {
-    final encryptedRows = await LocalVault().fetchWorkouts(secretKey);
-    final workouts = <Map<String, dynamic>>[];
-    for (final row in encryptedRows) {
-      try {
-        final decrypted =
-            await EncryptionService().decryptString(row, secretKey);
-        final decoded = jsonDecode(decrypted);
-        if (decoded is Map<String, dynamic>) {
-          workouts.add(decoded);
-        } else if (decoded is Map) {
-          workouts.add(decoded.map((k, v) => MapEntry('$k', v)));
-        }
-      } catch (_) {}
-    }
-    final steps = _healthData
-        .where((p) => p.type == HealthDataType.STEPS)
-        .map((p) => <String, dynamic>{
-              'timestamp': p.dateFrom.toUtc().toIso8601String(),
-              'value': _extractNumericValue(p).toInt(),
-              'source': p.sourceId,
-            })
-        .toList(growable: false);
-
-    final heartRecords = _healthData
-        .where((p) =>
-            p.type == HealthDataType.EXERCISE_TIME ||
-            p.type == HealthDataType.WORKOUT ||
-            p.type == HealthDataType.HEART_RATE)
-        .map((p) {
-      if (p.type == HealthDataType.EXERCISE_TIME ||
-          p.type == HealthDataType.WORKOUT) {
-        return <String, dynamic>{
-          'timestamp': p.dateFrom.toUtc().toIso8601String(),
-          'metric': 'exercise_time_min',
-          'value': _extractExerciseMinutes(p),
-        };
-      }
-      final value = _extractNumericValue(p);
-      return <String, dynamic>{
-        'timestamp': p.dateFrom.toUtc().toIso8601String(),
-        'metric': 'heart_rate_bpm',
-        'value': value.toInt(),
-        'derived_points': _calculateHeartPointsFromHeartRate(value, 1),
-      };
-    }).toList(growable: false);
-
-    final dailyMetrics = await LocalVault().fetchDailyMetrics(secretKey);
-    final dailyMetricMap = <String, Map<String, num>>{};
-    for (final row in dailyMetrics) {
-      final dateKey = row['date_key']?.toString();
-      if (dateKey == null || dateKey.isEmpty) continue;
-      final metricsRaw = row['metrics'];
-      if (metricsRaw is Map) {
-        final parsed = <String, num>{};
-        metricsRaw.forEach((k, v) {
-          if (v is num) {
-            parsed['$k'] = v;
-          } else if (v is String) {
-            final n = num.tryParse(v);
-            if (n != null) parsed['$k'] = n;
-          }
-        });
-        if (parsed.isNotEmpty) dailyMetricMap[dateKey] = parsed;
-      }
-    }
-    final achievements = await LocalVault().fetchAchievements(secretKey);
-    return {
-      'version': 2,
-      'synced_at': DateTime.now().toUtc().toIso8601String(),
-      'workouts_count': workouts.length,
-      'steps_count': steps.length,
-      'heart_points_total': _heartPointsTotal,
-      'daily_metrics': dailyMetrics,
-      'daily_metric_map': dailyMetricMap,
-      'workouts': workouts,
-      'steps': steps,
-      'heart_points': {'total': _heartPointsTotal, 'records': heartRecords},
-      'achievements': achievements,
-    };
-  }
-
-  List<Map<String, dynamic>> _buildDailyMetricsFromPayload(
-      Map<String, dynamic> payload) {
-    Map<String, num> parseMetricMap(dynamic raw) {
-      if (raw is! Map) return const <String, num>{};
-      final parsed = <String, num>{};
-      raw.forEach((key, value) {
-        if (value is num) {
-          parsed['$key'] = value;
-        } else if (value is String) {
-          final n = num.tryParse(value);
-          if (n != null) parsed['$key'] = n;
-        }
-      });
-      return parsed;
-    }
-
-    final fromPayload = <Map<String, dynamic>>[];
-    final dailyMetricMapRaw = payload['daily_metric_map'];
-    if (dailyMetricMapRaw is Map) {
-      dailyMetricMapRaw.forEach((key, value) {
-        final dateKey = key.toString();
-        if (dateKey.isEmpty) return;
-        final parsed = parseMetricMap(value);
-        if (parsed.isEmpty) return;
-        fromPayload.add({
-          'date_key': dateKey,
-          'metrics': parsed,
-          'steps': (parsed['steps'] ?? 0).toInt(),
-          'heart_points': (parsed['heart_points'] ?? 0).toInt(),
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        });
-      });
-    }
-
-    final dailyRaw = payload['daily_metrics'];
-    if (dailyRaw is List) {
-      for (final row in dailyRaw) {
-        if (row is! Map) continue;
-        final dateKey = row['date_key']?.toString();
-        if (dateKey == null || dateKey.isEmpty) continue;
-        var metrics = parseMetricMap(row['metrics']);
-        if (metrics.isEmpty) {
-          metrics = <String, num>{
-            'steps': (row['steps'] as num?) ?? 0,
-            'heart_points': (row['heart_points'] as num?) ?? 0,
-          };
-        }
-        fromPayload.add({
-          'date_key': dateKey,
-          'metrics': metrics,
-          'steps': (metrics['steps'] ?? 0).toInt(),
-          'heart_points': (metrics['heart_points'] ?? 0).toInt(),
-          'updated_at': row['updated_at']?.toString() ??
-              DateTime.now().toUtc().toIso8601String(),
-        });
-      }
-    }
-
-    if (fromPayload.isNotEmpty) {
-      final deduped = <String, Map<String, dynamic>>{};
-      for (final row in fromPayload) {
-        final key = row['date_key']?.toString();
-        if (key == null || key.isEmpty) continue;
-        deduped[key] = row;
-      }
-      final values = deduped.values.toList(growable: false)
-        ..sort((a, b) =>
-            (b['date_key'] as String).compareTo(a['date_key'] as String));
-      return values;
-    }
-
-    final merged = <String, Map<String, dynamic>>{};
-    final stepsRaw = payload['steps'];
-    if (stepsRaw is List) {
-      for (final row in stepsRaw) {
-        if (row is! Map) continue;
-        final timestamp =
-            DateTime.tryParse((row['timestamp'] ?? '').toString());
-        if (timestamp == null) continue;
-        final key = _dateKey(timestamp);
-        final existing = merged[key] ??
-            <String, dynamic>{
-              'date_key': key,
-              'metrics': <String, num>{'steps': 0, 'heart_points': 0},
-              'updated_at': DateTime.now().toUtc().toIso8601String(),
-            };
-        final metrics = existing['metrics'] as Map<String, num>;
-        metrics['steps'] =
-            (metrics['steps'] ?? 0) + ((row['value'] as num?) ?? 0);
-        existing['steps'] = (metrics['steps'] ?? 0).toInt();
-        existing['heart_points'] = (metrics['heart_points'] ?? 0).toInt();
-        merged[key] = existing;
-      }
-    }
-
-    final heartRaw = payload['heart_points'];
-    if (heartRaw is Map) {
-      final records = heartRaw['records'];
-      if (records is List) {
-        for (final row in records) {
-          if (row is! Map) continue;
-          final timestamp =
-              DateTime.tryParse((row['timestamp'] ?? '').toString());
-          if (timestamp == null) continue;
-          final key = _dateKey(timestamp);
-          final existing = merged[key] ??
-              <String, dynamic>{
-                'date_key': key,
-                'metrics': <String, num>{'steps': 0, 'heart_points': 0},
-                'updated_at': DateTime.now().toUtc().toIso8601String(),
-              };
-          final metrics = existing['metrics'] as Map<String, num>;
-          var pointsToAdd = 0;
-          if (row['metric'] == 'exercise_time_min') {
-            pointsToAdd = (row['value'] as num?)?.toInt() ?? 0;
-          } else if (row['metric'] == 'heart_rate_bpm') {
-            pointsToAdd = (row['derived_points'] as num?)?.toInt() ?? 0;
-          }
-          metrics['heart_points'] =
-              (metrics['heart_points'] ?? 0) + pointsToAdd;
-          existing['steps'] = (metrics['steps'] ?? 0).toInt();
-          existing['heart_points'] = (metrics['heart_points'] ?? 0).toInt();
-          merged[key] = existing;
-        }
-      }
-    }
-
-    final values = merged.values.toList(growable: false)
-      ..sort((a, b) =>
-          (b['date_key'] as String).compareTo(a['date_key'] as String));
-    return values;
-  }
-
-  Future<void> _pullEncryptedVault(SecretKey? secretKey) async {
-    if (_isPulling) return;
-    if (secretKey == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Unlock vault before pulling cloud data.')),
-      );
-      return;
-    }
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to pull cloud vault data.')),
-      );
-      return;
-    }
-    setState(() => _isPulling = true);
-    try {
-      final encryptedBlob =
-          await SupabaseService().fetchEncryptedVaultBlobForCurrentUser();
-      if (encryptedBlob == null || encryptedBlob.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No cloud vault backup found yet.')),
-        );
-        return;
-      }
-      String payloadJson;
-      try {
-        payloadJson = await EncryptionService()
-            .decryptString(encryptedBlob, secretKey);
-      } catch (_) {
-        payloadJson = encryptedBlob;
-      }
-      final decoded = jsonDecode(payloadJson);
-      if (decoded is! Map) {
-        throw StateError('Cloud payload format is invalid.');
-      }
-      final payload = decoded.map((k, v) => MapEntry('$k', v));
-      final workoutsRaw = payload['workouts'];
-      final workouts = <Map<String, dynamic>>[];
-      if (workoutsRaw is List) {
-        for (final item in workoutsRaw) {
-          if (item is Map<String, dynamic>) {
-            workouts.add(item);
-          } else if (item is Map) {
-            workouts.add(item.map((k, v) => MapEntry('$k', v)));
-          }
-        }
-      }
-      final restoredEncryptedRows = <String>[];
-      for (final workout in workouts) {
-        final enc = await EncryptionService()
-            .encryptString(jsonEncode(workout), secretKey);
-        restoredEncryptedRows.add(enc);
-      }
-      await LocalVault().replaceWorkouts(restoredEncryptedRows, secretKey);
-      final pulledDailyMetrics =
-          _buildDailyMetricsFromPayload(payload);
-      await LocalVault()
-          .replaceDailyMetrics(pulledDailyMetrics, secretKey);
-      final achievementsRaw = payload['achievements'];
-      if (achievementsRaw is List) {
-        for (final item in achievementsRaw) {
-          if (item is! Map) continue;
-          final id = item['id']?.toString();
-          final tsRaw = item['unlocked_at']?.toString();
-          if (id == null || tsRaw == null) continue;
-          final unlockedAt =
-              DateTime.tryParse(tsRaw) ?? DateTime.now().toUtc();
-          await LocalVault()
-              .insertAchievementIfAbsent(id, unlockedAt, secretKey);
-        }
-      }
-      var pulledHeartTotal = 0;
-      final heartPointsRaw = payload['heart_points'];
-      if (heartPointsRaw is Map && heartPointsRaw['total'] is num) {
-        pulledHeartTotal = (heartPointsRaw['total'] as num).toInt();
-      } else if (payload['heart_points_total'] is num) {
-        pulledHeartTotal = (payload['heart_points_total'] as num).toInt();
-      }
-      workouts.sort((a, b) {
-        final aTs = DateTime.tryParse(
-                (a['timestamp'] ?? a['date'] ?? '').toString()) ??
-            DateTime.fromMillisecondsSinceEpoch(0);
-        final bTs = DateTime.tryParse(
-                (b['timestamp'] ?? b['date'] ?? '').toString()) ??
-            DateTime.fromMillisecondsSinceEpoch(0);
-        return bTs.compareTo(aTs);
-      });
-      if (!mounted) return;
-      final pulledTodayMetrics =
-          _metricsForDate(DateTime.now(), pulledDailyMetrics);
-      if (pulledHeartTotal <= 0) {
-        pulledHeartTotal =
-            (pulledTodayMetrics['heart_points'])?.toInt() ?? 0;
-      }
-      setState(() {
-        if (pulledHeartTotal > 0) _heartPointsTotal = pulledHeartTotal;
-        _dailyMetrics = pulledDailyMetrics;
-        if (pulledTodayMetrics.isNotEmpty) _todayMetrics = pulledTodayMetrics;
-      });
-      await _loadRecentActivities();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Pull complete: ${workouts.length} workouts restored.'),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      showActionableErrorSnackBar(context,
-          error: e, onRetry: () => _pullEncryptedVault(secretKey));
-    } finally {
-      if (mounted) setState(() => _isPulling = false);
-    }
-  }
-
-  Future<void> _promptDeleteData(SecretKey? secretKey) async {
-    final selectedScope = await showDialog<_DeleteDataScope>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete data'),
-        content: const Text(
-            'Choose what to delete: cloud data, local data, or all data.'),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.of(context).pop(_DeleteDataScope.cloud),
-            child: const Text('Cloud data'),
-          ),
-          TextButton(
-            onPressed: () =>
-                Navigator.of(context).pop(_DeleteDataScope.local),
-            child: const Text('Local data'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.of(context).pop(_DeleteDataScope.all),
-            child: const Text('All data'),
-          ),
-        ],
-      ),
-    );
-    if (selectedScope == null) return;
-    await _deleteDataForScope(selectedScope, secretKey);
-  }
-
-  Future<void> _deleteDataForScope(
-      _DeleteDataScope scope, SecretKey? secretKey) async {
-    if (_isDeletingData) return;
-    final needsCloudDelete =
-        scope == _DeleteDataScope.cloud || scope == _DeleteDataScope.all;
-    final needsLocalDelete =
-        scope == _DeleteDataScope.local || scope == _DeleteDataScope.all;
-    if (needsLocalDelete && secretKey == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Unlock vault before deleting local data.')),
-      );
-      return;
-    }
-    final user = Supabase.instance.client.auth.currentUser;
-    if (needsCloudDelete && user == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Sign in before deleting cloud data.')),
-      );
-      return;
-    }
-    setState(() => _isDeletingData = true);
-    try {
-      if (needsCloudDelete) {
-        await SupabaseService().deleteEncryptedVaultDataForCurrentUser();
-      }
-      if (needsLocalDelete) {
-        await LocalVault().clearWorkouts(secretKey!);
-      }
-      await _loadRecentActivities();
-      await _loadDailyMetrics();
-      if (!mounted) return;
-      setState(() {
-        _recentActivities = [];
-        _dailyMetrics = [];
-        _todayMetrics = const <String, num>{};
-      });
-      final statusText = switch (scope) {
-        _DeleteDataScope.cloud => 'Cloud vault data deleted.',
-        _DeleteDataScope.local => 'Local vault data deleted.',
-        _DeleteDataScope.all => 'Cloud and local vault data deleted.',
-      };
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(statusText)));
-    } catch (e) {
-      if (!mounted) return;
-      showActionableErrorSnackBar(context, error: e);
-    } finally {
-      if (mounted) setState(() => _isDeletingData = false);
-    }
-  }
-
   // ---------------------------------------------------------------------------
   // Build
   // ---------------------------------------------------------------------------
 
-  @override
-  Widget build(BuildContext context) {
-    final secretKey = ref.watch(securityEnclaveProvider);
-    final isLocked = secretKey == null;
-    final goalsState = ref.watch(goalsProvider).asData?.value;
+  /// Reloads after changes from sync (another device) or from a screen
+  /// this shell didn't open, at most a few times a second.
+  void _onVaultChanged() {
+    _reloadDebounce?.cancel();
+    _reloadDebounce = Timer(const Duration(milliseconds: 400), () async {
+      if (!mounted) return;
+      await _loadRecentActivities();
+      await _loadDailyMetrics();
+      final vault = ref.read(openFitnessVaultProvider);
+      if (vault != null) {
+        final medals = await AchievementService().fetchUnlocked(vault);
+        if (mounted) setState(() => _earnedMedals = medals);
+      }
+      _computeInsights();
+    });
+  }
 
-    final shell = SecurityBarrier(
-      isLocked: isLocked,
-      onUnlock: () => _unlockVault(ref),
-      child: Scaffold(
-        body: IndexedStack(
-          index: _currentIndex,
-          children: [
-            TodayPage(
-              todayMetrics: _todayMetrics,
-              heartPointsTotal: _heartPointsTotal,
-              momentum: isLocked ? null : _computeMomentum(),
-              isLoading: _isLoading,
-              isSyncing: _isSyncing,
-              isPulling: _isPulling,
-              gpsSnapshot: _gpsSnapshot,
-              secretKey: secretKey,
-              unreadableMetricKeys: _unreadableMetricKeys,
-              onToggleGps: _toggleGpsTracking,
-              onManualEntry: () => _showManualIngestion(secretKey),
-              onRefresh: _refreshDashboardData,
-              onSync: () => _syncEncryptedVault(secretKey),
-              onPull: () => _pullEncryptedVault(secretKey),
-              onOpenPermissions: () async {
-                await Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const PermissionsPage(),
-                  ),
-                );
-                await _loadHealthData();
-              },
-              onLock: () async {
-                await ref.read(securityEnclaveProvider.notifier).lock();
-                setState(() => _recentActivities = []);
-                await WidgetService.redactWidget();
-              },
-              goalsState: goalsState,
-              lastBackupAt: _lastBackupAt,
-              streaks: _streaks,
-              weeklySteps: _weeklySteps,
-            ),
-            TrendsPage(
-              hourlyTrendPoints: _buildHourlyTrendPoints(),
-              currentWeekPoints: _buildCurrentWeekPoints(),
-              currentMonthPoints: _buildCurrentMonthPoints(),
-              selectedMetricWeekPoints: _buildSelectedMetricWeekPoints(),
-              selectedMetricMonthPoints: _buildSelectedMetricMonthPoints(),
-              selectedTrendMetricKey: _selectedTrendMetricKey,
-              onTrendMetricChanged: (value) =>
-                  setState(() => _selectedTrendMetricKey = value),
-              onRefresh: _refreshDashboardData,
-              baselines: _baselines,
-              sleepStepsCorrelation: _sleepStepsCorrelation,
-            ),
-            ActivitiesPage(
-              recentActivities: _recentActivities,
-              isLoading: _isLoading,
-              onManualEntry: () => _showManualIngestion(secretKey),
-              onRefresh: _refreshDashboardData,
-              secretKey: secretKey,
-              onEditActivity: (id, data) =>
-                  secretKey != null ? _editActivity(id, data, secretKey) : Future.value(),
-              onDeleteActivity: (id) =>
-                  secretKey != null ? _deleteActivity(id, secretKey) : Future.value(),
-            ),
-            ProfilePage(
-              isSyncing: _isSyncing,
-              isPulling: _isPulling,
-              isDeletingData: _isDeletingData,
-              onSync: () => _syncEncryptedVault(secretKey),
-              onPull: () => _pullEncryptedVault(secretKey),
-              onDeleteData: () => _promptDeleteData(secretKey),
-              earnedMedals: _earnedMedals,
-              onViewAllMedals: () => context.push('/achievements'),
-              autoLockMinutes: _autoLockMinutes,
-              onAutoLockChanged: saveAutoLockSetting,
-              secretKey: secretKey,
-            ),
-          ],
+  /// Once per install, after the first unlock: offer to connect Health
+  /// Connect (what the old onboarding's last step did).
+  Future<void> _maybeOfferHealthSetup() async {
+    const key = 'health_setup_offered';
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool(key) ?? false) return;
+    await prefs.setBool(key, true);
+    if (!mounted) return;
+    final go = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.health_and_safety_outlined),
+        title: const Text('Connect your health data?'),
+        content: const Text(
+          'Fitness can read steps, workouts, heart rate, sleep and more from '
+          'Health Connect. It stays encrypted on your phone and in your '
+          'vault. You can change this any time in Settings.',
         ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: _currentIndex,
-          onDestinationSelected: (i) => setState(() => _currentIndex = i),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.today_outlined),
-              selectedIcon: Icon(Icons.today),
-              label: 'Today',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.show_chart_outlined),
-              selectedIcon: Icon(Icons.show_chart),
-              label: 'Trends',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.local_fire_department_outlined),
-              selectedIcon: Icon(Icons.local_fire_department),
-              label: 'Activities',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
-        ),
-      ),
-    );
-
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) => _resetInteraction(),
-      child: Stack(
-        children: [
-          shell,
-          if (_isObscured)
-            Positioned.fill(
-              child: Container(
-                color: Theme.of(context).colorScheme.surface,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.lock_outline_rounded,
-                          size: 64,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.4)),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Zero-Trust Health',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Choose permissions'),
+          ),
         ],
       ),
     );
+    if (go != true || !mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const PermissionsPage()),
+    );
+    await _loadHealthData();
+  }
+
+  Widget _legacyImportBanner() => MaterialBanner(
+        leading: const Icon(Icons.cloud_off_outlined),
+        content: const Text(
+          'Your data from the previous version hasn\'t been brought over yet. '
+          'Check your connection and try again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => ref.invalidate(legacyImportProvider),
+            child: const Text('Try again'),
+          ),
+        ],
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final vault = ref.watch(openFitnessVaultProvider);
+    final isLocked = vault == null;
+    final goalsState = ref.watch(goalsProvider).asData?.value;
+    final syncStatus = ref.watch(ztSyncControllerProvider);
+    ref.listen(fitnessVaultChangesProvider, (_, __) => _onVaultChanged());
+
+    final shell = Scaffold(
+      body: Column(
+        children: [
+          if (widget.legacyImportFailed)
+            SafeArea(bottom: false, child: _legacyImportBanner()),
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: [
+                TodayPage(
+                  todayMetrics: _todayMetrics,
+                  heartPointsTotal: _heartPointsTotal,
+                  momentum: isLocked ? null : _computeMomentum(),
+                  isLoading: _isLoading,
+                  syncStatus: syncStatus,
+                  gpsSnapshot: _gpsSnapshot,
+                  vault: vault,
+                  unreadableMetricKeys: _unreadableMetricKeys,
+                  onToggleGps: _toggleGpsTracking,
+                  onManualEntry: () => _showManualIngestion(vault),
+                  onRefresh: _refreshDashboardData,
+                  onOpenPermissions: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PermissionsPage(),
+                      ),
+                    );
+                    await _loadHealthData();
+                  },
+                  onLock: () =>
+                      ref.read(vaultControllerProvider.notifier).lock(),
+                  goalsState: goalsState,
+                  streaks: _streaks,
+                  weeklySteps: _weeklySteps,
+                ),
+                TrendsPage(
+                  hourlyTrendPoints: _buildHourlyTrendPoints(),
+                  currentWeekPoints: _buildCurrentWeekPoints(),
+                  currentMonthPoints: _buildCurrentMonthPoints(),
+                  selectedMetricWeekPoints: _buildSelectedMetricWeekPoints(),
+                  selectedMetricMonthPoints: _buildSelectedMetricMonthPoints(),
+                  selectedTrendMetricKey: _selectedTrendMetricKey,
+                  onTrendMetricChanged: (value) =>
+                      setState(() => _selectedTrendMetricKey = value),
+                  onRefresh: _refreshDashboardData,
+                  baselines: _baselines,
+                  sleepStepsCorrelation: _sleepStepsCorrelation,
+                ),
+                ActivitiesPage(
+                  recentActivities: _recentActivities,
+                  isLoading: _isLoading,
+                  onManualEntry: () => _showManualIngestion(vault),
+                  onRefresh: _refreshDashboardData,
+                  vault: vault,
+                  onEditActivity: (id, data) => vault != null
+                      ? _editActivity(id, data, vault)
+                      : Future.value(),
+                  onDeleteActivity: (id) => vault != null
+                      ? _deleteActivity(id, vault)
+                      : Future.value(),
+                ),
+                FitnessSettingsPage(
+                  earnedMedals: _earnedMedals,
+                  onDataDeleted: () {
+                    setState(() {
+                      _recentActivities = [];
+                      _dailyMetrics = [];
+                      _todayMetrics = const <String, num>{};
+                    });
+                    _onVaultChanged();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (i) => setState(() => _currentIndex = i),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.today_outlined),
+            selectedIcon: Icon(Icons.today),
+            label: 'Today',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.show_chart_outlined),
+            selectedIcon: Icon(Icons.show_chart),
+            label: 'Trends',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.local_fire_department_outlined),
+            selectedIcon: Icon(Icons.local_fire_department),
+            label: 'Activities',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+      ),
+    );
+
+    return Stack(
+      children: [
+        shell,
+        if (_isObscured)
+          Positioned.fill(
+            child: Container(
+              color: Theme.of(context).colorScheme.surface,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const ZtBrandMark(app: ZtSuite.fitness),
+                    const SizedBox(height: 16),
+                    Text(
+                      ZtSuite.fitness.fullName,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
-
-enum _ConflictChoice { cancel, keepCloud, overwrite }

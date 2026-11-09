@@ -3,15 +3,14 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  audioplayers_linux
-  file_selector_linux
+  app_links_linux
+  dynamic_color
   flutter_secure_storage_linux
-  gtk
-  sqlcipher_flutter_libs
   url_launcher_linux
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  jni
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

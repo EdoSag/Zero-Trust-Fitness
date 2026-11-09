@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nowa_runtime/nowa_runtime.dart';
-
-@NowaGenerated()
 class StatCard extends StatelessWidget {
-  @NowaGenerated({'loader': 'auto-constructor'})
   const StatCard({
     required this.title,
     required this.value,
