@@ -154,6 +154,36 @@ void main() {
     });
   });
 
+  test('typed-in Heart Points are tracked apart from workout points',
+      () async {
+    final v = testVault();
+    await v.mergeDailyMetrics(
+        dateKey: '2026-11-09', incoming: {'heart_points': 5});
+    await v.logWorkout({
+      'type': 'Running',
+      'duration': 10,
+      'intensity': 8,
+      'timestamp': monday,
+    });
+    final m = await _day(v, '2026-11-09');
+    expect(FitnessVault.enteredHeartPoints(m), 5);
+    expect(m['heart_points'], 25);
+    // A rescore that drops the workout's share (Health Connect has it)
+    // keeps what was typed in.
+    await v.syncFromHealthConnect(
+        dateKey: '2026-11-09',
+        hcMetrics: {'heart_points': 20},
+        manualContributions: {
+          'heart_points': 0 + FitnessVault.enteredHeartPoints(m),
+        });
+    expect((await _day(v, '2026-11-09'))['heart_points'], 25);
+    final entry = (await v.fetchManualEntries()).single;
+    expect(entry.value, 5);
+    await v.editManualEntry(entry, 7);
+    expect(
+        FitnessVault.enteredHeartPoints(await _day(v, '2026-11-09')), 7);
+  });
+
   group('importDayTotals', () {
     test('an export total that includes hand-entered steps adds only the '
         'missing part', () async {

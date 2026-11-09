@@ -197,7 +197,11 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
         );
         final Map<String, num> manualOverrides = {};
         if (manualWorkoutsToday.isNotEmpty) {
-          manualOverrides['heart_points'] = unmatchedManualHp;
+          // Workouts are rescored; points typed in by hand stay.
+          final todayRow = _metricsForDate(
+              DateTime.now(), await vault.fetchDailyMetrics());
+          manualOverrides['heart_points'] = unmatchedManualHp +
+              FitnessVault.enteredHeartPoints(todayRow);
         }
         await vault.syncFromHealthConnect(
           dateKey: _dateKey(DateTime.now()),

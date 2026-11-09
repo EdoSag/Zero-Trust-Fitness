@@ -107,6 +107,16 @@ class FitnessVault {
 
   static const String idKeyInfo = 'zt/fitness/item-id/v1';
 
+  /// Heart Points the person typed in for a day, kept apart from the
+  /// manual share (which also holds logged workouts' points), so rescoring
+  /// workouts against Health Connect never drops them.
+  static const String enteredHeartPointsKey = 'heart_points_entered';
+
+  /// The typed-in Heart Points of a day's metrics (0 for days saved before
+  /// they were tracked).
+  static num enteredHeartPoints(Map<String, num> metrics) =>
+      metrics[enteredHeartPointsKey] ?? 0;
+
   /// The id key for an unlocked vault's app key.
   static Future<Uint8List> deriveIdKey(List<int> appKey) =>
       Kdf.hkdf(appKey, idKeyInfo);
@@ -388,7 +398,12 @@ class FitnessVault {
         if (!e.key.endsWith('_manual')) continue;
         final key = e.key.substring(0, e.key.length - '_manual'.length);
         var value = e.value;
-        if (key == 'heart_points') value -= workoutPoints[d.dateKey] ?? 0;
+        if (key == 'heart_points') {
+          // Days saved by this version say what was typed in; older days
+          // only have the total, so the workouts' share is taken off it.
+          value = d.metrics[enteredHeartPointsKey] ??
+              value - (workoutPoints[d.dateKey] ?? 0);
+        }
         if (value <= 0) continue;
         entries.add(ManualEntry(
           dateKey: d.dateKey,
@@ -418,6 +433,11 @@ class FitnessVault {
         dateKey: entry.dateKey,
         metricKey: entry.metricKey,
         value: stored < 0 ? 0 : stored);
+    if (entry.metricKey == 'heart_points') {
+      final metrics = Map<String, num>.from(await _metricsFor(entry.dateKey));
+      metrics[enteredHeartPointsKey] = value;
+      await _putDay(entry.dateKey, metrics);
+    }
   }
 
   Future<void> deleteManualEntry(ManualEntry entry) =>
@@ -527,6 +547,10 @@ class FitnessVault {
         merged['${key}_hc'] = hcBase;
         merged['${key}_manual'] = prevManual + value;
         merged[key] = hcBase + prevManual + value;
+        if (key == 'heart_points') {
+          merged[enteredHeartPointsKey] =
+              (existing[enteredHeartPointsKey] ?? 0) + value;
+        }
       } else if (_sleepKeys.contains(key)) {
         // Sleep is per-night: manual override replaces previous manual entry.
         final hcBase = existing.containsKey('${key}_hc')
