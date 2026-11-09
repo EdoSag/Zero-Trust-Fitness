@@ -50,6 +50,8 @@ class ZeroTrustFitnessApp extends StatelessWidget {
         darkTheme: darkTheme,
         themeMode: mode,
         home: home,
+        builder: (context, child) =>
+            AutoLockActivity(child: child ?? const SizedBox.shrink()),
       ),
     );
   }

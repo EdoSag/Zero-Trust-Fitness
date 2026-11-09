@@ -351,6 +351,8 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
               ),
       ),
       floatingActionButton: FloatingActionButton(
+        // Today and Activities are both kept alive in the tab stack.
+        heroTag: 'fab-activities',
         onPressed: widget.onManualEntry,
         tooltip: 'Log a workout or health metric',
         child: const Icon(Icons.add),
