@@ -403,6 +403,20 @@ void main() {
       expect(onTablet.data['duration'], 55);
     });
 
+    test('a day logged before the import still gets its old metrics',
+        () async {
+      final blob = await cloudBlob(cloudPayload, legacyKey);
+      final (phone, phoneVault) = await device('phone');
+      // Logged while the import was still running.
+      await phoneVault.upsertDailyMetrics(
+          dateKey: '2026-09-20', metrics: {'water_l': 2});
+      await runImport(phone, phoneVault, localPath: null, blob: blob);
+      final day = (await phoneVault.fetchDailyMetrics())
+          .firstWhere((d) => d['date_key'] == '2026-09-20');
+      expect(day['metrics'],
+          {'water_l': 2, 'steps': 3000, 'heart_points': 40});
+    });
+
     test('an account with no old data imports nothing', () async {
       final (phone, phoneVault) = await device('phone');
       await runImport(phone, phoneVault, localPath: null, blob: null);

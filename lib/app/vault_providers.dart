@@ -165,8 +165,11 @@ class LegacyImportController extends Notifier<LegacyImportStatus> {
     state = state.copyWith(running: true);
     try {
       final salt = await ref.read(legacyCloudBackupProvider).legacySalt();
-      if (salt == null) throw const LegacyBackupUnreadable('cloud');
-      final keys = await legacyKeysFromPassword(password, salt);
+      // No old salt: no key to derive. The run below still reports which
+      // source is locked, so Skip names the right one.
+      final keys = salt == null
+          ? <Uint8List>[]
+          : await legacyKeysFromPassword(password, salt);
       if (generation != _generation) return const VaultIsLocked();
       _forgetExtraKeys();
       _extraKeys = keys;

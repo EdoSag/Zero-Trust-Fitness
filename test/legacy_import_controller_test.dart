@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -19,8 +20,9 @@ const _oldPassword = 'the password from before';
 final _salt = base64Url.encode(List<int>.generate(16, (i) => 90 + i));
 
 class _Cloud implements LegacyCloudBackup {
-  _Cloud(this.blobs);
+  _Cloud(this.blobs, {this.salt = true});
   final List<String> blobs;
+  final bool salt;
   int fetches = 0;
   @override
   Future<List<String>> fetchAll() async {
@@ -29,7 +31,7 @@ class _Cloud implements LegacyCloudBackup {
   }
 
   @override
-  Future<String?> legacySalt() async => _salt;
+  Future<String?> legacySalt() async => salt ? _salt : null;
 }
 
 class _NoSecureStorage implements LegacySecureStorage {
@@ -58,7 +60,10 @@ Future<String> _lockedBackup() async {
   );
 }
 
-ProviderContainer _container(LegacyCloudBackup cloud) {
+ProviderContainer _container(
+  LegacyCloudBackup cloud, {
+  String localPath = '/nonexistent/vault.sqlite',
+}) {
   final container = ProviderContainer(overrides: [
     ztAppConfigProvider.overrideWithValue(fitnessAppConfig),
     ztSyncBackendProvider.overrideWithValue(FakeSyncBackend()),
@@ -75,8 +80,7 @@ ProviderContainer _container(LegacyCloudBackup cloud) {
     }),
     legacyCloudBackupProvider.overrideWithValue(cloud),
     legacySecureStorageProvider.overrideWithValue(_NoSecureStorage()),
-    legacyLocalVaultPathProvider
-        .overrideWithValue(() async => '/nonexistent/vault.sqlite'),
+    legacyLocalVaultPathProvider.overrideWithValue(() async => localPath),
   ]);
   addTearDown(container.dispose);
   return container;
@@ -147,6 +151,28 @@ void main() {
     await _settled(container);
     final controller = container.read(legacyImportProvider.notifier);
     await controller.retryWithPassword('not it at all');
+    expect(await controller.skipUnreadable(), isNull);
+    expect(container.read(legacyImportProvider).done, isTrue);
+  });
+
+  test('with no old salt, Skip still names the source that is locked',
+      () async {
+    // The fixture's key is the account key above; unlock with another so
+    // the phone's old database stays locked.
+    final dir = await Directory.systemTemp.createTemp('fitness-legacy');
+    addTearDown(() => dir.delete(recursive: true));
+    final path = '${dir.path}/vault.sqlite';
+    await File('test/fixtures/legacy_vault.sqlite').copy(path);
+    final container =
+        _container(_Cloud(const [], salt: false), localPath: path);
+    await container.read(vaultControllerProvider.notifier).unlock(
+        Uint8List.fromList(List.filled(32, 5)), legacyDek: true);
+    await _settled(container);
+    final controller = container.read(legacyImportProvider.notifier);
+    expect(
+        await controller.retryWithPassword('anything'),
+        isA<LegacyBackupUnreadable>()
+            .having((e) => e.source, 'source', 'phone'));
     expect(await controller.skipUnreadable(), isNull);
     expect(container.read(legacyImportProvider).done, isTrue);
   });

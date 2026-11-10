@@ -500,6 +500,23 @@ class FitnessVault {
         _Day(dateKey, normalized, DateTime.now().toUtc()));
   }
 
+  /// Adds a day's metrics from the previous version to a day that already
+  /// exists here (logged while the import was still running, say): keys
+  /// the day doesn't have yet are filled in, values it has are kept. A day
+  /// that isn't here, or was deleted, is left to the importer.
+  Future<void> fillDayFromLegacy(String dateKey, Map<String, num> legacy) async {
+    final item = await store.get(await idFor('day:$dateKey'));
+    if (item == null || item.deleted || item.json == null) return;
+    final existing = _days.decode(item)?.metrics;
+    if (existing == null) return;
+    final missing = {
+      for (final e in legacy.entries)
+        if (!existing.containsKey(e.key)) e.key: e.value,
+    };
+    if (missing.isEmpty) return;
+    await _putDay(dateKey, {...existing, ...missing});
+  }
+
   /// One row per day, newest first, in the shape screens used before:
   /// `date_key`, `metrics`, `steps`, `heart_points`, `updated_at`.
   Future<List<Map<String, dynamic>>> fetchDailyMetrics() async {

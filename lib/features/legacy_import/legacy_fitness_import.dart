@@ -578,7 +578,7 @@ List<LegacyImporter> fitnessLegacyImporters({
           await localPath(),
           await keys(legacyKey),
         );
-        return data == null ? const [] : legacyRecordsFor(data, vault);
+        return data == null ? const [] : _recordsFor(data, vault);
       },
     ),
     LegacyImporter(
@@ -588,7 +588,7 @@ List<LegacyImporter> fitnessLegacyImporters({
           await cloud.fetchAll(),
           await keys(legacyKey),
         );
-        return data == null ? const [] : legacyRecordsFor(data, vault);
+        return data == null ? const [] : _recordsFor(data, vault);
       },
     ),
   ];
@@ -621,6 +621,19 @@ Future<List<Uint8List>> legacyKeysFromPassword(
     for (final s in salts)
       await Kdf.deriveMasterKey(password: password, salt: s),
   ];
+}
+
+/// [legacyRecordsFor], after merging old days into days already logged
+/// here: the importer skips items that exist, so a day logged while the
+/// import ran would otherwise hide that day's older metrics.
+Future<List<LegacyRecord>> _recordsFor(
+  LegacyFitnessData data,
+  FitnessVault vault,
+) async {
+  for (final e in data.days.entries) {
+    await vault.fillDayFromLegacy(e.key, e.value);
+  }
+  return legacyRecordsFor(data, vault);
 }
 
 bool _sameBytes(List<int> a, List<int> b) {
