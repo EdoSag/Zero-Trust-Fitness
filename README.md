@@ -2,7 +2,7 @@
 
 **Your health data is human rights data. Own it. Encrypt it. Protect it.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)]()
 
@@ -69,10 +69,38 @@ We are actively looking for contributors! Whether you are a security researcher,
 
 ---
 
-## 📜 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
 ---
 
 > *"The only person who should know your resting heart rate is you and your doctor—not an advertising algorithm."*
+
+## License
+
+Copyright (C) 2026 EdoSag (https://zerotrust.bz)
+
+Zero-Trust is open source under the [GNU Affero General Public License v3.0](LICENSE)
+(AGPL-3.0-only), the same licence Signal uses.
+
+- You may use, study, change and share the code, including in your own projects.
+- If you share a changed version, or run it for other people over a network, you must
+  publish your full source code under the same licence.
+- This program comes with no warranty; see the licence for details.
+
+Third-party libraries keep their own licences; the app lists them under
+Settings > Open-source licences.
+
+### Name and logo
+
+The AGPL covers the code, not the brand. "Zero-Trust", "ZT", the app names and icons are
+reserved. If you publish a fork, give it a different name and icon so nobody mistakes it
+for an official Zero-Trust app.
+
+### Servers
+
+The official apps use the Zero-Trust servers. A fork must use its own backend (for
+example its own Supabase project) and must not connect to the official servers.
+
+### Contributing
+
+Pull requests are welcome. By sending one you agree that your contribution is licensed
+under the AGPL-3.0 and that the copyright holder may also license it under other terms,
+including commercially. This keeps the project able to offer paid plans and other licences.
