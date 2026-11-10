@@ -11,6 +11,8 @@ import 'package:zerotrust_fitness/features/health/data/health_writeback.dart';
 import 'package:zerotrust_fitness/pages/export_restore_page.dart';
 import 'package:zerotrust_fitness/pages/google_fit_import_page.dart';
 import 'package:zerotrust_fitness/pages/goals_page.dart';
+import 'package:zerotrust_fitness/pages/gpx_import_page.dart';
+import 'package:zerotrust_fitness/pages/offline_maps_page.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
 import 'package:zerotrust_fitness/pages/privacy_dashboard_page.dart';
 import 'package:zerotrust_fitness/pages/reminders_page.dart';
@@ -329,7 +331,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
         ListTile(
           leading: const Icon(Icons.notifications_outlined),
           title: const Text('Reminders'),
-          subtitle: const Text('Movement, hydration, workout & sleep'),
+          subtitle: const Text('Weekly summary, movement, water, workouts & sleep'),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const RemindersPage()),
           ),
@@ -368,6 +370,13 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
           onTap: () => _showUnitsPicker(context),
         ),
         ListTile(
+          leading: const Icon(Icons.map_outlined),
+          title: const Text('Offline maps'),
+          subtitle: const Text('Keep route maps on this phone'),
+          enabled: unlocked,
+          onTap: () => _push((v) => OfflineMapsPage(vault: v)),
+        ),
+        ListTile(
           leading: const Icon(Icons.privacy_tip_outlined),
           title: const Text('Privacy dashboard'),
           subtitle: const Text('What your vault holds and how it is protected'),
@@ -389,6 +398,13 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
           subtitle: const Text('Your history from a Google Takeout export'),
           enabled: unlocked,
           onTap: () => _push((v) => GoogleFitImportPage(vault: v)),
+        ),
+        ListTile(
+          leading: const Icon(Icons.route_outlined),
+          title: const Text('Import GPX routes'),
+          subtitle: const Text('From Strava, Komoot, Garmin and others'),
+          enabled: unlocked,
+          onTap: () => _push((v) => GpxImportPage(vault: v)),
         ),
         ListTile(
           leading: const Icon(Icons.share_outlined),

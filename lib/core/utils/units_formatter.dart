@@ -77,6 +77,29 @@ class UnitsFormatter {
     return '${kg.toStringAsFixed(1)} kg';
   }
 
+  static const litersPerFlOz = 0.0295735;
+
+  /// Water in litres → `1.25 L` or `42 fl oz`.
+  String formatWater(num liters) {
+    if (_distanceUnit == DistanceUnit.imperial) {
+      return '${(liters / litersPerFlOz).round()} fl oz';
+    }
+    return '${liters.toStringAsFixed(liters >= 10 ? 1 : 2)} L';
+  }
+
+  /// The quick-add glass sizes, in litres: 250/500/750 ml, or 8/16/24 oz.
+  List<({String label, double liters})> get waterPresets =>
+      _distanceUnit == DistanceUnit.imperial
+          ? [
+              for (final oz in const [8, 16, 24])
+                (label: '+$oz oz', liters: oz * litersPerFlOz),
+            ]
+          : const [
+              (label: '+250 ml', liters: 0.25),
+              (label: '+500 ml', liters: 0.5),
+              (label: '+750 ml', liters: 0.75),
+            ];
+
   /// Height in cm → formatted string.
   String formatHeight(double cm) {
     if (_distanceUnit == DistanceUnit.imperial) {

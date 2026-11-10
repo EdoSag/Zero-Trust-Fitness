@@ -3,6 +3,7 @@ import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/components/compact_metric_card.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
 import 'package:zerotrust_fitness/pages/metric_detail_page.dart';
+import 'package:zerotrust_fitness/pages/water_food_page.dart';
 
 class AllMetricsPage extends StatelessWidget {
   const AllMetricsPage({
@@ -39,7 +40,12 @@ class AllMetricsPage extends StatelessWidget {
                     ? null
                     : () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => MetricDetailPage(
+                            builder: (_) => spec.key == 'water_l' ||
+                                    spec.key == 'nutrition_entries'
+                                ? WaterFoodPage(
+                                    initialTab:
+                                        spec.key == 'water_l' ? 0 : 1)
+                                : MetricDetailPage(
                               metricKey: spec.key,
                               metricTitle: spec.title,
                               unit: spec.unit,

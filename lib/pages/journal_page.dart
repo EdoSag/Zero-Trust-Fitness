@@ -4,6 +4,8 @@ import 'package:zerotrust_fitness/components/empty_state_widget.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
+import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
+import 'package:zerotrust_fitness/features/maps/route_map.dart';
 
 enum JournalFilter { all, workouts, measurements }
 
@@ -37,6 +39,8 @@ class WorkoutItem extends JournalItem {
 
   String get sourceLabel => switch (data['source']) {
         'google_fit' => 'GOOGLE FIT',
+        'gpx' => 'GPX',
+        _ when data['imported_from'] == 'gpx' => 'GPX',
         _ when !isEditable => 'HEALTH',
         _ when data['route'] is List => 'GPS',
         _ => 'MANUAL',
@@ -85,6 +89,8 @@ class JournalPage extends StatefulWidget {
     required this.onDeleteWorkout,
     required this.onEditMeasurement,
     required this.onDeleteMeasurement,
+    this.onImportGpx,
+    this.onExportGpx,
   });
 
   /// Workout data with its item id under `_id`.
@@ -99,6 +105,12 @@ class JournalPage extends StatefulWidget {
   final Future<void> Function(String id) onDeleteWorkout;
   final Future<void> Function(ManualEntry entry, num value) onEditMeasurement;
   final Future<void> Function(ManualEntry entry) onDeleteMeasurement;
+
+  /// Opens the GPX import screen.
+  final VoidCallback? onImportGpx;
+
+  /// Shares a workout's route as a GPX file.
+  final Future<void> Function(Map<String, dynamic> data)? onExportGpx;
 
   @override
   State<JournalPage> createState() => _JournalPageState();
@@ -177,7 +189,17 @@ class _JournalPageState extends State<JournalPage> {
     final items = _items;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Journal')),
+      appBar: AppBar(
+        title: const Text('Journal'),
+        actions: [
+          if (widget.onImportGpx != null && widget.canEdit)
+            IconButton(
+              tooltip: 'Import GPX routes',
+              icon: const Icon(Icons.route_outlined),
+              onPressed: widget.onImportGpx,
+            ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: widget.onRefresh,
         child: widget.isLoading && widget.workouts.isEmpty
@@ -431,13 +453,16 @@ class _JournalPageState extends State<JournalPage> {
     final laps = _laps(w.data['laps']);
     final distance = (w.data['distance_m'] as num?)?.toDouble();
     final pace = (w.data['avg_pace_min_per_km'] as num?)?.toDouble();
+    final route = GpsRoutePoint.listFrom(w.data['route']);
+    final hasRoute = route.length >= 2;
     final action = await showModalBottomSheet<_Action>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
       builder: (ctx) => DraggableScrollableSheet(
         expand: false,
-        initialChildSize: splits.isEmpty && laps.isEmpty ? 0.4 : 0.6,
+        initialChildSize:
+            hasRoute ? 0.75 : (splits.isEmpty && laps.isEmpty ? 0.4 : 0.6),
         maxChildSize: 0.9,
         builder: (ctx, controller) => ListView(
           controller: controller,
@@ -450,6 +475,10 @@ class _JournalPageState extends State<JournalPage> {
               '${w.sourceLabel.toLowerCase()}',
               style: TextStyle(color: Theme.of(ctx).hintColor),
             ),
+            if (hasRoute) ...[
+              const SizedBox(height: 16),
+              RouteMap(points: route),
+            ],
             const SizedBox(height: 16),
             Wrap(
               spacing: 24,
@@ -476,6 +505,14 @@ class _JournalPageState extends State<JournalPage> {
               const SizedBox(height: 20),
               Text('Laps', style: Theme.of(ctx).textTheme.titleMedium),
               _lapTable(ctx, laps, auto: false),
+            ],
+            if (hasRoute && widget.onExportGpx != null) ...[
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => widget.onExportGpx!(w.data),
+                icon: const Icon(Icons.ios_share),
+                label: const Text('Export route (GPX)'),
+              ),
             ],
             if (widget.canEdit) ...[
               const SizedBox(height: 24),

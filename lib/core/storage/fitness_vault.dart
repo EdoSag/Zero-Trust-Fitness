@@ -62,6 +62,57 @@ class ManualEntry {
   final DateTime updatedAt;
 }
 
+/// A meal or snack the person logged. [kcal] and the macros are optional:
+/// many people only want to note what they ate.
+class FitnessMeal {
+  const FitnessMeal({
+    required this.id,
+    required this.name,
+    required this.mealType,
+    required this.at,
+    this.kcal,
+    this.proteinG,
+    this.carbsG,
+    this.fatG,
+  });
+
+  final String id;
+  final String name;
+
+  /// `breakfast`, `lunch`, `dinner` or `snack`.
+  final String mealType;
+  final DateTime at;
+  final num? kcal;
+  final num? proteinG;
+  final num? carbsG;
+  final num? fatG;
+
+  String get dateKey => FitnessVault.dateKeyOf(at);
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'meal': mealType,
+        'at': at.toUtc().toIso8601String(),
+        if (kcal != null) 'kcal': kcal,
+        if (proteinG != null) 'protein_g': proteinG,
+        if (carbsG != null) 'carbs_g': carbsG,
+        if (fatG != null) 'fat_g': fatG,
+      };
+
+  static FitnessMeal fromJson(String id, Map<String, dynamic> json) =>
+      FitnessMeal(
+        id: id,
+        name: json['name']?.toString() ?? '',
+        mealType: json['meal']?.toString() ?? 'snack',
+        at: DateTime.tryParse(json['at']?.toString() ?? '')?.toUtc() ??
+            DateTime.utc(2000),
+        kcal: json['kcal'] as num?,
+        proteinG: json['protein_g'] as num?,
+        carbsG: json['carbs_g'] as num?,
+        fatG: json['fat_g'] as num?,
+      );
+}
+
 class _Day {
   const _Day(this.dateKey, this.metrics, this.updatedAt);
   final String dateKey;
@@ -222,6 +273,14 @@ class FitnessVault {
     idOf: (t) => t.id,
   );
 
+  static final meals = ZtCollection<FitnessMeal>(
+    kind: 'meal',
+    fromJson: (id, json, _) =>
+        FitnessMeal.fromJson(id, Map<String, dynamic>.from(json)),
+    toJson: (m) => m.toJson(),
+    idOf: (m) => m.id,
+  );
+
   /// Saves [value] in [collection] under [id], keeping fields a newer app
   /// version added, and refusing to overwrite an item a newer version wrote.
   Future<void> _put<T>(ZtCollection<T> collection, String id, T value) async {
@@ -374,6 +433,68 @@ class FitnessVault {
     await setManualMetricValue(
         dateKey: dateKey, metricKey: key, value: next < 0 ? 0 : next);
   }
+
+  // ---------------------------------------------------------------------------
+  // Water and food
+  // ---------------------------------------------------------------------------
+
+  /// Adds [liters] of water to a day (negative takes some off, never below
+  /// what Health Connect reported). Returns the day's new total.
+  Future<num> addWater(String dateKey, num liters) async {
+    await _adjustManual(dateKey, 'water_l', liters);
+    return (await _metricsFor(dateKey))['water_l'] ?? 0;
+  }
+
+  /// The water a day holds: total, the part Health Connect reported and the
+  /// part logged here.
+  Future<({num total, num health, num logged})> waterFor(
+      String dateKey) async {
+    final m = await _metricsFor(dateKey);
+    final logged = m['water_l_manual'] ?? 0;
+    final total = m['water_l'] ?? 0;
+    return (
+      total: total,
+      health: m['water_l_hc'] ?? (total - logged),
+      logged: logged,
+    );
+  }
+
+  /// Meals, newest first; only [dateKey]'s when given.
+  Future<List<FitnessMeal>> fetchMeals({String? dateKey}) async {
+    final list = await meals.list(store);
+    final filtered = dateKey == null
+        ? list
+        : list.where((m) => m.dateKey == dateKey).toList();
+    filtered.sort((a, b) => b.at.compareTo(a.at));
+    return filtered;
+  }
+
+  /// Logs a new meal, or replaces the one with the same id, and keeps the
+  /// day's food-entry count (what Today shows) in step.
+  Future<String> logMeal(FitnessMeal meal) async {
+    final previous = await meals.get(store, meal.id);
+    await _put(meals, meal.id, meal);
+    if (previous != null) {
+      await _adjustManual(previous.dateKey, 'nutrition_entries', -1);
+    }
+    await _adjustManual(meal.dateKey, 'nutrition_entries', 1);
+    return meal.id;
+  }
+
+  /// Saves a meal from a backup as it is; the backup's days already count it.
+  Future<void> restoreMeal(FitnessMeal meal) => _put(meals, meal.id, meal);
+
+  Future<void> removeMeal(String id) async {
+    final existing = await meals.get(store, id);
+    await _writer.delete(id);
+    if (existing != null) {
+      await _adjustManual(existing.dateKey, 'nutrition_entries', -1);
+    }
+  }
+
+  /// The id a meal from a backup gets, so restoring twice adds it once.
+  Future<String> mealIdFor(FitnessMeal meal) =>
+      idFor('meal:${meal.at.toUtc().toIso8601String()}|${meal.name}');
 
   // ---------------------------------------------------------------------------
   // Journal
@@ -813,6 +934,7 @@ class FitnessVault {
       'achievement': 0,
       'goal': 0,
       'template': 0,
+      'meal': 0,
     };
     for (final item in await store.all()) {
       if (item.deleted) continue;
@@ -822,13 +944,16 @@ class FitnessVault {
     return counts;
   }
 
-  /// Deletes workouts, days and medals on every device (goals and templates
-  /// are settings, and stay).
+  /// Deletes workouts, days, meals and medals on every device (goals and
+  /// templates are settings, and stay).
   Future<void> clearActivityData() async {
     for (final item in await store.all()) {
       if (item.deleted) continue;
       final kind = item.json?[ZtCollection.kindKey];
-      if (kind == 'workout' || kind == 'day' || kind == 'achievement') {
+      if (kind == 'workout' ||
+          kind == 'day' ||
+          kind == 'meal' ||
+          kind == 'achievement') {
         await _writer.delete(item.itemId);
       }
     }

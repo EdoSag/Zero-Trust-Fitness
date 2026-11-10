@@ -36,6 +36,7 @@ class ExportService {
     final metricRows = await vault.fetchDailyMetrics();
     final achievements = await vault.fetchAchievements();
     final goals = await vault.fetchGoals();
+    final meals = [for (final m in await vault.fetchMeals()) m.toJson()];
 
     final payload = {
       'version': 1,
@@ -44,6 +45,7 @@ class ExportService {
       'daily_metrics': metricRows,
       'achievements': achievements,
       'goals': goals,
+      'meals': meals,
     };
 
     final json = const JsonEncoder.withIndent('  ').convert(payload);
@@ -194,6 +196,32 @@ class ExportService {
             period: period
           );
         }
+      }
+    }
+
+    // Meals: added unless already here. The backup's days already count
+    // them, so the days are not touched again.
+    final mealsRaw = decoded['meals'];
+    if (mealsRaw is List) {
+      final present = {
+        for (final m in await vault.fetchMeals()) await vault.mealIdFor(m),
+      };
+      for (final item in mealsRaw) {
+        if (item is! Map) continue;
+        final parsed =
+            FitnessMeal.fromJson('', item.map((k, v) => MapEntry('$k', v)));
+        final id = await vault.mealIdFor(parsed);
+        if (!present.add(id)) continue;
+        await vault.restoreMeal(FitnessMeal(
+          id: id,
+          name: parsed.name,
+          mealType: parsed.mealType,
+          at: parsed.at,
+          kcal: parsed.kcal,
+          proteinG: parsed.proteinG,
+          carbsG: parsed.carbsG,
+          fatG: parsed.fatG,
+        ));
       }
     }
 

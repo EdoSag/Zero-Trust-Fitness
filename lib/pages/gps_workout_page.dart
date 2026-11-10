@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zerotrust_fitness/features/maps/tile_cache.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
@@ -187,9 +188,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
         'distance_m': result.distanceMeters,
         'avg_pace_min_per_km': result.averagePaceMinutesPerKm,
         'timestamp': result.startedAt.toIso8601String(),
-        'route': [
-          for (final p in result.routePoints) {'lat': p.latitude, 'lng': p.longitude},
-        ],
+        'route': [for (final p in result.routePoints) p.toJson()],
         if (result.splits.isNotEmpty)
           'splits': [for (final s in result.splits) s.toJson()],
         if (result.laps.isNotEmpty)
@@ -511,10 +510,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
       mapController: _mapController,
       options: MapOptions(initialCenter: points.last, initialZoom: 16),
       children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'dev.sagron.zerotrustfitness',
-        ),
+        ztTileLayer(),
         if (points.length >= 2)
           PolylineLayer(
             polylines: [
@@ -540,6 +536,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
             ),
           ],
         ),
+        ztMapAttribution(),
       ],
     );
   }

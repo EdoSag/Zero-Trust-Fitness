@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zerotrust_fitness/app/vault_providers.dart';
 import 'package:zerotrust_fitness/core/services/reminder_service.dart';
 
-class RemindersPage extends StatefulWidget {
+class RemindersPage extends ConsumerStatefulWidget {
   const RemindersPage({super.key});
 
   @override
-  State<RemindersPage> createState() => _RemindersPageState();
+  ConsumerState<RemindersPage> createState() => _RemindersPageState();
 }
 
-class _RemindersPageState extends State<RemindersPage> {
+class _RemindersPageState extends ConsumerState<RemindersPage> {
   ReminderSettings _settings = const ReminderSettings(
     movementEnabled: false,
     hydrationEnabled: false,
@@ -48,7 +50,8 @@ class _RemindersPageState extends State<RemindersPage> {
       }
       if (mounted) setState(() => _permissionGranted = true);
     }
-    await ReminderService().applySettings(newSettings);
+    await ReminderService().applySettings(newSettings,
+        vault: ref.read(openFitnessVaultProvider));
     if (mounted) setState(() => _settings = newSettings);
   }
 
@@ -98,6 +101,19 @@ class _RemindersPageState extends State<RemindersPage> {
       appBar: AppBar(title: const Text('Reminders')),
       body: ListView(
         children: [
+          // -- Weekly summary -------------------------------------------------
+          _section('Summary'),
+          SwitchListTile(
+            secondary: const Icon(Icons.insights_outlined),
+            title: const Text('Weekly summary'),
+            subtitle: const Text(
+                'Mondays at 9:00: Heart Points, steps and workouts, '
+                'compared with the week before'),
+            value: _settings.weeklySummaryEnabled,
+            onChanged: (v) =>
+                _apply(_settings.copyWith(weeklySummaryEnabled: v)),
+          ),
+
           // -- Movement -------------------------------------------------------
           _section('Activity'),
           SwitchListTile(
@@ -194,7 +210,9 @@ class _RemindersPageState extends State<RemindersPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'All reminders are local-only and never leave your device.',
+              'All reminders are local-only and never leave your device. '
+              'Your data is locked while Fitness is closed, so the weekly '
+              'summary is prepared each time you open the app.',
               style: Theme.of(context)
                   .textTheme
                   .bodySmall

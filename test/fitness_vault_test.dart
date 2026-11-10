@@ -161,6 +161,8 @@ void main() {
     await v.insertAchievementIfAbsent('x', DateTime.utc(2026));
     await v.upsertGoal(metricKey: 'steps', targetValue: 1, period: 'daily');
     await v.saveTemplate(name: 'T', activityType: 'Run', data: const {});
+    await v.logMeal(FitnessMeal(
+        id: 'm', name: 'Soup', mealType: 'lunch', at: DateTime.utc(2026)));
 
     await v.clearActivityData();
     expect(await v.countsByKind(), {
@@ -169,6 +171,7 @@ void main() {
       'achievement': 0,
       'goal': 1,
       'template': 1,
+      'meal': 0,
     });
   });
 }
