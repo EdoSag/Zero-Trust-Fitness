@@ -137,8 +137,9 @@ class Gpx {
           'trk',
           nest: () {
             if (name != null) b.element('name', nest: name);
-            if (activity != null)
+            if (activity != null) {
               b.element('type', nest: activity.toLowerCase());
+            }
             b.element(
               'trkseg',
               nest: () {
