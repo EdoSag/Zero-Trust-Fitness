@@ -4,7 +4,7 @@
     android:id="@android:id/background"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/fitness_widget_bg"
+    style="@style/ZtWidget.Root"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingStart="8dp"
@@ -32,8 +32,8 @@
             android:layout_height="14dp"
             android:layout_gravity="center"
             android:contentDescription="@string/widget_locked_short"
-            android:src="@drawable/ic_widget_lock"
-            android:tint="@color/widget_on_surface_variant"
+            android:src="@drawable/ic_zt_widget_lock"
+            android:tint="@color/zt_widget_on_surface_variant"
             android:visibility="gone" />
     </FrameLayout>
 
@@ -72,7 +72,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:maxLines="1"
                     android:text="15"
-                    android:textColor="@color/widget_on_surface"
+                    android:textColor="@color/zt_widget_on_surface"
                     android:textSize="17sp" />
             </LinearLayout>
 
@@ -83,7 +83,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="of 21 Heart Pts"
-                android:textColor="@color/widget_on_surface_variant"
+                android:textColor="@color/zt_widget_on_surface_variant"
                 android:textSize="11sp" />
         </LinearLayout>
 
@@ -115,7 +115,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:maxLines="1"
                     android:text="5,480"
-                    android:textColor="@color/widget_on_surface"
+                    android:textColor="@color/zt_widget_on_surface"
                     android:textSize="17sp" />
             </LinearLayout>
 
@@ -126,7 +126,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="of 10,000 steps"
-                android:textColor="@color/widget_on_surface_variant"
+                android:textColor="@color/zt_widget_on_surface_variant"
                 android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
@@ -140,7 +140,7 @@
         android:ellipsize="end"
         android:maxLines="2"
         android:text="@string/widget_locked"
-        android:textColor="@color/widget_on_surface_variant"
+        android:textColor="@color/zt_widget_on_surface_variant"
         android:textSize="13sp"
         android:visibility="gone" />
 </LinearLayout>
