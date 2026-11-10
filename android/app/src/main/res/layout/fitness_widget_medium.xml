@@ -4,7 +4,7 @@
     android:id="@android:id/background"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/fitness_widget_bg"
+    style="@style/ZtWidget.Root"
     android:gravity="center_horizontal"
     android:orientation="vertical"
     android:padding="10dp">
@@ -36,7 +36,7 @@
                 android:fontFamily="sans-serif-medium"
                 android:maxLines="1"
                 android:text="15"
-                android:textColor="@color/widget_on_surface"
+                android:textColor="@color/zt_widget_on_surface"
                 android:textSize="22sp" />
 
             <TextView
@@ -53,8 +53,8 @@
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:contentDescription="@string/widget_locked_short"
-                android:src="@drawable/ic_widget_lock"
-                android:tint="@color/widget_on_surface_variant"
+                android:src="@drawable/ic_zt_widget_lock"
+                android:tint="@color/zt_widget_on_surface_variant"
                 android:visibility="gone" />
         </LinearLayout>
     </FrameLayout>
@@ -82,7 +82,7 @@
             android:fontFamily="sans-serif-medium"
             android:maxLines="1"
             android:text="5,480"
-            android:textColor="@color/widget_on_surface"
+            android:textColor="@color/zt_widget_on_surface"
             android:textSize="13sp" />
     </LinearLayout>
 
@@ -94,7 +94,7 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:text="@string/widget_locked_short"
-        android:textColor="@color/widget_on_surface_variant"
+        android:textColor="@color/zt_widget_on_surface_variant"
         android:textSize="12sp"
         android:visibility="gone" />
 </LinearLayout>

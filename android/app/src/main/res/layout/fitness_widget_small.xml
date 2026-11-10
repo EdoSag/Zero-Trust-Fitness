@@ -4,7 +4,7 @@
     android:id="@android:id/background"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/fitness_widget_bg"
+    style="@style/ZtWidget.Root"
     android:padding="6dp">
 
     <ImageView
@@ -23,7 +23,7 @@
         android:fontFamily="sans-serif-medium"
         android:maxLines="1"
         android:text="15"
-        android:textColor="@color/widget_on_surface"
+        android:textColor="@color/zt_widget_on_surface"
         android:textSize="15sp" />
 
     <ImageView
@@ -32,7 +32,7 @@
         android:layout_height="16dp"
         android:layout_gravity="center"
         android:contentDescription="@string/widget_locked_short"
-        android:src="@drawable/ic_widget_lock"
-        android:tint="@color/widget_on_surface_variant"
+        android:src="@drawable/ic_zt_widget_lock"
+        android:tint="@color/zt_widget_on_surface_variant"
         android:visibility="gone" />
 </FrameLayout>
