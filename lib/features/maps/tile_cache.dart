@@ -116,40 +116,44 @@ class TileCache {
 
   /// Saves the tiles that cover [points] (with a margin) from [minZoom] to
   /// [maxZoom] for offline use, skipping ones already here. Returns how many
-  /// were fetched. Stops at [maxDownloadTiles].
+  /// were fetched: at most [budget], and none once "Offline maps only" is
+  /// turned on, even mid-download. Tiles are listed lazily and the scan
+  /// stops early, so a very long route can't list millions of tiles.
   Future<int> saveArea(
     List<GpsRoutePoint> points, {
     int minZoom = 12,
     int maxZoom = 16,
-    void Function(int done, int total)? onProgress,
+    int budget = maxDownloadTiles,
+    Future<bool> Function() stop = offlineOnly,
+    void Function(int done, int budget)? onProgress,
   }) async {
-    final wanted = tilesCovering(points, minZoom: minZoom, maxZoom: maxZoom);
-    final missing = <TileXyz>[];
-    for (final t in wanted) {
-      if (!await has(t.z, t.x, t.y)) missing.add(t);
-    }
-    final todo = missing.take(maxDownloadTiles).toList();
-    var done = 0;
-    for (final t in todo) {
+    var done = 0, scanned = 0;
+    for (final t in tilesCovering(points, minZoom: minZoom, maxZoom: maxZoom)) {
+      if (done >= budget || ++scanned > maxScannedTiles) break;
+      if (await has(t.z, t.x, t.y)) continue;
+      if (await stop()) break;
       try {
         await fetch(t.z, t.x, t.y);
       } catch (_) {
         // A tile that fails is fetched again the next time it's seen.
       }
       done++;
-      onProgress?.call(done, todo.length);
+      onProgress?.call(done, budget);
     }
     return done;
   }
 
+  /// How many tiles one [saveArea] looks at, cached or not.
+  static const maxScannedTiles = 20000;
+
   /// The tiles covering [points]' bounding box (plus a one-tile margin) at
-  /// each zoom level.
-  static List<TileXyz> tilesCovering(
+  /// each zoom level, lowest zoom first, listed as they are read.
+  static Iterable<TileXyz> tilesCovering(
     List<GpsRoutePoint> points, {
     required int minZoom,
     required int maxZoom,
-  }) {
-    if (points.isEmpty) return const [];
+  }) sync* {
+    if (points.isEmpty) return;
     var minLat = 90.0, maxLat = -90.0, minLon = 180.0, maxLon = -180.0;
     for (final p in points) {
       minLat = math.min(minLat, p.latitude);
@@ -157,7 +161,6 @@ class TileCache {
       minLon = math.min(minLon, p.longitude);
       maxLon = math.max(maxLon, p.longitude);
     }
-    final tiles = <TileXyz>[];
     for (var z = minZoom; z <= maxZoom; z++) {
       final n = 1 << z;
       final x0 = math.max(0, lonToTileX(minLon, z) - 1);
@@ -166,11 +169,10 @@ class TileCache {
       final y1 = math.min(n - 1, latToTileY(minLat, z) + 1);
       for (var x = x0; x <= x1; x++) {
         for (var y = y0; y <= y1; y++) {
-          tiles.add(TileXyz(z, x, y));
+          yield TileXyz(z, x, y);
         }
       }
     }
-    return tiles;
   }
 
   static int lonToTileX(double lon, int z) =>

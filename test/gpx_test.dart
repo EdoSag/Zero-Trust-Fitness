@@ -127,4 +127,30 @@ void main() {
     expect(w['source'], 'gpx');
     expect(FitnessVault.workoutHeartPoints(w), 0);
   });
+
+  test('importing again with Heart Points on counts them after all', () async {
+    final v = testVault();
+    final t = Gpx.parse(_strava).single;
+    Future<void> run(bool count) => GpxWorkouts(v).import(
+      t,
+      activity: 'Running',
+      start: t.start!,
+      durationMinutes: 31,
+      countHeartPoints: count,
+    );
+    Future<num> dayPoints() async =>
+        (await v.fetchDailyMetrics()).firstOrNull?['heart_points'] ?? 0;
+    await run(false);
+    expect(await dayPoints(), 0);
+    await run(true);
+    final w = (await v.fetchWorkouts()).single.data;
+    expect(w['source'], isNull);
+    expect(FitnessVault.workoutHeartPoints(w), greaterThan(0));
+    expect(
+      await dayPoints(),
+      FitnessVault.workoutHeartPoints(w),
+    );
+    await run(false);
+    expect(await dayPoints(), 0);
+  });
 }
