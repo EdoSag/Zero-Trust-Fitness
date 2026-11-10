@@ -62,6 +62,8 @@ void showActionableErrorSnackBar(
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
+      // Flutter keeps a snackbar with an action open until it is tapped.
+      persist: false,
       action: onRetry == null
           ? null
           : SnackBarAction(label: 'Retry', onPressed: onRetry),
