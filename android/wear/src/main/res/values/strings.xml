@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tile_heart_points">Heart Points</string>
+    <string name="tile_water">Water</string>
+    <string name="not_connected">Turn on \"Show on Wear OS watch\" in ZT Fitness on your phone.</string>
+    <string name="stale">Open ZT Fitness on your phone to update.</string>
+</resources>

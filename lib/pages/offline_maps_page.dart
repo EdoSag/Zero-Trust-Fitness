@@ -60,11 +60,13 @@ class _OfflineMapsPageState extends State<OfflineMapsPage> {
             r,
       ];
       for (final (i, r) in routes.indexed) {
+        if (await TileCache.offlineOnly()) break;
         if (fetched >= TileCache.maxDownloadTiles) {
           capped = true;
           break;
         }
-        fetched += await cache.saveArea(r);
+        fetched += await cache.saveArea(r,
+            budget: TileCache.maxDownloadTiles - fetched);
         if (mounted) setState(() => _progress = (i + 1) / routes.length);
       }
       _message = fetched == 0

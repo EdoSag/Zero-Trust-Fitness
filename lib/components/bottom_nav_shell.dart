@@ -21,6 +21,7 @@ import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_service.dart';
 import 'package:zerotrust_fitness/features/legacy_import/legacy_import_banner.dart';
 import 'package:zerotrust_fitness/features/summary/weekly_summary.dart';
+import 'package:zerotrust_fitness/features/wear/wear_companion.dart';
 import 'package:zerotrust_fitness/core/services/reminder_service.dart';
 import 'package:zerotrust_fitness/components/manual_ingestion_bottom_sheet.dart';
 import 'package:zerotrust_fitness/pages/journal_page.dart';
@@ -92,6 +93,9 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WearCompanion.instance
+      ..listen()
+      ..changes.addListener(_onWatchChanged);
     _currentIndex = widget.initialIndex;
     _gpsTrackingService.snapshots.listen((snapshot) {
       if (!mounted) return;
@@ -113,9 +117,11 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    WearCompanion.instance.changes.removeListener(_onWatchChanged);
     _changes?.cancel();
     _reloadDebounce?.cancel();
     _weeklySummaryDebounce?.cancel();
+    _watchDebounce?.cancel();
     super.dispose();
   }
 
@@ -126,6 +132,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       if (mounted) setState(() => _isObscured = true);
     } else if (state == AppLifecycleState.resumed) {
       if (mounted) setState(() => _isObscured = false);
+      _drainWatchWater();
     }
   }
 
@@ -137,6 +144,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
+      await _drainWatchWater();
       final healthService = HealthService();
       final isAvailable = await healthService.isHealthConnectAvailable();
       if (!isAvailable) {
@@ -429,6 +437,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       final rows = await vault.fetchDailyMetrics();
       final fallbackToday = _metricsForDate(DateTime.now(), rows);
       _scheduleWeeklySummary(vault);
+      _syncWatchSoon();
       if (!mounted) return;
       setState(() {
         _dailyMetrics = rows;
@@ -449,6 +458,48 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   }
 
   Timer? _weeklySummaryDebounce;
+  Timer? _watchDebounce;
+
+  /// Adds water logged on the watch; errors leave it queued on the phone.
+  Future<void> _drainWatchWater() async {
+    final vault = ref.read(openFitnessVaultProvider);
+    if (vault == null) return;
+    try {
+      await WearCompanion.instance.drainPendingWater(vault);
+    } catch (e) {
+      debugPrint('Watch water not added yet: $e');
+    }
+  }
+
+  /// Water from the watch while the app runs, or the switch turned on.
+  void _onWatchChanged() {
+    _drainWatchWater();
+    _syncWatchSoon();
+  }
+
+  /// Sends today's numbers to the Wear OS watch (when that's on), once the
+  /// screen has settled.
+  void _syncWatchSoon() {
+    _watchDebounce?.cancel();
+    _watchDebounce = Timer(const Duration(seconds: 2), () {
+      if (!mounted || ref.read(openFitnessVaultProvider) == null) return;
+      final goals = ref.read(goalsProvider).asData?.value;
+      num? daily(String key) {
+        final g = goals?.forKey(key);
+        if (g == null) return null;
+        return g.period == 'weekly' ? g.targetValue / 7 : g.targetValue;
+      }
+
+      WearCompanion.instance
+          .push(WearCompanion.todayFrom(
+            _todayMetrics,
+            stepsGoal: daily('steps'),
+            heartPointsGoal: daily('heart_points'),
+            waterGoalLiters: daily('water_l'),
+          ))
+          .catchError((Object e) => debugPrint('Watch not updated: $e'));
+    });
+  }
 
   /// Re-prepares the Monday summary from the latest data (see
   /// [ReminderService.refreshWeeklySummary]); several reloads in a row

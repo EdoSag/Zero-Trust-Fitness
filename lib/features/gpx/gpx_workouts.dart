@@ -49,7 +49,10 @@ class GpxWorkouts {
       'timestamp': start.toLocal().toIso8601String(),
       if (track.name != null) 'name': track.name,
       'route': [for (final p in Gpx.thin(track.points)) p.toJson()],
-      if (countHeartPoints) 'imported_from': 'gpx' else 'source': 'gpx',
+      // Both keys are always written, so importing a track again with the
+      // other choice replaces the earlier one (logWorkout merges fields).
+      'imported_from': countHeartPoints ? 'gpx' : null,
+      'source': countHeartPoints ? null : 'gpx',
     };
   }
 

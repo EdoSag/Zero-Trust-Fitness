@@ -4,12 +4,16 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/maps/tile_cache.dart';
 
 void main() {
   late Directory dir;
-  setUp(() async => dir = await Directory.systemTemp.createTemp('tiles'));
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    dir = await Directory.systemTemp.createTemp('tiles');
+  });
   tearDown(() async {
     if (await dir.exists()) await dir.delete(recursive: true);
   });
@@ -85,6 +89,51 @@ void main() {
       expect(wide, TileCache.maxDownloadTiles);
       await cache.clear();
       expect((await cache.usage()).tiles, 0);
+    },
+  );
+
+  test('turning on offline only stops a download in progress', () async {
+    var requests = 0;
+    final cache = TileCache(
+      dir,
+      client: MockClient((req) async {
+        requests++;
+        if (requests == 3) await TileCache.setOfflineOnly(true);
+        return http.Response.bytes(Uint8List.fromList([9]), 200);
+      }),
+    );
+    final got = await cache.saveArea(
+      const [GpsRoutePoint(50, 10), GpsRoutePoint(51, 11)],
+      minZoom: 10,
+      maxZoom: 12,
+    );
+    expect(got, 3);
+    expect(requests, 3);
+  });
+
+  test(
+    'a continent-wide route is listed lazily and scanned only so far',
+    () async {
+      // Los Angeles to New York: millions of tiles at zoom 16.
+      const route = [
+        GpsRoutePoint(34.05, -118.24),
+        GpsRoutePoint(40.71, -74.0),
+      ];
+      expect(
+        TileCache.tilesCovering(route, minZoom: 12, maxZoom: 16).take(5),
+        hasLength(5),
+      );
+      var requests = 0;
+      final cache = TileCache(
+        dir,
+        client: MockClient((req) async {
+          requests++;
+          return http.Response.bytes(Uint8List.fromList([9]), 200);
+        }),
+      );
+      final got = await cache.saveArea(route, budget: 10);
+      expect(got, 10);
+      expect(requests, 10);
     },
   );
 }
