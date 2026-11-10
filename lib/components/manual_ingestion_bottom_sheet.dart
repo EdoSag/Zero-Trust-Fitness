@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -930,7 +931,12 @@ class _ManualIngestionBottomSheetState
         left: 24,
         right: 24,
         top: 12,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        // Above the keyboard, else above the navigation bar.
+        bottom: math.max(
+              MediaQuery.viewInsetsOf(context).bottom,
+              MediaQuery.viewPaddingOf(context).bottom,
+            ) +
+            16,
       ),
       child: ElevatedButton(
         onPressed: _isSaving ? null : _saveData,

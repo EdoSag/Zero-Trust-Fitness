@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zerotrust_fitness/components/inline_button_style.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
 
@@ -181,6 +182,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                         const SizedBox(width: 8),
                         FilledButton(
                           onPressed: () => _save(spec.key),
+                          style: inlineButtonStyle,
                           child: const Text('Save'),
                         ),
                       ],

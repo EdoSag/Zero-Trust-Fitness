@@ -7,12 +7,14 @@ import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
 import 'package:zerotrust_fitness/pages/water_food_page.dart';
 
+import 'phone_layout.dart';
 import 'support.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   Future<FitnessVault> pump(WidgetTester tester, {int tab = 0}) async {
+    await usePhoneScreen(tester);
     final vault = testVault();
     await tester.pumpWidget(
       ProviderScope(
@@ -20,7 +22,10 @@ void main() {
           openFitnessVaultProvider.overrideWithValue(vault),
           goalsProvider.overrideWith(() => _NoGoals()),
         ],
-        child: MaterialApp(home: WaterFoodPage(initialTab: tab)),
+        child: MaterialApp(
+          theme: appTheme,
+          home: WaterFoodPage(initialTab: tab),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -50,11 +55,41 @@ void main() {
       'Porridge',
     );
     await tester.enterText(find.widgetWithText(TextField, 'Calories'), '320');
-    await tester.tap(find.text('Save'));
+    // Close the keyboard, as in the bug report: Save must still be there.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    final save = find.widgetWithText(FilledButton, 'Save');
+    expectTappableOnScreen(tester, save);
+    await tester.tap(save);
     await tester.pumpAndSettle();
     expect(find.text('Porridge'), findsWidgets);
     expect(find.text('320'), findsOneWidget);
     expect((await vault.fetchMeals()).single.kcal, 320);
+  });
+
+  testWidgets('food with only a name saves too', (tester) async {
+    final vault = await pump(tester, tab: 1);
+    await tester.tap(find.text('Log food'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'What did you eat?'),
+      'Omelet & boiled potatoes',
+    );
+    await tester.tap(
+      find.descendant(
+        of: find.byType(SegmentedButton<String>),
+        matching: find.text('Dinner'),
+      ),
+    );
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pumpAndSettle();
+    final meal = (await vault.fetchMeals()).single;
+    expect(meal.name, 'Omelet & boiled potatoes');
+    expect(meal.mealType, 'dinner');
+    expect(meal.kcal, isNull);
+    expect(find.text('Log food'), findsOneWidget, reason: 'sheet closed');
   });
 }
 
