@@ -2,11 +2,10 @@
 
 **Your health data is human rights data. Own it. Encrypt it. Protect it.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![Status: Alpha](https://img.shields.io/badge/Status-Alpha-orange.svg)]()
 
-Zero-Trust Fitness is a privacy-first, open-source alternative to mainstream fitness platforms. Built on the principle of **Zero-Knowledge**, this app ensures that your heart rate, GPS coordinates, and biometric telemetry are encrypted on your device before they ever touch a server. 
+Zero-Trust Fitness is a privacy-first, source-available alternative to mainstream fitness platforms. Built on the principle of **Zero-Knowledge**, this app ensures that your heart rate, GPS coordinates, and biometric telemetry are encrypted on your device before they ever touch a server. 
 
 Neither the developers nor the hosting providers can see your data. **You hold the keys.**
 
@@ -69,10 +68,27 @@ We are actively looking for contributors! Whether you are a security researcher,
 
 ---
 
-## 📜 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
 ---
 
 > *"The only person who should know your resting heart rate is you and your doctor—not an advertising algorithm."*
+
+## License
+
+Zero-Trust is **source-available**, not open source. The code is published under the
+[PolyForm Noncommercial License 1.0.0](LICENSE):
+
+- You may download, build and use the app yourself, study the code, fork it, change it,
+  and share your version for free or for personal, hobby, research or nonprofit use.
+- You may not use it, or anything built from it, commercially: no selling it, no paid
+  subscriptions, no ads or paid features. Commercial rights stay with the copyright holder.
+- When you share the code or a version of it, include the [LICENSE](LICENSE) file and its
+  `Required Notice` line.
+
+Third-party libraries keep their own licences; the app lists them under
+Settings > Open-source licences.
+
+### Contributing
+
+Pull requests are welcome. By sending one you agree that your contribution is licensed to
+the copyright holder under terms that let them use, change and relicense it, including
+commercially, and to everyone else under the same licence as this repository.
