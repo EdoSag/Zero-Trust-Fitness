@@ -1,7 +1,7 @@
 name: zerotrust_fitness
 description: Zero-Trust Fitness, end-to-end encrypted activity and health tracking.
 publish_to: none
-version: 0.4.2+8
+version: 0.5.0+9
 environment:
   sdk: ^3.8.0
 
@@ -45,6 +45,10 @@ dependencies:
   intl: ^0.20.1
   archive: ^4.6.0
   flutter_tts: ^4.2.5
+  # Already in the build through other packages: GPX files (F7) and the
+  # offline map tile cache (F8).
+  xml: ^7.1.0
+  http: ^1.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

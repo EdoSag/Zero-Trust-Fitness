@@ -4,9 +4,52 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 class GpsRoutePoint {
-  const GpsRoutePoint(this.latitude, this.longitude);
+  const GpsRoutePoint(this.latitude, this.longitude, {this.time, this.elevation});
   final double latitude;
   final double longitude;
+
+  /// When the phone was here (for GPX export); null on old workouts.
+  final DateTime? time;
+
+  /// Metres above sea level, when the phone knows.
+  final double? elevation;
+
+  factory GpsRoutePoint.ofFix(GpsFix fix) => GpsRoutePoint(
+        fix.latitude,
+        fix.longitude,
+        time: fix.time,
+        elevation: fix.altitude,
+      );
+
+  /// The shape saved in a workout's `route`: `lat`, `lng`, and when known
+  /// `t` (Unix seconds) and `ele` (metres).
+  Map<String, dynamic> toJson() => {
+        'lat': latitude,
+        'lng': longitude,
+        if (time != null) 't': time!.millisecondsSinceEpoch ~/ 1000,
+        if (elevation != null) 'ele': double.parse(elevation!.toStringAsFixed(1)),
+      };
+
+  static GpsRoutePoint? fromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final lat = raw['lat'], lng = raw['lng'];
+    if (lat is! num || lng is! num) return null;
+    final t = raw['t'];
+    final ele = raw['ele'];
+    return GpsRoutePoint(
+      lat.toDouble(),
+      lng.toDouble(),
+      time: t is num
+          ? DateTime.fromMillisecondsSinceEpoch(t.toInt() * 1000, isUtc: true)
+          : null,
+      elevation: ele is num ? ele.toDouble() : null,
+    );
+  }
+
+  /// A workout's saved route.
+  static List<GpsRoutePoint> listFrom(Object? route) => route is List
+      ? [for (final p in route) ?fromJson(p)]
+      : const [];
 }
 
 /// One location reading.
@@ -17,6 +60,7 @@ class GpsFix {
     required this.time,
     this.accuracy = 5,
     this.speed = -1,
+    this.altitude,
   });
 
   factory GpsFix.fromPosition(Position p) => GpsFix(
@@ -25,6 +69,8 @@ class GpsFix {
         time: p.timestamp,
         accuracy: p.accuracy,
         speed: p.speed,
+        // Android reports 0 when it has no altitude.
+        altitude: p.altitude == 0 ? null : p.altitude,
       );
 
   final double latitude;
@@ -37,6 +83,9 @@ class GpsFix {
 
   /// Metres per second, or negative when the phone doesn't know.
   final double speed;
+
+  /// Metres above sea level, or null.
+  final double? altitude;
 }
 
 /// A split (every kilometre or mile) or a lap (the Lap button).
@@ -406,7 +455,7 @@ class GpsTrackingService {
     _lastFix = fix;
     if (last == null) {
       if (!isPaused) {
-        _routePoints.add(GpsRoutePoint(fix.latitude, fix.longitude));
+        _routePoints.add(GpsRoutePoint.ofFix(fix));
         _emitSnapshot();
       }
       return;
@@ -427,7 +476,7 @@ class GpsTrackingService {
     if (moving) _lastMovedAt = _clock();
 
     _distanceMeters += d;
-    _routePoints.add(GpsRoutePoint(fix.latitude, fix.longitude));
+    _routePoints.add(GpsRoutePoint.ofFix(fix));
     _checkSplits();
     _emitSnapshot();
   }

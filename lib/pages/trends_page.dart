@@ -1,3 +1,5 @@
+import 'package:zerotrust_fitness/components/weekly_summary_card.dart';
+import 'package:zerotrust_fitness/features/summary/weekly_summary.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:zerotrust_fitness/components/compact_metric_card.dart';
@@ -17,6 +19,7 @@ class TrendsPage extends StatefulWidget {
     required this.selectedTrendMetricKey,
     required this.onTrendMetricChanged,
     required this.onRefresh,
+    this.weeklySummary,
     this.baselines = const {},
     this.sleepStepsCorrelation,
   });
@@ -29,6 +32,7 @@ class TrendsPage extends StatefulWidget {
   final String selectedTrendMetricKey;
   final ValueChanged<String> onTrendMetricChanged;
   final Future<void> Function() onRefresh;
+  final WeeklySummary? weeklySummary;
   final Map<String, double> baselines;
   final double? sleepStepsCorrelation;
 
@@ -360,6 +364,10 @@ class _TrendsPageState extends State<TrendsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (widget.weeklySummary case final summary?) ...[
+                  WeeklySummaryCard(summary: summary),
+                  const SizedBox(height: 16),
+                ],
                 ..._buildInsightCards(theme),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

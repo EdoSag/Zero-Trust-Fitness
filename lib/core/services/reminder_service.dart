@@ -5,13 +5,16 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/health/data/workout_feedback.dart';
+import 'package:zerotrust_fitness/features/summary/weekly_summary.dart';
 
 /// Notification IDs
 const int _kMovementId = 1001;
 const int _kHydrationId = 1002;
 const int _kSleepId = 1010;
 const int _kMeasurementId = 1011;
+const int _kWeeklySummaryId = 1012;
 // Workout uses 1003–1009 (one per weekday 1–7)
 
 /// SharedPreferences keys
@@ -25,6 +28,7 @@ const String kReminderSleepEnabled = 'reminder_sleep_enabled';
 const String kReminderSleepHour = 'reminder_sleep_hour';
 const String kReminderSleepMinute = 'reminder_sleep_minute';
 const String kReminderMeasurementEnabled = 'reminder_measurement_enabled';
+const String kWeeklySummaryEnabled = 'weekly_summary_enabled';
 
 class ReminderService {
   ReminderService._();
@@ -174,6 +178,62 @@ class ReminderService {
   Future<void> cancelMeasurementReminder() =>
       _plugin.cancel(_kMeasurementId);
 
+  // ---------------------------------------------------------------------------
+  // Weekly summary — Monday 09:00, about the week that just ended
+  // ---------------------------------------------------------------------------
+
+  /// Schedules the next weekly summary from the vault as it is now.
+  ///
+  /// The vault is encrypted and locked while the app is closed, so the
+  /// summary can't be worked out in the background on Monday morning.
+  /// Instead it is worked out every time the app has the data open, and the
+  /// one pending notification is replaced; if the app isn't opened again
+  /// before Monday, the text says which day it counts up to.
+  Future<void> refreshWeeklySummary(FitnessVault vault, {DateTime? now}) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!(prefs.getBool(kWeeklySummaryEnabled) ?? false)) return;
+    final at = now ?? DateTime.now();
+    final slot = nextWeeklySummarySlot(at);
+    final summary = WeeklySummary.compute(
+      dailyRows: await vault.fetchDailyMetrics(),
+      workouts: [for (final w in await vault.fetchWorkouts()) w.data],
+      weekOf: slot.weekOf,
+      now: at,
+    );
+    await scheduleWeeklySummary(summary, slot.at);
+  }
+
+  Future<void> scheduleWeeklySummary(WeeklySummary summary, DateTime at) async {
+    if (!_initialized) await initialize();
+    await _plugin.cancel(_kWeeklySummaryId);
+    await _plugin.zonedSchedule(
+      _kWeeklySummaryId,
+      summary.title,
+      summary.body,
+      tz.TZDateTime.from(at, tz.local),
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'zt_health_weekly_summary',
+          'Weekly Summary',
+          channelDescription: 'Your week of Heart Points and steps, Mondays',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          icon: '@mipmap/ic_launcher',
+          styleInformation: BigTextStyleInformation(summary.body),
+          // Health numbers stay off the lock screen unless the phone is set
+          // to show private notification content.
+          visibility: NotificationVisibility.private,
+        ),
+        iOS: const DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  Future<void> cancelWeeklySummary() => _plugin.cancel(_kWeeklySummaryId);
+
   Future<void> cancelAll() => _plugin.cancelAll();
 
   // ---------------------------------------------------------------------------
@@ -194,22 +254,22 @@ class ReminderService {
     );
   }
 
-  tz.TZDateTime _nextInstanceOfTime(TimeOfDay time) {
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(
-        tz.local, now.year, now.month, now.day, time.hour, time.minute);
-    if (scheduled.isBefore(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
-    }
-    return scheduled;
-  }
+  // The timezone database's `local` is UTC (the app never sets the phone's
+  // zone), so times are worked out in the phone's local time and handed
+  // over as that instant. Repeats then keep the same instant each day.
+  tz.TZDateTime _nextInstanceOfTime(TimeOfDay time) =>
+      tz.TZDateTime.from(_nextLocal(time, null), tz.local);
 
-  tz.TZDateTime _nextInstanceOfWeekdayTime(int weekday, TimeOfDay time) {
-    var dt = _nextInstanceOfTime(time);
-    while (dt.weekday != weekday) {
-      dt = dt.add(const Duration(days: 1));
+  tz.TZDateTime _nextInstanceOfWeekdayTime(int weekday, TimeOfDay time) =>
+      tz.TZDateTime.from(_nextLocal(time, weekday), tz.local);
+
+  static DateTime _nextLocal(TimeOfDay time, int? weekday) {
+    final now = DateTime.now();
+    var at = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+    while (!at.isAfter(now) || (weekday != null && at.weekday != weekday)) {
+      at = DateTime(at.year, at.month, at.day + 1, time.hour, time.minute);
     }
-    return dt;
+    return at;
   }
 
   // ---------------------------------------------------------------------------
@@ -237,6 +297,7 @@ class ReminderService {
       ),
       measurementEnabled:
           prefs.getBool(kReminderMeasurementEnabled) ?? false,
+      weeklySummaryEnabled: prefs.getBool(kWeeklySummaryEnabled) ?? false,
     );
   }
 
@@ -253,10 +314,18 @@ class ReminderService {
     await prefs.setInt(kReminderSleepHour, s.sleepTime.hour);
     await prefs.setInt(kReminderSleepMinute, s.sleepTime.minute);
     await prefs.setBool(kReminderMeasurementEnabled, s.measurementEnabled);
+    await prefs.setBool(kWeeklySummaryEnabled, s.weeklySummaryEnabled);
   }
 
-  Future<void> applySettings(ReminderSettings s) async {
+  /// Saves and schedules [s]. The weekly summary needs the open [vault] to
+  /// be worked out.
+  Future<void> applySettings(ReminderSettings s, {FitnessVault? vault}) async {
     await saveSettings(s);
+    if (!s.weeklySummaryEnabled) {
+      await cancelWeeklySummary();
+    } else if (vault != null) {
+      await refreshWeeklySummary(vault);
+    }
     if (s.movementEnabled) {
       await scheduleMovementReminder();
     } else {
@@ -295,6 +364,7 @@ class ReminderSettings {
     required this.sleepEnabled,
     required this.sleepTime,
     required this.measurementEnabled,
+    this.weeklySummaryEnabled = false,
   });
 
   final bool movementEnabled;
@@ -305,6 +375,7 @@ class ReminderSettings {
   final bool sleepEnabled;
   final TimeOfDay sleepTime;
   final bool measurementEnabled;
+  final bool weeklySummaryEnabled;
 
   ReminderSettings copyWith({
     bool? movementEnabled,
@@ -315,6 +386,7 @@ class ReminderSettings {
     bool? sleepEnabled,
     TimeOfDay? sleepTime,
     bool? measurementEnabled,
+    bool? weeklySummaryEnabled,
   }) =>
       ReminderSettings(
         movementEnabled: movementEnabled ?? this.movementEnabled,
@@ -325,5 +397,7 @@ class ReminderSettings {
         sleepEnabled: sleepEnabled ?? this.sleepEnabled,
         sleepTime: sleepTime ?? this.sleepTime,
         measurementEnabled: measurementEnabled ?? this.measurementEnabled,
+        weeklySummaryEnabled:
+            weeklySummaryEnabled ?? this.weeklySummaryEnabled,
       );
 }

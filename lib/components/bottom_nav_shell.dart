@@ -20,8 +20,12 @@ import 'package:zerotrust_fitness/features/health/domain/heart_points_service.da
 import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_service.dart';
 import 'package:zerotrust_fitness/features/legacy_import/legacy_import_banner.dart';
+import 'package:zerotrust_fitness/features/summary/weekly_summary.dart';
+import 'package:zerotrust_fitness/core/services/reminder_service.dart';
 import 'package:zerotrust_fitness/components/manual_ingestion_bottom_sheet.dart';
 import 'package:zerotrust_fitness/pages/journal_page.dart';
+import 'package:zerotrust_fitness/pages/gpx_import_page.dart';
+import 'package:zerotrust_fitness/features/gpx/gpx_workouts.dart';
 import 'package:zerotrust_fitness/pages/gps_workout_page.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
 import 'package:zerotrust_fitness/pages/settings_page.dart';
@@ -111,6 +115,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     WidgetsBinding.instance.removeObserver(this);
     _changes?.cancel();
     _reloadDebounce?.cancel();
+    _weeklySummaryDebounce?.cancel();
     super.dispose();
   }
 
@@ -423,6 +428,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     try {
       final rows = await vault.fetchDailyMetrics();
       final fallbackToday = _metricsForDate(DateTime.now(), rows);
+      _scheduleWeeklySummary(vault);
       if (!mounted) return;
       setState(() {
         _dailyMetrics = rows;
@@ -440,6 +446,19 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       if (!mounted) return;
       setState(() => _dailyMetrics = []);
     }
+  }
+
+  Timer? _weeklySummaryDebounce;
+
+  /// Re-prepares the Monday summary from the latest data (see
+  /// [ReminderService.refreshWeeklySummary]); several reloads in a row
+  /// schedule once.
+  void _scheduleWeeklySummary(FitnessVault vault) {
+    _weeklySummaryDebounce?.cancel();
+    _weeklySummaryDebounce = Timer(const Duration(seconds: 5), () {
+      ReminderService().refreshWeeklySummary(vault).catchError(
+          (Object e) => debugPrint('Weekly summary not scheduled: $e'));
+    });
   }
 
   Future<void> _refreshDashboardData() async {
@@ -998,6 +1017,14 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
                   onRefresh: _refreshDashboardData,
                   baselines: _baselines,
                   sleepStepsCorrelation: _sleepStepsCorrelation,
+                  weeklySummary: isLocked || _dailyMetrics.isEmpty
+                      ? null
+                      : WeeklySummary.compute(
+                          dailyRows: _dailyMetrics,
+                          workouts: _recentActivities,
+                          weekOf: DateTime.now(),
+                          now: DateTime.now(),
+                        ),
                 ),
                 JournalPage(
                   workouts: _recentActivities,
@@ -1018,6 +1045,15 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
                   onDeleteMeasurement: (entry) => vault != null
                       ? _deleteMeasurement(vault, entry)
                       : Future.value(),
+                  onImportGpx: vault == null
+                      ? null
+                      : () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                                builder: (_) => GpxImportPage(vault: vault)),
+                          ),
+                  onExportGpx: (data) => ref
+                      .read(vaultControllerProvider.notifier)
+                      .whileShowingSystemUi(() => GpxWorkouts.share(data)),
                 ),
                 FitnessSettingsPage(
                   earnedMedals: _earnedMedals,

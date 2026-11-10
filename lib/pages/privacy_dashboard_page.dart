@@ -21,6 +21,7 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
     'achievement': 'Medals',
     'goal': 'Goals',
     'template': 'Templates',
+    'meal': 'Meals',
   };
 
   @override

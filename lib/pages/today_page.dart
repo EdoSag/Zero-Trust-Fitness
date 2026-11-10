@@ -15,6 +15,8 @@ import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/pages/all_metrics_page.dart';
 import 'package:zerotrust_fitness/pages/metric_detail_page.dart';
+import 'package:zerotrust_fitness/pages/water_food_page.dart';
+import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 
 class TodayPage extends StatelessWidget {
   const TodayPage({
@@ -222,6 +224,107 @@ class TodayPage extends StatelessWidget {
     );
   }
 
+  /// Today's water and food, with a one-tap glass of water.
+  Widget _buildWaterFood(BuildContext context) {
+    final theme = Theme.of(context);
+    final units = UnitsFormatter();
+    final water = todayMetrics['water_l'] ?? 0;
+    final goal = goalsState?.forKey('water_l')?.targetValue ??
+        defaultWaterGoalLiters;
+    final entries = (todayMetrics['nutrition_entries'] ?? 0).toInt();
+    final glass = units.waterPresets.first;
+    final sk = vault;
+    void open(int tab) => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+              builder: (_) => WaterFoodPage(initialTab: tab)),
+        );
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: sk == null ? null : () => open(0),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 4, 14),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: CircularProgressIndicator(
+                        value: goal <= 0
+                            ? 0
+                            : (water / goal).clamp(0.0, 1.0).toDouble(),
+                        strokeWidth: 4,
+                        color: const Color(0xFF0EA5E9),
+                        backgroundColor:
+                            const Color(0xFF0EA5E9).withValues(alpha: 0.15),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(units.formatWater(water),
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700)),
+                          Text('Water',
+                              style: TextStyle(color: theme.hintColor)),
+                        ],
+                      ),
+                    ),
+                    IconButton.filledTonal(
+                      tooltip: 'Add ${glass.label.substring(1)} of water',
+                      icon: const Icon(Icons.add),
+                      onPressed: sk == null
+                          ? null
+                          : () {
+                              HapticFeedback.lightImpact();
+                              sk.addWater(
+                                  FitnessVault.dateKeyOf(DateTime.now()),
+                                  glass.liters);
+                            },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Container(width: 1, height: 48, color: theme.dividerColor),
+          Expanded(
+            child: InkWell(
+              onTap: sk == null ? null : () => open(1),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                child: Row(
+                  children: [
+                    const Icon(Icons.restaurant_menu_outlined,
+                        color: Color(0xFF22C55E), size: 32),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('$entries',
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700)),
+                          Text(entries == 1 ? 'Food entry' : 'Food entries',
+                              style: TextStyle(color: theme.hintColor)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildGpsSection(ThemeData theme) {
     final isActive = gpsSnapshot.isTracking;
     return InkWell(
@@ -341,6 +444,8 @@ class TodayPage extends StatelessWidget {
                       const SizedBox(height: 16),
                     ],
                     _buildPriorityMetrics(context),
+                    const SizedBox(height: 16),
+                    _buildWaterFood(context),
                     const SizedBox(height: 20),
                     _buildGpsSection(theme),
                   ],
