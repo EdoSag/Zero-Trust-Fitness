@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_surface">@android:color/system_neutral1_900</color>
+    <color name="widget_on_surface">@android:color/system_neutral1_50</color>
+    <color name="widget_on_surface_variant">@android:color/system_neutral2_200</color>
+    <color name="widget_heart">#FB7185</color>
+    <color name="widget_steps">#60A5FA</color>
+    <color name="widget_momentum">#FBBF24</color>
+    <color name="widget_locked_track">#33E5E1EC</color>
+</resources>

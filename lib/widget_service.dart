@@ -1,7 +1,6 @@
 import 'package:home_widget/home_widget.dart';
+/// Feeds the Android home screen widget (FitnessWidgetProvider).
 class WidgetService {
-  void test() {}
-
   static Future<void> updateWidgetData({
     required int steps,
     required int heartPoints,
@@ -9,6 +8,7 @@ class WidgetService {
     int momentum = 0,
     String momentumLabel = '',
     int heartTarget = 0,
+    int stepsGoal = 0,
   }) async {
     await HomeWidget.saveWidgetData<int>('steps', isLocked ? 0 : steps);
     await HomeWidget.saveWidgetData<int>(
@@ -24,6 +24,8 @@ class WidgetService {
       'heartTarget',
       isLocked ? 0 : heartTarget,
     );
+    // Goals aren't health data; keep them so the rings keep their scale.
+    await HomeWidget.saveWidgetData<int>('stepsGoal', stepsGoal);
     await HomeWidget.saveWidgetData<bool>('isLocked', isLocked);
     await HomeWidget.updateWidget(
       name: 'FitnessWidgetProvider',

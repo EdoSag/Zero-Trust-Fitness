@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Picker preview only: Heart Points at 70 %, steps at 55 %. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp" android:height="96dp"
+    android:viewportWidth="100" android:viewportHeight="100">
+    <path android:strokeColor="#33E11D48" android:strokeWidth="9"
+        android:pathData="M50,6.5 A43.5,43.5 0 1,1 50,93.5 A43.5,43.5 0 1,1 50,6.5" />
+    <path android:strokeColor="#E11D48" android:strokeWidth="9" android:strokeLineCap="round"
+        android:pathData="M50,6.5 A43.5,43.5 0 1,1 8.63,63.44" />
+    <path android:strokeColor="#332563EB" android:strokeWidth="9"
+        android:pathData="M50,18.5 A31.5,31.5 0 1,1 50,81.5 A31.5,31.5 0 1,1 50,18.5" />
+    <path android:strokeColor="#2563EB" android:strokeWidth="9" android:strokeLineCap="round"
+        android:pathData="M50,18.5 A31.5,31.5 0 1,1 40.27,79.96" />
+</vector>

@@ -254,6 +254,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
         momentum: momentum?.momentum ?? 0,
         momentumLabel: momentum?.label ?? '',
         heartTarget: momentum?.target ?? 0,
+        stepsGoal: _dailyStepsGoal(),
       );
       await _loadRecentActivities();
       await _loadDailyMetrics();
@@ -475,6 +476,13 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   void _onWatchChanged() {
     _drainWatchWater();
     _syncWatchSoon();
+  }
+
+  /// Today's step goal for the home screen widget (0 = widget default).
+  int _dailyStepsGoal() {
+    final g = ref.read(goalsProvider).asData?.value.forKey('steps');
+    if (g == null) return 0;
+    return (g.period == 'weekly' ? g.targetValue / 7 : g.targetValue).round();
   }
 
   /// Sends today's numbers to the Wear OS watch (when that's on), once the

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 1x1 (or any very small size): the two rings with today's Heart Points. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@android:id/background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/fitness_widget_bg"
+    android:padding="6dp">
+
+    <ImageView
+        android:id="@+id/widget_ring"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@null"
+        android:scaleType="fitCenter"
+        android:src="@drawable/fitness_widget_preview_ring" />
+
+    <TextView
+        android:id="@+id/widget_ring_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:fontFamily="sans-serif-medium"
+        android:maxLines="1"
+        android:text="15"
+        android:textColor="@color/widget_on_surface"
+        android:textSize="15sp" />
+
+    <ImageView
+        android:id="@+id/widget_ring_lock"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_gravity="center"
+        android:contentDescription="@string/widget_locked_short"
+        android:src="@drawable/ic_widget_lock"
+        android:tint="@color/widget_on_surface_variant"
+        android:visibility="gone" />
+</FrameLayout>
