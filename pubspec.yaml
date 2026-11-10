@@ -1,7 +1,7 @@
 name: zerotrust_fitness
 description: Zero-Trust Fitness, end-to-end encrypted activity and health tracking.
 publish_to: none
-version: 0.4.1+7
+version: 0.4.2+8
 environment:
   sdk: ^3.8.0
 
@@ -22,7 +22,7 @@ dependencies:
     git:
       url: https://github.com/EdoSag/Zero-Trust-Core.git
       path: packages/zero_trust_core
-      ref: 3ee5d08971d6ccc4712d9caddb6593691b85ccf3 # v0.7.2 (switch to the tag once it's pushed)
+      ref: bc656a515733cef2e2f9771c11d80f19e25918e0 # v0.8.1 (Core PR #15; switch to the tag once it is pushed)
   flutter_riverpod: ^3.5.0
   supabase_flutter: ^2.10.0
   sqlite3: ^3.7.0

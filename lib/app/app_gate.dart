@@ -191,9 +191,9 @@ class AutoLockActivity extends ConsumerWidget {
       );
 }
 
-/// The dashboard once the vault's store is open and data from earlier
-/// versions has been brought over (or that failed, say offline, and will
-/// be retried). Sync runs while this is shown.
+/// The dashboard once the vault's store is open. Data from earlier
+/// versions is brought over meanwhile (see [legacyImportProvider]). Sync
+/// runs while this is shown.
 class _FitnessHome extends ConsumerWidget {
   const _FitnessHome();
 
@@ -221,12 +221,11 @@ class _FitnessHome extends ConsumerWidget {
         ),
       );
     }
-    return switch (ref.watch(legacyImportProvider)) {
-      AsyncData() => const BottomNavShell(),
-      AsyncError(:final error) when error is! VaultIsLocked =>
-        const BottomNavShell(legacyImportFailed: true),
-      _ => const _Opening(),
-    };
+    if (vault is! AsyncData) return const _Opening();
+    // Data from earlier versions comes over in the background; the
+    // dashboard shows what's there now and refreshes as it arrives.
+    final importDone = ref.watch(legacyImportProvider.select((s) => s.done));
+    return BottomNavShell(legacyImportPending: !importDone);
   }
 }
 
