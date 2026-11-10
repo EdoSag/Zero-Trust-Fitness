@@ -19,11 +19,16 @@ class WearBridge(private val context: Context) {
         const val PENDING_PREFS = "zt_wear_pending"
         const val PENDING_WATER_KEY = "water_ml"
 
+        /** Set by the running app, so water from the watch is added at once. */
+        @Volatile
+        var onPendingWater: (() -> Unit)? = null
+
         fun addPendingWater(context: Context, ml: Int) {
             val prefs = context.getSharedPreferences(PENDING_PREFS, Context.MODE_PRIVATE)
             synchronized(this) {
-                prefs.edit().putInt(PENDING_WATER_KEY, prefs.getInt(PENDING_WATER_KEY, 0) + ml).apply()
+                prefs.edit().putInt(PENDING_WATER_KEY, prefs.getInt(PENDING_WATER_KEY, 0) + ml).commit()
             }
+            onPendingWater?.invoke()
         }
     }
 
@@ -57,12 +62,18 @@ class WearBridge(private val context: Context) {
             .addOnFailureListener { done(false) }
     }
 
-    fun takePendingWaterMl(): Int {
+    fun peekPendingWaterMl(): Int =
+        context.getSharedPreferences(PENDING_PREFS, Context.MODE_PRIVATE)
+            .getInt(PENDING_WATER_KEY, 0)
+
+    /** Removes [ml] once the app has saved it, keeping anything that came since. */
+    fun ackPendingWaterMl(ml: Int) {
         val prefs = context.getSharedPreferences(PENDING_PREFS, Context.MODE_PRIVATE)
         synchronized(Companion) {
-            val ml = prefs.getInt(PENDING_WATER_KEY, 0)
-            prefs.edit().remove(PENDING_WATER_KEY).apply()
-            return ml
+            val left = prefs.getInt(PENDING_WATER_KEY, 0) - ml
+            prefs.edit().apply {
+                if (left > 0) putInt(PENDING_WATER_KEY, left) else remove(PENDING_WATER_KEY)
+            }.commit()
         }
     }
 }

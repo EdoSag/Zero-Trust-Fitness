@@ -93,6 +93,9 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WearCompanion.instance
+      ..listen()
+      ..changes.addListener(_onWatchChanged);
     _currentIndex = widget.initialIndex;
     _gpsTrackingService.snapshots.listen((snapshot) {
       if (!mounted) return;
@@ -114,6 +117,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    WearCompanion.instance.changes.removeListener(_onWatchChanged);
     _changes?.cancel();
     _reloadDebounce?.cancel();
     _weeklySummaryDebounce?.cancel();
@@ -128,6 +132,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       if (mounted) setState(() => _isObscured = true);
     } else if (state == AppLifecycleState.resumed) {
       if (mounted) setState(() => _isObscured = false);
+      _drainWatchWater();
     }
   }
 
@@ -139,10 +144,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final openVault = ref.read(openFitnessVaultProvider);
-      if (openVault != null) {
-        await WearCompanion.instance.drainPendingWater(openVault);
-      }
+      await _drainWatchWater();
       final healthService = HealthService();
       final isAvailable = await healthService.isHealthConnectAvailable();
       if (!isAvailable) {
@@ -457,6 +459,23 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
 
   Timer? _weeklySummaryDebounce;
   Timer? _watchDebounce;
+
+  /// Adds water logged on the watch; errors leave it queued on the phone.
+  Future<void> _drainWatchWater() async {
+    final vault = ref.read(openFitnessVaultProvider);
+    if (vault == null) return;
+    try {
+      await WearCompanion.instance.drainPendingWater(vault);
+    } catch (e) {
+      debugPrint('Watch water not added yet: $e');
+    }
+  }
+
+  /// Water from the watch while the app runs, or the switch turned on.
+  void _onWatchChanged() {
+    _drainWatchWater();
+    _syncWatchSoon();
+  }
 
   /// Sends today's numbers to the Wear OS watch (when that's on), once the
   /// screen has settled.

@@ -58,13 +58,32 @@ class WearCompanion {
 
   WearToday? _lastSent;
 
+  /// Ticks when the switch is turned on (so today is sent at once) and when
+  /// water arrives from the watch while the app is running.
+  final changes = ValueNotifier<int>(0);
+  bool _listening = false;
+
+  /// Starts hearing from the phone side; safe to call more than once.
+  void listen() {
+    if (_listening || defaultTargetPlatform != TargetPlatform.android) return;
+    _listening = true;
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'pendingWater') changes.value++;
+      return null;
+    });
+  }
+
   Future<bool> get isEnabled async =>
       (await SharedPreferences.getInstance()).getBool(_enabledKey) ?? false;
 
   Future<void> setEnabled(bool on) async {
     await (await SharedPreferences.getInstance()).setBool(_enabledKey, on);
     _lastSent = null;
-    if (!on) await _call('clear');
+    if (on) {
+      changes.value++;
+    } else {
+      await _call('clear');
+    }
   }
 
   /// What [today]'s metrics and goals look like on the watch.
@@ -96,13 +115,24 @@ class WearCompanion {
     if (ok == true) _lastSent = today;
   }
 
-  /// Adds water logged on the watch while the app was closed or locked to
-  /// today. Returns the litres added.
-  Future<double> drainPendingWater(FitnessVault vault) async {
-    final ml = await _call('takePendingWater');
+  /// Adds water logged on the watch to today. The phone keeps it until the
+  /// vault has saved it, so a failed write is tried again next time.
+  /// Returns the litres added.
+  Future<double> drainPendingWater(FitnessVault vault) {
+    // One at a time: two overlapping drains would both add the same glass.
+    final run = _drain.then((_) => _drainOnce(vault));
+    _drain = run.then((_) {}, onError: (_) {});
+    return run;
+  }
+
+  Future<void> _drain = Future.value();
+
+  Future<double> _drainOnce(FitnessVault vault) async {
+    final ml = await _call('peekPendingWater');
     if (ml is! int || ml <= 0) return 0;
     final liters = ml / 1000;
     await vault.addWater(FitnessVault.dateKeyOf(DateTime.now()), liters);
+    await _call('ackPendingWater', ml);
     return liters;
   }
 
