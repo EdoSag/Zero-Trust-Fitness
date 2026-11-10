@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
+import 'package:zerotrust_fitness/components/inline_button_style.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
@@ -707,7 +710,13 @@ class _MealSheetState extends State<MealSheet> {
         20,
         0,
         20,
-        20 + MediaQuery.of(context).viewInsets.bottom,
+        // Above the keyboard when it is open, else above the system
+        // navigation bar (the app draws edge to edge).
+        20 +
+            math.max(
+              MediaQuery.viewInsetsOf(context).bottom,
+              MediaQuery.viewPaddingOf(context).bottom,
+            ),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -812,7 +821,11 @@ class _MealSheetState extends State<MealSheet> {
                     label: const Text('Delete'),
                   ),
                 const Spacer(),
-                FilledButton(onPressed: _save, child: const Text('Save')),
+                FilledButton(
+                  onPressed: _save,
+                  style: inlineButtonStyle,
+                  child: const Text('Save'),
+                ),
               ],
             ),
           ],

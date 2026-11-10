@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:health/health.dart';
+import 'package:zerotrust_fitness/components/inline_button_style.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
 
@@ -548,12 +549,14 @@ class _PermissionsPageState extends State<PermissionsPage> {
             children: [
               FilledButton.tonalIcon(
                 onPressed: _permissionsBusy ? null : onEnable,
+                style: inlineButtonStyle,
                 icon: const Icon(Icons.toggle_on),
                 label: const Text('Turn On'),
               ),
               const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: _permissionsBusy ? null : onDisable,
+                style: inlineButtonStyle,
                 icon: const Icon(Icons.toggle_off),
                 label: const Text('Turn Off'),
               ),

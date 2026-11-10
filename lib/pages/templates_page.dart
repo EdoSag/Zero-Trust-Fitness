@@ -1,5 +1,7 @@
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:zerotrust_fitness/components/inline_button_style.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 
 class TemplatesPage extends StatefulWidget {
@@ -59,7 +61,12 @@ class _TemplatesPageState extends State<TemplatesPage> {
         builder: (ctx, setSheet) => Padding(
           padding: EdgeInsets.only(
             left: 20, right: 20, top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            // Above the keyboard, else above the navigation bar.
+            bottom: math.max(
+                  MediaQuery.viewInsetsOf(ctx).bottom,
+                  MediaQuery.viewPaddingOf(ctx).bottom,
+                ) +
+                20,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -144,6 +151,7 @@ class _TemplatesPageState extends State<TemplatesPage> {
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
+                    style: inlineButtonStyle,
                     onPressed: () async {
                       final name = nameCtrl.text.trim();
                       if (name.isEmpty) return;
