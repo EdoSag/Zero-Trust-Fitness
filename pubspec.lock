@@ -1326,20 +1326,20 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/zero_trust_core"
-      ref: "3ee5d08971d6ccc4712d9caddb6593691b85ccf3"
-      resolved-ref: "3ee5d08971d6ccc4712d9caddb6593691b85ccf3"
+      ref: a6f8e52391fd8be806f7b38abb97a0f17d6035de
+      resolved-ref: a6f8e52391fd8be806f7b38abb97a0f17d6035de
       url: "https://github.com/EdoSag/Zero-Trust-Core.git"
     source: git
-    version: "0.7.2"
+    version: "0.8.1"
   zt_crypto:
     dependency: transitive
     description:
       path: "packages/zt_crypto"
-      ref: "3ee5d08971d6ccc4712d9caddb6593691b85ccf3"
-      resolved-ref: "3ee5d08971d6ccc4712d9caddb6593691b85ccf3"
+      ref: a6f8e52391fd8be806f7b38abb97a0f17d6035de
+      resolved-ref: a6f8e52391fd8be806f7b38abb97a0f17d6035de
       url: "https://github.com/EdoSag/Zero-Trust-Core.git"
     source: git
-    version: "0.3.1"
+    version: "0.3.2"
 sdks:
   dart: ">=3.13.0 <4.0.0"
   flutter: ">=3.47.0"

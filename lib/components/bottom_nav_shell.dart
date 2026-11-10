@@ -19,6 +19,7 @@ import 'package:zerotrust_fitness/features/health/domain/heart_points_engine.dar
 import 'package:zerotrust_fitness/features/health/domain/heart_points_service.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_service.dart';
+import 'package:zerotrust_fitness/features/legacy_import/legacy_import_banner.dart';
 import 'package:zerotrust_fitness/components/manual_ingestion_bottom_sheet.dart';
 import 'package:zerotrust_fitness/pages/journal_page.dart';
 import 'package:zerotrust_fitness/pages/gps_workout_page.dart';
@@ -33,15 +34,16 @@ class BottomNavShell extends ConsumerStatefulWidget {
   const BottomNavShell({
     super.key,
     this.initialIndex = 0,
-    this.legacyImportFailed = false,
+    this.legacyImportPending = false,
   });
 
   final int initialIndex;
 
-  /// Bringing over data from the previous version failed (offline, say).
-  /// Health Connect refreshes don't write to the vault until it succeeds,
-  /// so they can't hide older entries for the same days.
-  final bool legacyImportFailed;
+  /// Data from the previous version is still being brought over (or that
+  /// failed and waits for a retry). Health Connect refreshes don't write to
+  /// the vault until it's done, so they can't hide older entries for the
+  /// same days.
+  final bool legacyImportPending;
 
   @override
   ConsumerState<BottomNavShell> createState() => _BottomNavShellState();
@@ -98,8 +100,8 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   @override
   void didUpdateWidget(BottomNavShell oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // The import finished on a retry: write today's Health Connect data now.
-    if (oldWidget.legacyImportFailed && !widget.legacyImportFailed) {
+    // The import finished: write today's Health Connect data now.
+    if (oldWidget.legacyImportPending && !widget.legacyImportPending) {
       _loadHealthData();
     }
   }
@@ -183,7 +185,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       });
 
       final vault = ref.read(openFitnessVaultProvider);
-      if (vault != null && !widget.legacyImportFailed) {
+      if (vault != null && !widget.legacyImportPending) {
         final hcWorkoutPoints = todayPoints
             .where((p) => p.type == HealthDataType.WORKOUT)
             .toList(growable: false);
@@ -409,7 +411,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
   }
 
   /// With [refreshToday], today's headline numbers follow the vault too
-  /// (a synced edit or a delete), unless the import failed and Health
+  /// (a synced edit or a delete), unless the old-data import is pending and Health
   /// Connect values are only on screen.
   Future<void> _loadDailyMetrics({bool refreshToday = false}) async {
     final vault = ref.read(openFitnessVaultProvider);
@@ -424,7 +426,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       if (!mounted) return;
       setState(() {
         _dailyMetrics = rows;
-        if (refreshToday && !widget.legacyImportFailed) {
+        if (refreshToday && !widget.legacyImportPending) {
           _todayMetrics = fallbackToday;
           _heartPointsTotal = (fallbackToday['heart_points'])?.toInt() ?? 0;
         } else if (_todayMetrics.isEmpty && fallbackToday.isNotEmpty) {
@@ -942,20 +944,6 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     await _loadHealthData();
   }
 
-  Widget _legacyImportBanner() => MaterialBanner(
-        leading: const Icon(Icons.cloud_off_outlined),
-        content: const Text(
-          'Your data from the previous version hasn\'t been brought over yet. '
-          'Check your connection and try again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => ref.invalidate(legacyImportProvider),
-            child: const Text('Try again'),
-          ),
-        ],
-      );
-
   @override
   Widget build(BuildContext context) {
     final vault = ref.watch(openFitnessVaultProvider);
@@ -967,8 +955,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     final shell = Scaffold(
       body: Column(
         children: [
-          if (widget.legacyImportFailed)
-            SafeArea(bottom: false, child: _legacyImportBanner()),
+          const SafeArea(bottom: false, child: LegacyImportBanner()),
           Expanded(
             child: IndexedStack(
               index: _currentIndex,

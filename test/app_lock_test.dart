@@ -16,7 +16,9 @@ import 'support.dart';
 
 class _NoCloud implements LegacyCloudBackup {
   @override
-  Future<String?> fetch() async => null;
+  Future<List<String>> fetchAll() async => const [];
+  @override
+  Future<String?> legacySalt() async => null;
 }
 
 class _NoSecureStorage implements LegacySecureStorage {
