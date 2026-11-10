@@ -34,3 +34,5 @@ plugins {
 }
 
 include(":app")
+// ZT Fitness for Wear OS (F10); built by CI with :wear:assembleRelease.
+include(":wear")

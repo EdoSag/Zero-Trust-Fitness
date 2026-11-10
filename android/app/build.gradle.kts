@@ -74,4 +74,6 @@ configurations.all {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // Wear OS companion (F10): the Data Layer to the paired watch.
+    implementation("com.google.android.gms:play-services-wearable:19.0.0")
 }

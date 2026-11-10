@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.type.watch" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="ZT Fitness"
+        android:theme="@android:style/Theme.DeviceDefault">
+
+        <!-- Needs the phone app: the watch has no account of its own. -->
+        <meta-data
+            android:name="com.google.android.wearable.standalone"
+            android:value="false" />
+
+        <activity
+            android:name=".TodayActivity"
+            android:exported="true"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".AddWaterActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <service
+            android:name=".PhoneDataService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data
+                    android:host="*"
+                    android:path="/zt/today"
+                    android:scheme="wear" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".HeartPointsTileService"
+            android:exported="true"
+            android:label="@string/tile_heart_points"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@mipmap/ic_launcher" />
+        </service>
+
+        <service
+            android:name=".WaterTileService"
+            android:exported="true"
+            android:label="@string/tile_water"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@mipmap/ic_launcher" />
+        </service>
+    </application>
+</manifest>

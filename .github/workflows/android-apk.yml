@@ -136,10 +136,22 @@ jobs:
             echo "APK=$APK"
           } >> "$GITHUB_ENV"
 
+      - name: Build the Wear OS APK
+        # The watch companion (android/wear), signed with the same key.
+        # `flutter build apk` above wrote android/gradlew and local.properties.
+        run: |
+          set -e
+          (cd android && ./gradlew :wear:assembleRelease -PztBuild="$BUILD" --stacktrace)
+          WEAR_APK="$APP_SLUG-wear-$VERSION-build$BUILD.apk"
+          cp build/wear/outputs/apk/release/wear-release.apk "$WEAR_APK"
+          echo "WEAR_APK=$WEAR_APK" >> "$GITHUB_ENV"
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ env.APK }}
-          path: ${{ env.APK }}
+          path: |
+            ${{ env.APK }}
+            ${{ env.WEAR_APK }}
           retention-days: 14
 
       - name: Publish the GitHub Release
@@ -149,10 +161,12 @@ jobs:
         run: |
           TAG="v$VERSION-build$BUILD"
           SUBJECT=$(git log -1 --pretty=%s)
-          gh release create "$TAG" "$APK" \
+          gh release create "$TAG" "$APK" "$WEAR_APK" \
             --target "$GITHUB_SHA" \
             --title "$APP_TITLE $VERSION (build $BUILD)" \
             --notes "Latest change: $SUBJECT
 
-          Download **$APK** below and open it on your phone to install or update. Android may ask you to allow installs from this source the first time." \
+          Download **$APK** below and open it on your phone to install or update. Android may ask you to allow installs from this source the first time.
+
+          For a Wear OS watch, install **$WEAR_APK** on the watch (for example with adb, or the Play Store once listed)." \
             --latest

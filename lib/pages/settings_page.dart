@@ -8,6 +8,7 @@ import 'package:zerotrust_fitness/features/achievements/domain/achievement_servi
 import 'package:zerotrust_fitness/features/achievements/presentation/achievements_page.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/medal_chip.dart';
 import 'package:zerotrust_fitness/features/health/data/health_writeback.dart';
+import 'package:zerotrust_fitness/features/wear/wear_companion.dart';
 import 'package:zerotrust_fitness/pages/export_restore_page.dart';
 import 'package:zerotrust_fitness/pages/google_fit_import_page.dart';
 import 'package:zerotrust_fitness/pages/goals_page.dart';
@@ -44,12 +45,16 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
   bool _deleting = false;
   bool _writeback = false;
   bool _writebackBusy = false;
+  bool _watch = false;
 
   @override
   void initState() {
     super.initState();
     HealthWriteback.instance.isEnabled.then((on) {
       if (mounted) setState(() => _writeback = on);
+    });
+    WearCompanion.instance.isEnabled.then((on) {
+      if (mounted) setState(() => _watch = on);
     });
   }
 
@@ -361,6 +366,19 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
           value: _writeback,
           onChanged: _writebackBusy || !unlocked ? null : _setWriteback,
         ),
+        if (Theme.of(context).platform == TargetPlatform.android)
+          SwitchListTile(
+            secondary: const Icon(Icons.watch_outlined),
+            title: const Text('Show on Wear OS watch'),
+            subtitle: const Text(
+                'Today\'s Heart Points, steps and water on your paired watch, '
+                'and add water from it. Sent only to the watch.'),
+            value: _watch,
+            onChanged: (on) async {
+              await WearCompanion.instance.setEnabled(on);
+              if (mounted) setState(() => _watch = on);
+            },
+          ),
         ListTile(
           leading: const Icon(Icons.straighten_outlined),
           title: const Text('Units & format'),
