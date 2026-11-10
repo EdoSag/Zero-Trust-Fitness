@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Resizable from 1x1 (rings only) to any larger size; the provider picks
+     one of four layouts for the size the widget has on the home screen. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="180dp"
-    android:minHeight="170dp"
-    android:updatePeriodMillis="1800000"
-    android:initialLayout="@layout/fitness_widget_layout"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/fitness_widget_medium"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="40dp"
+    android:minResizeHeight="40dp"
+    android:previewLayout="@layout/fitness_widget_medium"
     android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen" />

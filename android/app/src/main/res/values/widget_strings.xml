@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Today\'s Heart Points and steps. Resize it from a small ring to a full summary.</string>
+    <string name="widget_heart_points">Heart Pts</string>
+    <string name="widget_steps">Steps</string>
+    <string name="widget_locked">Unlock to see today</string>
+    <string name="widget_locked_short">Locked</string>
+    <string name="widget_today">Today</string>
+    <string name="widget_app_name">ZT Fitness</string>
+</resources>
