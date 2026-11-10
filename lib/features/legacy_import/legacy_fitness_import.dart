@@ -95,12 +95,18 @@ class SupabaseLegacyCloudBackup implements LegacyCloudBackup {
     final client = Supabase.instance.client;
     final user = client.auth.currentUser;
     if (user == null) throw StateError('Not signed in');
-    final rows = await client
-        .from('encrypted_vault')
-        .select('data_blob, updated_at')
-        .eq('user_id', user.id)
-        .order('updated_at', ascending: false)
-        .limit(20);
+    final List<Map<String, dynamic>> rows;
+    try {
+      rows = await client
+          .from('encrypted_vault')
+          .select('data_blob, updated_at')
+          .eq('user_id', user.id)
+          .order('updated_at', ascending: false)
+          .limit(20);
+    } on PostgrestException catch (e) {
+      if (isMissingLegacyTable(e)) return const [];
+      rethrow;
+    }
     return [
       for (final row in rows)
         if (row['data_blob'] case final String blob when blob.isNotEmpty) blob,
@@ -653,3 +659,8 @@ String _dateKey(DateTime date) {
 
 String _hex(List<int> bytes) =>
     bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+
+/// The pre-core tables were dropped from the database on 2026-11-10. A
+/// missing table means there is nothing left to import.
+bool isMissingLegacyTable(PostgrestException e) =>
+    e.code == 'PGRST205' || e.code == '42P01';
