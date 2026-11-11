@@ -278,9 +278,7 @@ class ChallengeActions {
       final challenge = c.challenge;
       if (challenge == null || c.entry.space == null) continue;
       if (!c.members.containsKey(c.myUserId)) continue;
-      if (today.compareTo(addDays(challenge.end, publishGraceDays)) > 0) {
-        continue;
-      }
+      if (scoresClosed(challenge, today)) continue;
       days ??= await _dayValues(vault);
       final p = computeProgress(
         c: challenge,
@@ -329,6 +327,12 @@ String challengeRulesKey(List<ChallengeData> list) => [
 /// Days after a challenge ends that phones still update their totals
 /// (a day logged late, a phone that was offline on the last day).
 const int publishGraceDays = 3;
+
+/// Whether [c] ended so long ago that phones no longer update their totals.
+/// Its rules can't be edited then: the scores would stay counted the old
+/// way under the new rules.
+bool scoresClosed(Challenge c, String today) =>
+    today.compareTo(addDays(c.end, publishGraceDays)) > 0;
 
 /// Keeps this account's challenge progress up to date while unlocked: when
 /// its own days change and when challenges arrive or change. Watched by the
