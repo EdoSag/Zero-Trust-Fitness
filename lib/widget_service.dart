@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:zerotrust_fitness/l10n/l10n.dart';
+import 'package:zerotrust_fitness/core/services/reminder_service.dart';
 /// Feeds the Android home screen widget (FitnessWidgetProvider).
 class WidgetService {
   static Future<void> updateWidgetData({
@@ -82,9 +83,19 @@ class _WidgetTextSyncState extends State<WidgetTextSync> {
     super.didChangeDependencies();
     final l10n = context.l10n;
     if (l10n.localeName == _synced) return;
+    final changed = _synced != null;
     _synced = l10n.localeName;
     // Best effort: the widget keeps its last texts if this fails.
     WidgetService.saveTexts(l10n).catchError((Object _) {});
+    // Scheduled reminders carry their text: schedule them again in the
+    // newly picked language (not at start, when nothing changed).
+    if (changed) {
+      final reminders = ReminderService();
+      reminders
+          .loadSettings()
+          .then(reminders.applySettings)
+          .catchError((Object _) {});
+    }
   }
 
   @override

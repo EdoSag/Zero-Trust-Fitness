@@ -53,6 +53,7 @@ class VoiceCoach {
   static const prefsKey = 'gps_voice_cues';
 
   FlutterTts? _tts;
+  String? _ttsLanguage;
   StreamSubscription<GpsEvent>? _sub;
 
   Future<bool> get isEnabled async =>
@@ -85,6 +86,12 @@ class VoiceCoach {
   Future<void> _say(String text) async {
     try {
       final tts = _tts ??= await _create();
+      // Speak in the app's language, which can differ from the phone's.
+      final language = currentL10n.localeName.startsWith('he') ? 'he-IL' : 'en-US';
+      if (language != _ttsLanguage) {
+        await tts.setLanguage(language);
+        _ttsLanguage = language;
+      }
       await tts.speak(text, focus: true);
     } on Object catch (e) {
       debugPrint('Voice cue failed: $e');

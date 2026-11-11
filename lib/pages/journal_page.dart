@@ -149,7 +149,8 @@ class _JournalPageState extends State<JournalPage> {
         ? items
         : items.where((i) {
             final title = switch (i) {
-              WorkoutItem w => w.title,
+              // The stored name and the one shown in the app's language.
+              WorkoutItem w => '${w.title} ${activityLabel(w.title)}',
               MeasurementItem m => m.title,
             };
             return title.toLowerCase().contains(_query);
