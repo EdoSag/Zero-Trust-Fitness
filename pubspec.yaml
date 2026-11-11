@@ -24,10 +24,9 @@ dependencies:
     git:
       url: https://github.com/EdoSag/Zero-Trust-Core.git
       path: packages/zero_trust_core
-      # Core Dev (0.10.0 + Z24 shared spaces) plus owned items in spaces
-      # (Core PR #24, for challenge progress). Repin to Dev / the next tag
-      # once that PR is merged.
-      ref: b345508f61ef5730297c727f9d26e5fc7bd47591
+      # Core Dev: 0.10.0 + Z24 shared spaces + owned items in spaces (Core
+      # PR #24, for challenge progress). Switch to the next tag once pushed.
+      ref: 40eda7e4115c0b1bf047dc1d30af4b1568086f99
   flutter_riverpod: ^3.5.0
   supabase_flutter: ^2.10.0
   sqlite3: ^3.7.0
