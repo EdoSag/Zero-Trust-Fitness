@@ -75,7 +75,7 @@ We are actively looking for contributors! Whether you are a security researcher,
 
 ## License
 
-Copyright (C) 2026 EdoSag (https://zerotrust.bz)
+Copyright (C) 2026 Edo Sagron (https://zerotrust.bz)
 
 Zero-Trust is open source under the [GNU Affero General Public License v3.0](LICENSE)
 (AGPL-3.0-only), the same licence Signal uses.
