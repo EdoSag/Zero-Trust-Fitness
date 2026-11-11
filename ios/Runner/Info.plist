@@ -34,6 +34,9 @@
     <key>NSHealthUpdateUsageDescription</key>
     <string>When you turn it on in Settings, Fitness saves the workouts you log or record to Apple Health so your other apps see them.</string>
     
+    <key>NSCameraUsageDescription</key>
+    <string>Fitness uses the camera to scan a friend's challenge invite code.</string>
+
     <key>NSFaceIDUsageDescription</key>
     <string>Use Face ID to unlock your encrypted fitness vault.</string>
 

@@ -414,12 +414,17 @@ void main() {
   });
 
   group('screens', () {
-    Widget app(ChallengesState state, Widget home, {Locale? locale}) =>
+    Widget app(
+      ChallengesState state,
+      Widget home, {
+      Locale? locale,
+      String today = '2026-11-12',
+    }) =>
         ProviderScope(
           overrides: [
             challengesProvider.overrideWith((ref) async => state),
             pendingChallengeJoinsProvider.overrideWith((ref) async => []),
-            challengeTodayProvider.overrideWithValue(() => '2026-11-12'),
+            challengeTodayProvider.overrideWithValue(() => today),
           ],
           child: MaterialApp(
             theme: appTheme,
@@ -493,6 +498,27 @@ void main() {
       );
       expect(find.text('Alice (you)'), findsOneWidget);
       expect(find.text('No data yet'), findsOneWidget);
+    });
+
+    testWidgets('Edit is offered until the scores close, not after', (
+      tester,
+    ) async {
+      for (final (today, shown) in [('2026-11-12', true), ('2026-12-30', false)]) {
+        await tester.pumpWidget(
+          app(
+            state(),
+            ChallengeDetailPage(key: ValueKey(today), spaceId: 's1'),
+            today: today,
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.pumpAndSettle();
+        expect(find.text('Edit challenge'), shown ? findsOneWidget : findsNothing);
+        expect(find.text('Delete'), findsOneWidget);
+        await tester.tapAt(Offset.zero);
+        await tester.pumpAndSettle();
+      }
     });
 
     testWidgets('list shows the challenge with my rank, and both buttons '

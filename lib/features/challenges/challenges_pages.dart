@@ -425,7 +425,8 @@ class ChallengeDetailPage extends ConsumerWidget {
           PopupMenuButton<String>(
             onSelected: (v) => _menu(context, ref, data, v),
             itemBuilder: (_) => [
-              if (data.isAdmin)
+              if (data.isAdmin &&
+                  !scoresClosed(c, ref.read(challengeTodayProvider)()))
                 PopupMenuItem(value: 'edit', child: Text(l.challengeEdit)),
               PopupMenuItem(value: 'leave', child: Text(l.challengeLeave)),
               if (data.isAdmin)
