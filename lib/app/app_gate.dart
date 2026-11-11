@@ -5,6 +5,7 @@ import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/app/auth_providers.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
 import 'package:zerotrust_fitness/components/bottom_nav_shell.dart';
+import 'package:zerotrust_fitness/features/challenges/challenge_links.dart';
 import 'package:zerotrust_fitness/pages/home_page.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 import 'package:zerotrust_fitness/l10n/l10n.dart';
@@ -226,7 +227,9 @@ class _FitnessHome extends ConsumerWidget {
     // Data from earlier versions comes over in the background; the
     // dashboard shows what's there now and refreshes as it arrives.
     final importDone = ref.watch(legacyImportProvider.select((s) => s.done));
-    return BottomNavShell(legacyImportPending: !importDone);
+    return ChallengeLinks(
+      child: BottomNavShell(legacyImportPending: !importDone),
+    );
   }
 }
 

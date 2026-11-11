@@ -2177,4 +2177,342 @@ class AppL10nHe extends AppL10n {
   @override
   String get widgetSummary =>
       '%1\$s מתוך %2\$s נקודות לב, %3\$s מתוך %4\$s צעדים';
+
+  @override
+  String get challenges => 'אתגרים';
+
+  @override
+  String get challengesSubtitle => 'להתחרות עם חברים, בהצפנה מקצה לקצה';
+
+  @override
+  String get challengeSyncNow => 'סנכרון עכשיו';
+
+  @override
+  String get challengeNeedsInternet =>
+      'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.';
+
+  @override
+  String challengeJoinRequest(String name, String title) {
+    return '$name רוצה להצטרף ל$title';
+  }
+
+  @override
+  String get challengeJoinRequestHint => 'יש להקיש כדי להשוות קודים ולאשר';
+
+  @override
+  String get challengeActive => 'פעילים עכשיו';
+
+  @override
+  String get challengeUpcoming => 'מתחילים בקרוב';
+
+  @override
+  String get challengeFinished => 'הסתיימו';
+
+  @override
+  String get challengeCreate => 'יצירת אתגר';
+
+  @override
+  String get challengeJoin => 'הצטרפות עם הזמנה';
+
+  @override
+  String get challengeEmptyTitle => 'לאתגר את החברים';
+
+  @override
+  String get challengeEmptyBody =>
+      'תחרות עם חברים על צעדים או נקודות לב, לכמה ימים או לחודש, ולראות מי מוביל.';
+
+  @override
+  String get challengePrivacy =>
+      'החברים רואים רק מספר אחד בכל אתגר: הסכום שלך. הוא מוצפן עבור המשתתפים באתגר, והשרת לא יכול לקרוא אותו.';
+
+  @override
+  String get challengeWaitingTitle => 'ממתינים למארגן';
+
+  @override
+  String get challengeWaitingBody => 'האתגר יופיע אחרי שיאשרו את הקוד שלך.';
+
+  @override
+  String get challengeYourCode => 'הקוד שלך:';
+
+  @override
+  String challengeGoalMostSummary(String metric) {
+    return 'הכי הרבה $metric';
+  }
+
+  @override
+  String challengeGoalDaysSummary(String target, String metric) {
+    return 'ימים עם $target $metric';
+  }
+
+  @override
+  String challengeStarts(String date) {
+    return 'מתחיל ב-$date';
+  }
+
+  @override
+  String challengeDaysLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'נשארו $count ימים',
+      two: 'נשארו יומיים',
+      one: 'יום אחרון',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String challengeEnded(String date) {
+    return 'הסתיים ב-$date';
+  }
+
+  @override
+  String challengeYourRank(int rank, int count) {
+    return 'מקום $rank מתוך $count';
+  }
+
+  @override
+  String get challengeGone => 'כבר אינך משתתף/ת באתגר הזה.';
+
+  @override
+  String get challengeInvite => 'הזמנת חבר/ה';
+
+  @override
+  String get challengeEdit => 'עריכת אתגר';
+
+  @override
+  String get challengeLeave => 'יציאה';
+
+  @override
+  String get challengeDelete => 'מחיקה';
+
+  @override
+  String challengeDates(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get challengeLeaderboard => 'טבלת מובילים';
+
+  @override
+  String challengeDaysUnit(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ימים',
+      two: 'יומיים',
+      one: 'יום אחד',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String challengeTotalDetail(String total, String metric) {
+    return '$total $metric בסך הכול';
+  }
+
+  @override
+  String get challengeInviteHint => 'אפשר להזמין חברים כדי לראות אותם כאן.';
+
+  @override
+  String challengeWhatIsShared(String metric) {
+    return 'משותף עם האתגר: רק סך ה$metric שלך בימי האתגר (וכמה ימים עמדו ביעד). שאר הנתונים, האימונים והמיקומים נשארים פרטיים.';
+  }
+
+  @override
+  String get challengeDeleteTitle => 'למחוק את האתגר?';
+
+  @override
+  String get challengeDeleteBody =>
+      'האתגר יימחק לכל המשתתפים, יחד עם כל התוצאות.';
+
+  @override
+  String get challengeLeaveTitle => 'לצאת מהאתגר?';
+
+  @override
+  String get challengeLeaveBody =>
+      'הסכום שלך יוסר מהטבלה והטלפון יפסיק לשתף איתו. אפשר להצטרף שוב עם הזמנה חדשה.';
+
+  @override
+  String challengeRemoveTitle(String name) {
+    return 'להסיר את $name?';
+  }
+
+  @override
+  String get challengeRemoveBody =>
+      'הם יוצאו מהאתגר ולא יוכלו לקרוא שום דבר שישותף מעכשיו.';
+
+  @override
+  String get challengeRemove => 'הסרה';
+
+  @override
+  String challengeYou(String name) {
+    return '$name (את/ה)';
+  }
+
+  @override
+  String get challengeNoDataYet => 'אין נתונים עדיין';
+
+  @override
+  String get challengeTitle => 'שם';
+
+  @override
+  String get challengeTitleHint => 'למשל: מרוץ הצעדים של נובמבר';
+
+  @override
+  String get challengeRequired => 'שדה חובה';
+
+  @override
+  String get challengeMeasure => 'מה נספר';
+
+  @override
+  String get challengeWinBy => 'איך מנצחים';
+
+  @override
+  String get challengeGoalMost => 'הסכום הגבוה ביותר';
+
+  @override
+  String get challengeGoalDays => 'יעד יומי';
+
+  @override
+  String get challengeGoalMostHint => 'מי שצובר הכי הרבה עד היום האחרון מנצח.';
+
+  @override
+  String get challengeGoalDaysHint =>
+      'מי שמגיע ליעד היומי בהכי הרבה ימים מנצח. בתיקו, הסכום הגבוה יותר קובע.';
+
+  @override
+  String challengeDailyTarget(String metric) {
+    return 'יעד יומי ($metric)';
+  }
+
+  @override
+  String get challengeStartDate => 'מתחיל';
+
+  @override
+  String get challengeLength => 'משך';
+
+  @override
+  String challengeLengthDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ימים',
+      two: 'יומיים',
+      one: 'יום אחד',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get challengeYourName => 'השם שלך באתגרים';
+
+  @override
+  String get challengeYourNameHint => 'מה שהחברים באתגר יראו';
+
+  @override
+  String get challengeCreateAndInvite => 'יצירה והזמנת חברים';
+
+  @override
+  String challengeInviteTo(String title) {
+    return 'הזמנה ל$title';
+  }
+
+  @override
+  String get challengeInviteIntro =>
+      'יוצרים הזמנה חד־פעמית: שולחים את הקישור, או נותנים לחבר/ה לסרוק את קוד ה-QR. כל הזמנה מיועדת לאדם אחד ותקפה ל-7 ימים.';
+
+  @override
+  String get challengeCreateInvite => 'יצירת הזמנה';
+
+  @override
+  String get challengeInviteReady =>
+      'אפשר לשלוח את הקישור, או לתת לחבר/ה לסרוק את הקוד עם ZT Fitness.';
+
+  @override
+  String get challengeInviteQr => 'קוד QR להזמנה';
+
+  @override
+  String get challengeLinkCopied => 'הקישור הועתק';
+
+  @override
+  String get challengeCopyLink => 'העתקת קישור';
+
+  @override
+  String get challengeShareLink => 'שיתוף';
+
+  @override
+  String challengeInviteMessage(String title, String link) {
+    return 'בואו להצטרף לאתגר הכושר שלי \"$title\" ב-ZT Fitness: $link';
+  }
+
+  @override
+  String get challengeInviteNextSteps =>
+      'כשהחבר/ה יפתחו את הקישור, יופיע אצלם קוד. לפני האישור יש לבדוק שהוא זהה לקוד בטלפון שלך: כך זר שהשיג את הקישור לא ייכנס.';
+
+  @override
+  String get challengeCheckAnswers => 'בדיקת תשובות';
+
+  @override
+  String get challengeAnotherInvite => 'הזמנת מישהו נוסף';
+
+  @override
+  String challengeConfirmTitle(String name) {
+    return 'לאשר את $name?';
+  }
+
+  @override
+  String get challengeConfirmBody => 'יש לבדוק שהקוד הזה זהה לקוד בטלפון שלהם.';
+
+  @override
+  String get challengeCodesDiffer => 'הקודים שונים';
+
+  @override
+  String get challengeLater => 'אחר כך';
+
+  @override
+  String get challengeCodesMatch => 'הקודים זהים';
+
+  @override
+  String challengeJoined(String name) {
+    return '$name הצטרפו';
+  }
+
+  @override
+  String get challengeInviteOtherApp =>
+      'ההזמנה הזו מיועדת לאפליקציית Zero-Trust אחרת.';
+
+  @override
+  String get challengeInviteInvalid => 'זה לא קישור הזמנה לאתגר.';
+
+  @override
+  String get challengeInviteUsed =>
+      'ההזמנה כבר נוצלה או שפג תוקפה. אפשר לבקש הזמנה חדשה.';
+
+  @override
+  String get challengeJoinCodeTitle => 'יש להציג את הקוד הזה למארגן';
+
+  @override
+  String get challengeJoinCodeBody =>
+      'אותו קוד יופיע גם בטלפון שלהם. אחרי שיאשרו, האתגר יופיע כאן.';
+
+  @override
+  String get challengeDone => 'סיום';
+
+  @override
+  String get challengeJoinIntro =>
+      'יש להדביק את קישור ההזמנה שקיבלת, או לסרוק את קוד ה-QR.';
+
+  @override
+  String get challengeInviteLink => 'קישור הזמנה';
+
+  @override
+  String get challengeScanQr => 'סריקת קוד QR';
+
+  @override
+  String get challengeJoinPrivacy =>
+      'ההצטרפות משתפת רק את הסכום שלך במדד ובימים של האתגר. אפשר לצאת בכל רגע.';
+
+  @override
+  String get challengeJoinButton => 'הצטרפות';
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zerotrust_fitness/features/challenges/challenges_pages.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
@@ -322,6 +323,15 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: _buildMedalsCard(context),
+        ),
+        ListTile(
+          leading: const Icon(Icons.emoji_events_outlined),
+          title: Text(context.l10n.challenges),
+          subtitle: Text(context.l10n.challengesSubtitle),
+          enabled: unlocked,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const ChallengesPage()),
+          ),
         ),
         ListTile(
           leading: const Icon(Icons.flag_outlined),
