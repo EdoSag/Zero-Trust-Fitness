@@ -148,6 +148,10 @@ void main() {
       // Across a daylight-saving change.
       expect(daysBetween('2026-03-25', '2026-04-01'), 7);
       expect(addDays('2026-12-30', 3), '2027-01-02');
+      // Every day of the year counts once, whatever the phone's time zone.
+      for (var d = 0; d < 366; d++) {
+        expect(daysBetween('2026-01-01', addDays('2026-01-01', d)), d);
+      }
     });
 
     test('validation', () {
@@ -255,6 +259,37 @@ void main() {
       expect(board.first.name, 'Bob');
       expect(board.map((s) => s.rank), [1, 2]);
     });
+  });
+
+  test('an organiser editing the rules changes the rules key', () {
+    ChallengeData data(Challenge c) => ChallengeData(
+      entry: const SpaceEntry(
+        info: SpaceInfo(
+          id: 's1',
+          app: 'fitness',
+          keyEpoch: 1,
+          myRole: SpaceRole.member,
+        ),
+      ),
+      myUserId: bob,
+      challenge: c,
+      members: {bob: 'Bob'},
+    );
+    final edited = Challenge(
+      title: steps7.title,
+      metric: ChallengeMetric.heartPoints,
+      goal: steps7.goal,
+      start: steps7.start,
+      end: steps7.end,
+    );
+    expect(
+      challengeRulesKey([data(steps7)]),
+      isNot(challengeRulesKey([data(edited)])),
+    );
+    expect(
+      challengeRulesKey([data(steps7)]),
+      challengeRulesKey([data(steps7)]),
+    );
   });
 
   group('shared challenge', () {

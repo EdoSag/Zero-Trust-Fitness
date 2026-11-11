@@ -319,6 +319,13 @@ class ChallengeActions {
   }
 }
 
+/// What each challenge counts and when, to notice an organiser's edit.
+String challengeRulesKey(List<ChallengeData> list) => [
+  for (final c in list)
+    '${c.spaceId}:${c.members.containsKey(c.myUserId)}:'
+        '${c.challenge?.toJson()}',
+].join('|');
+
 /// Days after a challenge ends that phones still update their totals
 /// (a day logged late, a phone that was offline on the last day).
 const int publishGraceDays = 3;
@@ -337,11 +344,13 @@ final challengePublisherProvider = Provider<void>((ref) {
 
   ref.listen(fitnessVaultChangesProvider, (_, _) => schedule());
   ref.listen(challengesProvider, (prev, next) {
-    final before = prev?.value?.challenges.length;
     final now = next.value?.challenges;
     if (now == null) return;
-    // New or changed challenges (a join confirmed, dates edited).
-    if (before != now.length ||
+    // New challenges (a join confirmed) or changed rules (metric, target,
+    // dates edited by an organiser): recount under the current rules.
+    final before = prev?.value?.challenges;
+    if (before == null ||
+        challengeRulesKey(before) != challengeRulesKey(now) ||
         now.any((c) => c.challenge != null && c.mine?.hasData != true)) {
       schedule();
     }

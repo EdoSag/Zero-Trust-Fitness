@@ -64,14 +64,13 @@ String addDays(String key, int days) {
 int daysBetween(String from, String to) {
   final a = parseDateKey(from);
   final b = parseDateKey(to);
-  // Noon avoids daylight-saving hours turning a day into 23 or 25 hours.
-  return DateTime(
-        b.year,
-        b.month,
-        b.day,
-        12,
-      ).difference(DateTime(a.year, a.month, a.day, 12)).inHours ~/
-      24;
+  // UTC dates: local days can be 23 or 25 hours long around a
+  // daylight-saving change.
+  return DateTime.utc(
+    b.year,
+    b.month,
+    b.day,
+  ).difference(DateTime.utc(a.year, a.month, a.day)).inDays;
 }
 
 class Challenge {
