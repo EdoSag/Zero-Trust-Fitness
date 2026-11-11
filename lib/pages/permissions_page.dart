@@ -5,9 +5,10 @@ import 'package:health/health.dart';
 import 'package:zerotrust_fitness/components/inline_button_style.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/health/data/health_service.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class _HealthPermissionConfig {
-  const _HealthPermissionConfig({
+  _HealthPermissionConfig({
     required this.key,
     required this.title,
     required this.description,
@@ -22,121 +23,121 @@ class _HealthPermissionConfig {
   final List<HealthDataType>? androidRequestTypes;
 }
 
-const _healthPermissionConfigs = <_HealthPermissionConfig>[
+List<_HealthPermissionConfig> get _healthPermissionConfigs => <_HealthPermissionConfig>[
   _HealthPermissionConfig(
     key: 'steps',
-    title: 'Steps',
-    description: 'Read daily step counts.',
+    title: currentL10n.steps,
+    description: currentL10n.readDailyStepCounts,
     requestTypes: [HealthDataType.STEPS],
   ),
   _HealthPermissionConfig(
     key: 'heart_rate',
-    title: 'Heart Rate',
-    description: 'Read heart-rate samples.',
+    title: currentL10n.heartRate,
+    description: currentL10n.readHeartRateSamples,
     requestTypes: [HealthDataType.HEART_RATE],
   ),
   _HealthPermissionConfig(
     key: 'exercise',
-    title: 'Exercise Sessions',
-    description: 'Read workouts and active minutes.',
+    title: currentL10n.exerciseSessions,
+    description: currentL10n.readWorkoutsAndActiveMinutes,
     requestTypes: [HealthDataType.WORKOUT],
   ),
   _HealthPermissionConfig(
     key: 'sleep_asleep',
-    title: 'Sleep Asleep',
-    description: 'Read sleep-asleep duration.',
+    title: currentL10n.sleepAsleep,
+    description: currentL10n.readSleepAsleepDuration,
     requestTypes: [HealthDataType.SLEEP_ASLEEP],
   ),
   _HealthPermissionConfig(
     key: 'sleep_light',
-    title: 'Sleep Light',
-    description: 'Read light sleep duration.',
+    title: currentL10n.sleepLight,
+    description: currentL10n.readLightSleepDuration,
     requestTypes: [HealthDataType.SLEEP_LIGHT],
   ),
   _HealthPermissionConfig(
     key: 'sleep_deep',
-    title: 'Sleep Deep',
-    description: 'Read deep sleep duration.',
+    title: currentL10n.sleepDeep,
+    description: currentL10n.readDeepSleepDuration,
     requestTypes: [HealthDataType.SLEEP_DEEP],
   ),
   _HealthPermissionConfig(
     key: 'sleep_rem',
-    title: 'Sleep REM',
-    description: 'Read REM sleep duration.',
+    title: currentL10n.sleepRem,
+    description: currentL10n.readRemSleepDuration,
     requestTypes: [HealthDataType.SLEEP_REM],
   ),
   _HealthPermissionConfig(
     key: 'resting_hr',
-    title: 'Resting Heart Rate',
-    description: 'Read resting BPM.',
+    title: currentL10n.restingHeartRate,
+    description: currentL10n.readRestingBpm,
     requestTypes: [HealthDataType.RESTING_HEART_RATE],
   ),
   _HealthPermissionConfig(
     key: 'respiratory_rate',
-    title: 'Respiratory Rate',
-    description: 'Read respirations per minute.',
+    title: currentL10n.respiratoryRate,
+    description: currentL10n.readRespirationsPerMinute,
     requestTypes: [HealthDataType.RESPIRATORY_RATE],
   ),
   _HealthPermissionConfig(
     key: 'blood_oxygen',
-    title: 'Blood Oxygen',
-    description: 'Read oxygen saturation (SpO2).',
+    title: currentL10n.bloodOxygen,
+    description: currentL10n.readOxygenSaturationSpo2,
     requestTypes: [HealthDataType.BLOOD_OXYGEN],
   ),
   _HealthPermissionConfig(
     key: 'weight',
-    title: 'Weight',
-    description: 'Read body weight.',
+    title: currentL10n.weight,
+    description: currentL10n.readBodyWeight,
     requestTypes: [HealthDataType.WEIGHT],
   ),
   _HealthPermissionConfig(
     key: 'bmi',
-    title: 'Body Mass Index',
-    description: 'Read BMI values.',
+    title: currentL10n.bodyMassIndex,
+    description: currentL10n.readBmiValues,
     requestTypes: [HealthDataType.BODY_MASS_INDEX],
     // Health Connect permissions are tied to weight/height records.
     androidRequestTypes: [HealthDataType.WEIGHT, HealthDataType.HEIGHT],
   ),
   _HealthPermissionConfig(
     key: 'body_fat',
-    title: 'Body Fat %',
-    description: 'Read body fat percentage.',
+    title: currentL10n.bodyFatX,
+    description: currentL10n.readBodyFatPercentage,
     requestTypes: [HealthDataType.BODY_FAT_PERCENTAGE],
   ),
   _HealthPermissionConfig(
     key: 'water',
-    title: 'Hydration',
-    description: 'Read water intake.',
+    title: currentL10n.hydration,
+    description: currentL10n.readWaterIntake,
     requestTypes: [HealthDataType.WATER],
   ),
   _HealthPermissionConfig(
     key: 'nutrition',
-    title: 'Nutrition',
-    description: 'Read nutrition entries.',
+    title: currentL10n.nutrition,
+    description: currentL10n.readNutritionEntries,
     requestTypes: [HealthDataType.NUTRITION],
   ),
   _HealthPermissionConfig(
     key: 'bp_systolic',
-    title: 'Blood Pressure Systolic',
-    description: 'Read systolic blood pressure.',
+    title: currentL10n.bloodPressureSystolic,
+    description: currentL10n.readSystolicBloodPressure,
     requestTypes: [HealthDataType.BLOOD_PRESSURE_SYSTOLIC],
   ),
   _HealthPermissionConfig(
     key: 'bp_diastolic',
-    title: 'Blood Pressure Diastolic',
-    description: 'Read diastolic blood pressure.',
+    title: currentL10n.bloodPressureDiastolic,
+    description: currentL10n.readDiastolicBloodPressure,
     requestTypes: [HealthDataType.BLOOD_PRESSURE_DIASTOLIC],
   ),
   _HealthPermissionConfig(
     key: 'blood_glucose',
-    title: 'Blood Glucose',
-    description: 'Read blood glucose samples.',
+    title: currentL10n.bloodGlucose,
+    description: currentL10n.readBloodGlucoseSamples,
     requestTypes: [HealthDataType.BLOOD_GLUCOSE],
   ),
 ];
 
 class _PermissionCategory {
-  const _PermissionCategory({
+  _PermissionCategory({
     required this.title,
     required this.icon,
     required this.keys,
@@ -147,19 +148,19 @@ class _PermissionCategory {
   final List<String> keys;
 }
 
-const _healthPermissionCategories = <_PermissionCategory>[
+List<_PermissionCategory> get _healthPermissionCategories => <_PermissionCategory>[
   _PermissionCategory(
-    title: 'Activity',
+    title: currentL10n.activity,
     icon: Icons.directions_run,
     keys: ['steps', 'heart_rate', 'exercise', 'water', 'nutrition'],
   ),
   _PermissionCategory(
-    title: 'Sleep',
+    title: currentL10n.sleep,
     icon: Icons.bedtime_outlined,
     keys: ['sleep_asleep', 'sleep_light', 'sleep_deep', 'sleep_rem'],
   ),
   _PermissionCategory(
-    title: 'Vitals',
+    title: currentL10n.vitals,
     icon: Icons.monitor_heart_outlined,
     keys: [
       'resting_hr',
@@ -171,7 +172,7 @@ const _healthPermissionCategories = <_PermissionCategory>[
     ],
   ),
   _PermissionCategory(
-    title: 'Body',
+    title: currentL10n.body,
     icon: Icons.accessibility_new_outlined,
     keys: ['weight', 'bmi', 'body_fat'],
   ),
@@ -274,7 +275,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Permission action failed: $e')),
+        SnackBar(content: Text(context.l10n.permissionActionFailed('$e'))),
       );
     } finally {
       if (mounted) setState(() => _permissionsBusy = false);
@@ -330,11 +331,11 @@ class _PermissionsPageState extends State<PermissionsPage> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Permissions Center'),
+        title: Text(context.l10n.permissionsCenter),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            tooltip: 'Refresh permission states',
+            tooltip: context.l10n.refreshPermissionStates,
             onPressed: _permissionsBusy ? null : _refreshPermissionStates,
           ),
         ],
@@ -359,7 +360,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Permissions Center',
+                    context.l10n.permissionsCenter,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -375,7 +376,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Control each permission directly from here.',
+                context.l10n.controlEachPermissionDirectlyFrom,
                 style: theme.textTheme.bodySmall,
               ),
               const SizedBox(height: 16),
@@ -384,7 +385,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
               if (defaultTargetPlatform == TargetPlatform.android &&
                   !_healthConnectAvailable)
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: OutlinedButton.icon(
                     onPressed: _permissionsBusy
                         ? null
@@ -392,7 +393,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
                               _health.installHealthConnect,
                             ),
                     icon: const Icon(Icons.download_rounded),
-                    label: const Text('Install Health Connect'),
+                    label: Text(context.l10n.installHealthConnect),
                   ),
                 ),
             ],
@@ -417,7 +418,7 @@ class _PermissionsPageState extends State<PermissionsPage> {
           category.title,
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
-        subtitle: Text('$grantedCount / ${configs.length} granted'),
+        subtitle: Text(context.l10n.nOfMGranted(grantedCount, configs.length)),
         children: configs
             .map(
               (config) => Padding(
@@ -450,17 +451,17 @@ class _PermissionsPageState extends State<PermissionsPage> {
       margin: const EdgeInsets.only(bottom: 12),
       child: ExpansionTile(
         leading: const Icon(Icons.location_on_outlined),
-        title: const Text(
-          'Location',
+        title: Text(
+          context.l10n.location,
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
-        subtitle: Text('$granted / $total granted'),
+        subtitle: Text(context.l10n.nOfMGranted(granted, total)),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: _buildPermissionRow(
-              title: 'Location',
-              description: 'Enable real-time GPS run/cycle tracking.',
+              title: context.l10n.location,
+              description: context.l10n.enableRealTimeGpsRun,
               granted: _locationPermission,
               onEnable: () =>
                   _handlePermissionAction(_grantLocationPermission),
@@ -472,8 +473,8 @@ class _PermissionsPageState extends State<PermissionsPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: _buildPermissionRow(
-                title: 'Background Health Sync',
-                description: 'Allow periodic background health data reads.',
+                title: context.l10n.backgroundHealthSync,
+                description: context.l10n.allowPeriodicBackgroundHealthData,
                 granted: _backgroundHealthPermission,
                 onEnable: () => _handlePermissionAction(
                   _grantBackgroundHealthPermission,
@@ -496,10 +497,10 @@ class _PermissionsPageState extends State<PermissionsPage> {
     required VoidCallback onDisable,
   }) {
     final statusText = granted == true
-        ? 'Granted'
+        ? context.l10n.granted
         : granted == false
-            ? 'Denied'
-            : 'Unknown';
+            ? context.l10n.denied
+            : context.l10n.unknown;
     final statusColor = granted == true
         ? Colors.green
         : granted == false
@@ -551,14 +552,14 @@ class _PermissionsPageState extends State<PermissionsPage> {
                 onPressed: _permissionsBusy ? null : onEnable,
                 style: inlineButtonStyle,
                 icon: const Icon(Icons.toggle_on),
-                label: const Text('Turn On'),
+                label: Text(context.l10n.turnOn),
               ),
               const SizedBox(width: 8),
               OutlinedButton.icon(
                 onPressed: _permissionsBusy ? null : onDisable,
                 style: inlineButtonStyle,
                 icon: const Icon(Icons.toggle_off),
-                label: const Text('Turn Off'),
+                label: Text(context.l10n.turnOff),
               ),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// One week's totals.
 class WeekTotals {
@@ -110,33 +111,33 @@ class WeeklySummary {
   static String _delta(num now, num before) {
     final c = change(now, before);
     if (c == null) return '';
-    if (c == 0) return ' (same as last week)';
-    return c > 0 ? ' (up $c%)' : ' (down ${-c}%)';
+    if (c == 0) return currentL10n.sameAsLastWeek;
+    return c > 0 ? currentL10n.changeUp(c) : currentL10n.changeDown(-c);
   }
 
   String get title {
-    if (week.isEmpty) return 'Your week in Fitness';
+    if (week.isEmpty) return currentL10n.yourWeekInFitness;
     final days = week.activeDays;
-    return 'Your week: $days active ${days == 1 ? 'day' : 'days'}';
+    return currentL10n.yourWeekActiveDays(days);
   }
 
   /// The notification text, such as "152 Heart Points (up 18%) · 54,210
   /// steps (down 4%) · 4 workouts".
   String get body {
     if (week.isEmpty) {
-      return 'No activity logged this week. A short walk is a good start.';
+      return currentL10n.noActivityLoggedThisWeek;
     }
     final n = NumberFormat.decimalPattern();
     final parts = [
-      '${n.format(week.heartPoints)} Heart Points'
+      '${currentL10n.nHeartPoints(n.format(week.heartPoints))}'
           '${_delta(week.heartPoints, previous.heartPoints)}',
-      '${n.format(week.steps)} steps${_delta(week.steps, previous.steps)}',
+      '${currentL10n.nSteps(n.format(week.steps))}${_delta(week.steps, previous.steps)}',
       if (week.workouts > 0)
-        '${week.workouts} ${week.workouts == 1 ? 'workout' : 'workouts'}',
+        currentL10n.nWorkouts(week.workouts),
     ];
     final through = isComplete
         ? ''
-        : ' (through ${DateFormat.EEEE().format(weekStart.add(Duration(days: daysCounted - 1)))})';
+        : currentL10n.throughDay(DateFormat.EEEE().format(weekStart.add(Duration(days: daysCounted - 1))));
     return '${parts.join(' · ')}$through';
   }
 }

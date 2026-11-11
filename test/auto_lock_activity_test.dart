@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/app/app_gate.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class _CountingVault extends VaultController {
   int touches = 0;
@@ -19,11 +20,14 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [vaultControllerProvider.overrideWith(() => vault)],
       child: MaterialApp(
+        localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
+        supportedLocales: ZtLanguages.supported,
         navigatorKey: nav,
         builder: (context, child) => AutoLockActivity(child: child!),
         home: const Text('home'),
       ),
     ));
+    await tester.pump();
     nav.currentState!.push(MaterialPageRoute<void>(
         builder: (_) => const Scaffold(body: Center(child: Text('editor')))));
     await tester.pumpAndSettle();

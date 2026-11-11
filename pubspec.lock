@@ -343,7 +343,7 @@ packages:
     source: hosted
     version: "8.0.0"
   flutter_localizations:
-    dependency: transitive
+    dependency: "direct main"
     description: flutter
     source: sdk
     version: "0.0.0"
@@ -1326,17 +1326,17 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/zero_trust_core"
-      ref: a6f8e52391fd8be806f7b38abb97a0f17d6035de
-      resolved-ref: a6f8e52391fd8be806f7b38abb97a0f17d6035de
+      ref: ba9a62de6bf17de7deb4596751c3f457d48d7942
+      resolved-ref: ba9a62de6bf17de7deb4596751c3f457d48d7942
       url: "https://github.com/EdoSag/Zero-Trust-Core.git"
     source: git
-    version: "0.8.1"
+    version: "0.10.0"
   zt_crypto:
     dependency: transitive
     description:
       path: "packages/zt_crypto"
-      ref: a6f8e52391fd8be806f7b38abb97a0f17d6035de
-      resolved-ref: a6f8e52391fd8be806f7b38abb97a0f17d6035de
+      ref: ba9a62de6bf17de7deb4596751c3f457d48d7942
+      resolved-ref: ba9a62de6bf17de7deb4596751c3f457d48d7942
       url: "https://github.com/EdoSag/Zero-Trust-Core.git"
     source: git
     version: "0.3.2"

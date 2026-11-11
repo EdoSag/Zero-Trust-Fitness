@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 enum AchievementCategory { fitness, momentum, sleep, health, milestones }
 
@@ -450,3 +451,83 @@ const kAllAchievements = <AchievementDefinition>[
     progressTarget: 30,
   ),
 ];
+
+/// A medal's name and description in the app's language. The English ones
+/// above stay the source of truth (and what tests and old data see).
+extension AchievementText on AchievementDefinition {
+  String get title {
+    final l = currentL10n;
+    return switch (id) {
+        'first_steps' => l.medalFirstSteps,
+        'step_seeker' => l.medalStepSeeker,
+        'step_champion' => l.medalStepChampion,
+        'step_legend' => l.medalStepLegend,
+        'heart_starter' => l.medalHeartStarter,
+        'heart_warrior' => l.medalHeartWarrior,
+        'heart_legend' => l.medalHeartLegend,
+        'active_week' => l.medalActiveWeek,
+        'on_target' => l.medalOnTarget,
+        'target_streak_3' => l.medalTargetStreak3,
+        'target_streak_7' => l.medalTargetStreak7,
+        'comeback' => l.medalComeback,
+        'target_40' => l.medalTarget40,
+        'momentum_50' => l.medalMomentum50,
+        'momentum_75' => l.medalMomentum75,
+        'momentum_week_75' => l.medalMomentumWeek75,
+        'night_logged' => l.medalNightLogged,
+        'well_rested' => l.medalWellRested,
+        'deep_dreamer' => l.medalDeepDreamer,
+        'sleep_champion' => l.medalSleepChampion,
+        'hydrated' => l.medalHydrated,
+        'healthy_heart' => l.medalHealthyHeart,
+        'oxygen_check' => l.medalOxygenCheck,
+        'first_sync' => l.medalFirstSync,
+        'dedicated' => l.medalDedicated,
+        'committed' => l.medalCommitted,
+        'step_millionaire' => l.medalStepMillionaire,
+        'elite' => l.medalElite,
+        'streak_3' => l.medalStreak3,
+        'streak_7' => l.medalStreak7,
+        'streak_30' => l.medalStreak30,
+      _ => name,
+    };
+  }
+
+  String get blurb {
+    final l = currentL10n;
+    return switch (id) {
+        'first_steps' => l.medalFirstStepsDesc,
+        'step_seeker' => l.medalStepSeekerDesc,
+        'step_champion' => l.medalStepChampionDesc,
+        'step_legend' => l.medalStepLegendDesc,
+        'heart_starter' => l.medalHeartStarterDesc,
+        'heart_warrior' => l.medalHeartWarriorDesc,
+        'heart_legend' => l.medalHeartLegendDesc,
+        'active_week' => l.medalActiveWeekDesc,
+        'on_target' => l.medalOnTargetDesc,
+        'target_streak_3' => l.medalTargetStreak3Desc,
+        'target_streak_7' => l.medalTargetStreak7Desc,
+        'comeback' => l.medalComebackDesc,
+        'target_40' => l.medalTarget40Desc,
+        'momentum_50' => l.medalMomentum50Desc,
+        'momentum_75' => l.medalMomentum75Desc,
+        'momentum_week_75' => l.medalMomentumWeek75Desc,
+        'night_logged' => l.medalNightLoggedDesc,
+        'well_rested' => l.medalWellRestedDesc,
+        'deep_dreamer' => l.medalDeepDreamerDesc,
+        'sleep_champion' => l.medalSleepChampionDesc,
+        'hydrated' => l.medalHydratedDesc,
+        'healthy_heart' => l.medalHealthyHeartDesc,
+        'oxygen_check' => l.medalOxygenCheckDesc,
+        'first_sync' => l.medalFirstSyncDesc,
+        'dedicated' => l.medalDedicatedDesc,
+        'committed' => l.medalCommittedDesc,
+        'step_millionaire' => l.medalStepMillionaireDesc,
+        'elite' => l.medalEliteDesc,
+        'streak_3' => l.medalStreak3Desc,
+        'streak_7' => l.medalStreak7Desc,
+        'streak_30' => l.medalStreak30Desc,
+      _ => description,
+    };
+  }
+}

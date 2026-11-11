@@ -10,6 +10,8 @@ import 'package:zerotrust_fitness/pages/templates_page.dart';
 
 import 'phone_layout.dart';
 import 'support.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
+import 'package:zero_trust_core/zero_trust_core.dart';
 
 /// Buttons placed next to each other in a row, drawn with the app's real
 /// theme. Before the fix each of these rows failed layout and the button
@@ -23,6 +25,8 @@ void main() {
     await usePhoneScreen(tester);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
+        supportedLocales: ZtLanguages.supported,
         theme: appTheme,
         home: Scaffold(
           body: Row(
@@ -34,6 +38,7 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
     expect(tester.takeException(), isNotNull);
   });
 
@@ -43,6 +48,8 @@ void main() {
     await usePhoneScreen(tester);
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
+        supportedLocales: ZtLanguages.supported,
         theme: appTheme,
         home: Scaffold(
           body: Row(
@@ -63,6 +70,7 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
     expectTappableOnScreen(tester, find.text('Off'));
     expectTappableOnScreen(tester, find.text('Save'));
     // The theme's height stays.
@@ -75,7 +83,10 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [openFitnessVaultProvider.overrideWithValue(vault)],
-        child: MaterialApp(theme: appTheme, home: const GoalsPage()),
+        child: MaterialApp(
+          localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
+          supportedLocales: ZtLanguages.supported,
+          theme: appTheme, home: const GoalsPage()),
       ),
     );
     await tester.pumpAndSettle();
@@ -94,6 +105,8 @@ void main() {
     final vault = testVault();
     await tester.pumpWidget(
       MaterialApp(
+        localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
+        supportedLocales: ZtLanguages.supported,
         theme: appTheme,
         home: TemplatesPage(vault: vault),
       ),

@@ -24,6 +24,7 @@
 library;
 
 import 'dart:math' as math;
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class MomentumResult {
   const MomentumResult({
@@ -56,10 +57,10 @@ class MomentumResult {
   int get pointsToTarget => math.max(0, target - todayPoints);
 
   String get label {
-    if (momentum >= 75) return 'Unstoppable';
-    if (momentum >= 50) return 'Steady';
-    if (momentum >= 25) return 'Building';
-    return 'Getting started';
+    if (momentum >= 75) return currentL10n.unstoppable;
+    if (momentum >= 50) return currentL10n.steady;
+    if (momentum >= 25) return currentL10n.building;
+    return currentL10n.gettingStarted;
   }
 }
 

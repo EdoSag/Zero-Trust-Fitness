@@ -4,6 +4,7 @@ import 'package:zerotrust_fitness/components/compact_metric_card.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
 import 'package:zerotrust_fitness/pages/metric_detail_page.dart';
 import 'package:zerotrust_fitness/pages/water_food_page.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class AllMetricsPage extends StatelessWidget {
   const AllMetricsPage({
@@ -20,7 +21,7 @@ class AllMetricsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('All Metrics')),
+      appBar: AppBar(title: Text(context.l10n.allMetrics)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Wrap(
@@ -61,7 +62,7 @@ class AllMetricsPage extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: onManualEntry,
-        tooltip: 'Log a workout or health metric',
+        tooltip: context.l10n.logAWorkoutOrHealth,
         child: const Icon(Icons.add),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:zerotrust_fitness/components/compact_metric_card.dart';
 import 'package:zerotrust_fitness/components/empty_state_widget.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 enum ChartRange { day, week, month }
 
@@ -52,7 +53,7 @@ class _TrendsPageState extends State<TrendsPage> {
     int xLabelInterval = 1,
   }) {
     if (points.isEmpty) {
-      return EmptyStateWidget.noData('trend data');
+      return EmptyStateWidget.noData(context.l10n.trendData);
     }
 
     final maxY = points
@@ -65,9 +66,9 @@ class _TrendsPageState extends State<TrendsPage> {
       children: [
         Row(
           children: [
-            LegendChip(color: stepColor, label: 'Steps'),
+            LegendChip(color: stepColor, label: context.l10n.steps),
             const SizedBox(width: 8),
-            LegendChip(color: heartColor, label: 'Heart Points'),
+            LegendChip(color: heartColor, label: context.l10n.heartPoints),
           ],
         ),
         const SizedBox(height: 8),
@@ -91,7 +92,7 @@ class _TrendsPageState extends State<TrendsPage> {
                   getTooltipColor: (_) => Colors.black87,
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     final point = points[group.x.toInt()];
-                    final label = rodIndex == 0 ? 'Steps' : 'Heart Points';
+                    final label = rodIndex == 0 ? context.l10n.steps : context.l10n.heartPoints;
                     final value = rod.toY.toStringAsFixed(0);
                     return BarTooltipItem(
                       '${point.label}\n$label: $value',
@@ -176,7 +177,7 @@ class _TrendsPageState extends State<TrendsPage> {
     required Color color,
   }) {
     if (points.isEmpty) {
-      return EmptyStateWidget.noData('trend data');
+      return EmptyStateWidget.noData(context.l10n.trendData);
     }
 
     final maxY = points
@@ -281,14 +282,14 @@ class _TrendsPageState extends State<TrendsPage> {
     if (!_baselineCardDismissed && (hrBaseline != null || stepsBaseline != null)) {
       final parts = <String>[
         if (hrBaseline != null && hrBaseline > 0)
-          'Resting HR avg: ${hrBaseline.toStringAsFixed(0)} bpm',
+          context.l10n.restingHrAvg(hrBaseline.toStringAsFixed(0)),
         if (stepsBaseline != null && stepsBaseline > 0)
-          'Daily steps avg: ${stepsBaseline.toStringAsFixed(0)}',
+          context.l10n.dailyStepsAvg(stepsBaseline.toStringAsFixed(0)),
       ];
       cards.add(_InsightCard(
         theme: theme,
         icon: Icons.analytics_outlined,
-        title: '30-Day Baselines',
+        title: context.l10n.s30DayBaselines,
         body: parts.join('  ·  '),
         onDismiss: () => setState(() => _baselineCardDismissed = true),
       ));
@@ -297,16 +298,14 @@ class _TrendsPageState extends State<TrendsPage> {
 
     final corr = widget.sleepStepsCorrelation;
     if (!_correlationCardDismissed && corr != null) {
-      final strength =
-          corr.abs() >= 0.5 ? 'strong' : corr.abs() >= 0.3 ? 'moderate' : 'weak';
+      final strength = corr.abs() >= 0.5 ? 'strong' : corr.abs() >= 0.3 ? 'moderate' : 'weak';
       final direction = corr >= 0 ? 'positive' : 'negative';
       cards.add(_InsightCard(
         theme: theme,
         icon: Icons.link_outlined,
-        title: 'Sleep & Steps',
+        title: context.l10n.sleepSteps,
         body:
-            'Your sleep duration shows a $strength $direction correlation '
-            'with your daily step count.',
+            context.l10n.sleepStepsCorrelation(strength, direction),
         onDismiss: () => setState(() => _correlationCardDismissed = true),
       ));
       cards.add(const SizedBox(height: 12));
@@ -330,17 +329,17 @@ class _TrendsPageState extends State<TrendsPage> {
       ChartRange.month => widget.selectedMetricMonthPoints,
     };
     final dualLabel = switch (_range) {
-      ChartRange.day => 'Steps & Heart Points (Today, Hourly)',
-      ChartRange.week => 'Steps & Heart Points (This Week)',
-      ChartRange.month => 'Steps & Heart Points (Last 30 Days)',
+      ChartRange.day => context.l10n.stepsHeartPointsTodayHourly,
+      ChartRange.week => context.l10n.stepsHeartPointsThisWeek,
+      ChartRange.month => context.l10n.stepsHeartPointsLast30,
     };
     final singleLabel = switch (_range) {
-      ChartRange.day || ChartRange.week => 'Selected Metric (Week)',
-      ChartRange.month => 'Selected Metric (Month)',
+      ChartRange.day || ChartRange.week => context.l10n.selectedMetricWeek,
+      ChartRange.month => context.l10n.selectedMetricMonth,
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Trends')),
+      appBar: AppBar(title: Text(context.l10n.trends)),
       body: RefreshIndicator(
         onRefresh: widget.onRefresh,
         child: SingleChildScrollView(
@@ -372,25 +371,25 @@ class _TrendsPageState extends State<TrendsPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Analytics', style: theme.textTheme.titleMedium),
-                    const Icon(Icons.insights, color: Color(0xFF6366F1)),
+                    Text(context.l10n.analytics, style: theme.textTheme.titleMedium),
+                    Icon(Icons.insights, color: Color(0xFF6366F1)),
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Center(
                   child: SegmentedButton<ChartRange>(
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                           value: ChartRange.day,
-                          label: Text('Day'),
+                          label: Text(context.l10n.day),
                           icon: Icon(Icons.today_outlined, size: 16)),
                       ButtonSegment(
                           value: ChartRange.week,
-                          label: Text('Week'),
+                          label: Text(context.l10n.week),
                           icon: Icon(Icons.date_range_outlined, size: 16)),
                       ButtonSegment(
                           value: ChartRange.month,
-                          label: Text('Month'),
+                          label: Text(context.l10n.month),
                           icon: Icon(Icons.calendar_month_outlined, size: 16)),
                     ],
                     selected: {_range},
@@ -499,7 +498,7 @@ class _InsightCard extends StatelessWidget {
                             .withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text('Informational',
+                      child: Text(context.l10n.informational,
                           style: theme.textTheme.labelSmall
                               ?.copyWith(fontSize: 9)),
                     ),
@@ -510,7 +509,7 @@ class _InsightCard extends StatelessWidget {
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.hintColor)),
                 const SizedBox(height: 2),
-                Text('Not medical advice · based on your logged data',
+                Text(context.l10n.notMedicalAdviceBasedOn,
                     style: theme.textTheme.labelSmall?.copyWith(
                         fontSize: 9,
                         color: theme.hintColor.withValues(alpha: 0.6))),
@@ -520,7 +519,7 @@ class _InsightCard extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.close, size: 16, color: theme.hintColor),
             onPressed: onDismiss,
-            tooltip: 'Dismiss',
+            tooltip: context.l10n.dismiss,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
           ),

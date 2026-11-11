@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class CompactMetricCard extends StatelessWidget {
   const CompactMetricCard({
@@ -56,7 +57,7 @@ class CompactMetricCard extends StatelessWidget {
           if (goalProgress != null) ...[
             const SizedBox(height: 6),
             Semantics(
-              label: '${(goalProgress! * 100).round()}% of goal',
+              label: context.l10n.percentOfGoal((goalProgress! * 100).round()),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(

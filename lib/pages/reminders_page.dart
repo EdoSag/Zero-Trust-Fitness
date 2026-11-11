@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
 import 'package:zerotrust_fitness/core/services/reminder_service.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class RemindersPage extends ConsumerStatefulWidget {
   const RemindersPage({super.key});
@@ -24,7 +26,6 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
   bool _loading = true;
   bool _permissionGranted = false;
 
-  static const _weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   @override
   void initState() {
@@ -43,8 +44,8 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
       final granted = await ReminderService().requestPermission();
       if (!granted && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Notification permission required for reminders.')),
+          SnackBar(
+              content: Text(context.l10n.notificationPermissionRequiredForReminders)),
         );
         return;
       }
@@ -61,10 +62,7 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
   }
 
   String _fmt(TimeOfDay t) {
-    final h = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
-    final m = t.minute.toString().padLeft(2, '0');
-    final period = t.period == DayPeriod.am ? 'AM' : 'PM';
-    return '$h:$m $period';
+    return MaterialLocalizations.of(context).formatTimeOfDay(t);
   }
 
   Widget _section(String title) {
@@ -98,28 +96,27 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Reminders')),
+      appBar: AppBar(title: Text(context.l10n.reminders)),
       body: ListView(
         children: [
           // -- Weekly summary -------------------------------------------------
-          _section('Summary'),
+          _section(context.l10n.summary),
           SwitchListTile(
             secondary: const Icon(Icons.insights_outlined),
-            title: const Text('Weekly summary'),
-            subtitle: const Text(
-                'Mondays at 9:00: Heart Points, steps and workouts, '
-                'compared with the week before'),
+            title: Text(context.l10n.weeklySummaryX),
+            subtitle: Text(
+                context.l10n.mondaysAt900Heart),
             value: _settings.weeklySummaryEnabled,
             onChanged: (v) =>
                 _apply(_settings.copyWith(weeklySummaryEnabled: v)),
           ),
 
           // -- Movement -------------------------------------------------------
-          _section('Activity'),
+          _section(context.l10n.activity),
           SwitchListTile(
             secondary: const Icon(Icons.directions_walk_outlined),
-            title: const Text('Movement nudge'),
-            subtitle: const Text('Hourly reminder to stay active'),
+            title: Text(context.l10n.movementNudge),
+            subtitle: Text(context.l10n.hourlyReminderToStayActive),
             value: _settings.movementEnabled,
             onChanged: (v) =>
                 _apply(_settings.copyWith(movementEnabled: v)),
@@ -128,26 +125,26 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
           // -- Hydration ------------------------------------------------------
           SwitchListTile(
             secondary: const Icon(Icons.water_drop_outlined),
-            title: const Text('Hydration reminder'),
-            subtitle: const Text('Hourly prompt to drink water'),
+            title: Text(context.l10n.hydrationReminder),
+            subtitle: Text(context.l10n.hourlyPromptToDrinkWater),
             value: _settings.hydrationEnabled,
             onChanged: (v) =>
                 _apply(_settings.copyWith(hydrationEnabled: v)),
           ),
 
           // -- Workout --------------------------------------------------------
-          _section('Workout'),
+          _section(context.l10n.workout),
           SwitchListTile(
             secondary: const Icon(Icons.fitness_center_outlined),
-            title: const Text('Workout reminder'),
-            subtitle: const Text('Choose days and time'),
+            title: Text(context.l10n.workoutReminder),
+            subtitle: Text(context.l10n.chooseDaysAndTime),
             value: _settings.workoutEnabled,
             onChanged: (v) =>
                 _apply(_settings.copyWith(workoutEnabled: v)),
           ),
           if (_settings.workoutEnabled) ...[
             _timeTile(
-              'Reminder time',
+              context.l10n.reminderTime,
               _settings.workoutTime,
               () => _pickTime(_settings.workoutTime, (t) {
                 _apply(_settings.copyWith(workoutTime: t));
@@ -162,7 +159,7 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
                   final day = i + 1; // 1=Mon … 7=Sun
                   final selected = _settings.workoutDays.contains(day);
                   return FilterChip(
-                    label: Text(_weekdayLabels[i]),
+                    label: Text(DateFormat.E().format(DateTime(2024, 1, i + 1))),
                     selected: selected,
                     onSelected: (v) {
                       final days = List<int>.from(_settings.workoutDays);
@@ -176,18 +173,18 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
           ],
 
           // -- Sleep ----------------------------------------------------------
-          _section('Sleep'),
+          _section(context.l10n.sleep),
           SwitchListTile(
             secondary: const Icon(Icons.bedtime_outlined),
-            title: const Text('Bedtime reminder'),
-            subtitle: const Text('Daily wind-down prompt'),
+            title: Text(context.l10n.bedtimeReminder),
+            subtitle: Text(context.l10n.dailyWindDownPrompt),
             value: _settings.sleepEnabled,
             onChanged: (v) =>
                 _apply(_settings.copyWith(sleepEnabled: v)),
           ),
           if (_settings.sleepEnabled)
             _timeTile(
-              'Bedtime',
+              context.l10n.bedtime,
               _settings.sleepTime,
               () => _pickTime(_settings.sleepTime, (t) {
                 _apply(_settings.copyWith(sleepTime: t));
@@ -195,12 +192,12 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
             ),
 
           // -- Measurement ----------------------------------------------------
-          _section('Body Measurements'),
+          _section(context.l10n.bodyMeasurements),
           SwitchListTile(
             secondary: const Icon(Icons.monitor_weight_outlined),
-            title: const Text('Weekly check-in'),
+            title: Text(context.l10n.weeklyCheckIn),
             subtitle:
-                const Text('Weekly reminder to log weight or measurements'),
+                Text(context.l10n.weeklyReminderToLogWeight),
             value: _settings.measurementEnabled,
             onChanged: (v) =>
                 _apply(_settings.copyWith(measurementEnabled: v)),
@@ -210,9 +207,7 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'All reminders are local-only and never leave your device. '
-              'Your data is locked while Fitness is closed, so the weekly '
-              'summary is prepared each time you open the app.',
+              context.l10n.allRemindersAreLocalOnly,
               style: Theme.of(context)
                   .textTheme
                   .bodySmall

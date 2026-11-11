@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/core/services/export_service.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class ShareReportPage extends StatefulWidget {
   const ShareReportPage({super.key, required this.vault});
@@ -33,7 +34,7 @@ class _ShareReportPageState extends State<ShareReportPage> {
   Future<void> _generate() async {
     if (_selectedKeys.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select at least one metric.')),
+        SnackBar(content: Text(context.l10n.selectAtLeastOneMetric)),
       );
       return;
     }
@@ -47,7 +48,7 @@ class _ShareReportPageState extends State<ShareReportPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed: $e')));
+            .showSnackBar(SnackBar(content: Text(context.l10n.failedError('$e'))));
       }
     } finally {
       if (mounted) setState(() => _generating = false);
@@ -62,23 +63,23 @@ class _ShareReportPageState extends State<ShareReportPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Share Report')),
+      appBar: AppBar(title: Text(context.l10n.shareReportX)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
             child: ListTile(
               leading: const Icon(Icons.date_range_outlined),
-              title: const Text('Date range'),
+              title: Text(context.l10n.dateRange),
               subtitle: Text('${_fmtDate(_range.start)} – ${_fmtDate(_range.end)}'),
               trailing: TextButton(
                 onPressed: _pickRange,
-                child: const Text('Change'),
+                child: Text(context.l10n.change),
               ),
             ),
           ),
           const SizedBox(height: 20),
-          Text('Metrics to include',
+          Text(context.l10n.metricsToInclude,
               style: theme.textTheme.titleSmall
                   ?.copyWith(color: theme.hintColor)),
           const SizedBox(height: 8),
@@ -118,9 +119,7 @@ class _ShareReportPageState extends State<ShareReportPage> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'The report is a plain-text file — not encrypted. '
-                    'Only share with people you trust. '
-                    'Informational only — not medical advice.',
+                    context.l10n.theReportIsAPlain,
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: theme.hintColor),
                   ),
@@ -137,7 +136,7 @@ class _ShareReportPageState extends State<ShareReportPage> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.share_outlined),
-            label: Text(_generating ? 'Generating…' : 'Generate & Share'),
+            label: Text(_generating ? context.l10n.generating : context.l10n.generateShare),
           ),
         ],
       ),

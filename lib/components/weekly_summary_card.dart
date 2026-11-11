@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:zerotrust_fitness/features/summary/weekly_summary.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// This week next to last week: Heart Points, steps, workouts, active days.
 class WeeklySummaryCard extends StatelessWidget {
@@ -30,12 +31,12 @@ class WeeklySummaryCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  summary.isComplete ? 'This week' : 'This week so far',
+                  summary.isComplete ? context.l10n.thisWeek : context.l10n.thisWeekSoFar,
                   style: theme.textTheme.titleMedium,
                 ),
               ),
               Text(
-                'vs the week before',
+                context.l10n.vsTheWeekBefore,
                 style: TextStyle(color: theme.hintColor, fontSize: 12),
               ),
             ],
@@ -46,7 +47,7 @@ class WeeklySummaryCard extends StatelessWidget {
               _cell(
                 context,
                 '${week.heartPoints}',
-                'Heart Points',
+                context.l10n.heartPoints,
                 WeeklySummary.change(week.heartPoints, prev.heartPoints),
               ),
               _cell(
@@ -64,7 +65,7 @@ class WeeklySummaryCard extends StatelessWidget {
               _cell(
                 context,
                 '${week.activeDays}/${summary.daysCounted}',
-                'active days',
+                context.l10n.activeDays,
                 null,
               ),
             ],

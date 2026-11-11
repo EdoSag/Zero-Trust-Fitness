@@ -8,6 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/health/data/workout_feedback.dart';
 import 'package:zerotrust_fitness/features/summary/weekly_summary.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// Notification IDs
 const int _kMovementId = 1001;
@@ -76,10 +77,10 @@ class ReminderService {
     await _plugin.cancel(_kMovementId);
     await _plugin.periodicallyShow(
       _kMovementId,
-      'Time to move!',
-      "You haven't been active in a while. A short walk counts.",
+      currentL10n.timeToMove,
+      currentL10n.youHaventBeenActiveIn,
       RepeatInterval.hourly,
-      _details('movement', 'Movement Reminders'),
+      _details('movement', currentL10n.movementReminders),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     );
   }
@@ -95,10 +96,10 @@ class ReminderService {
     await _plugin.cancel(_kHydrationId);
     await _plugin.periodicallyShow(
       _kHydrationId,
-      'Stay hydrated!',
-      'Drink a glass of water to keep your hydration on track.',
+      currentL10n.stayHydrated,
+      currentL10n.drinkAGlassOfWater,
       RepeatInterval.hourly,
-      _details('hydration', 'Hydration Reminders'),
+      _details('hydration', currentL10n.hydrationReminders),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     );
   }
@@ -120,10 +121,10 @@ class ReminderService {
       final id = 1002 + day; // 1003–1009
       await _plugin.zonedSchedule(
         id,
-        'Workout time!',
-        "Your scheduled workout is today. Let's get moving.",
+        currentL10n.workoutTime,
+        currentL10n.yourScheduledWorkoutIsToday,
         _nextInstanceOfWeekdayTime(day, time),
-        _details('workout', 'Workout Reminders'),
+        _details('workout', currentL10n.workoutReminders),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -146,10 +147,10 @@ class ReminderService {
     await _plugin.cancel(_kSleepId);
     await _plugin.zonedSchedule(
       _kSleepId,
-      'Bedtime soon',
-      'Winding down now supports better sleep quality.',
+      currentL10n.bedtimeSoon,
+      currentL10n.windingDownNowSupportsBetter,
       _nextInstanceOfTime(time),
-      _details('sleep', 'Sleep Reminders'),
+      _details('sleep', currentL10n.sleepReminders),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
@@ -167,10 +168,10 @@ class ReminderService {
     await _plugin.cancel(_kMeasurementId);
     await _plugin.periodicallyShow(
       _kMeasurementId,
-      'Weekly check-in',
-      'Time to log your weight or other measurements.',
+      currentL10n.weeklyCheckIn,
+      currentL10n.timeToLogYourWeight,
       RepeatInterval.weekly,
-      _details('measurement', 'Measurement Reminders'),
+      _details('measurement', currentL10n.measurementReminders),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
     );
   }
@@ -214,8 +215,8 @@ class ReminderService {
       NotificationDetails(
         android: AndroidNotificationDetails(
           'zt_health_weekly_summary',
-          'Weekly Summary',
-          channelDescription: 'Your week of Heart Points and steps, Mondays',
+          currentL10n.weeklySummary,
+          channelDescription: currentL10n.yourWeekOfHeartPoints,
           importance: Importance.defaultImportance,
           priority: Priority.defaultPriority,
           icon: '@mipmap/ic_launcher',

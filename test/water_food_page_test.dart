@@ -9,6 +9,8 @@ import 'package:zerotrust_fitness/pages/water_food_page.dart';
 
 import 'phone_layout.dart';
 import 'support.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
+import 'package:zero_trust_core/zero_trust_core.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -23,6 +25,8 @@ void main() {
           goalsProvider.overrideWith(() => _NoGoals()),
         ],
         child: MaterialApp(
+          localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
+          supportedLocales: ZtLanguages.supported,
           theme: appTheme,
           home: WaterFoodPage(initialTab: tab),
         ),

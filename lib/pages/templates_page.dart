@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:zerotrust_fitness/components/inline_button_style.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class TemplatesPage extends StatefulWidget {
   const TemplatesPage({super.key, required this.vault});
@@ -73,33 +74,33 @@ class _TemplatesPageState extends State<TemplatesPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                existing == null ? 'New Template' : 'Edit Template',
+                existing == null ? context.l10n.newTemplate : context.l10n.editTemplate,
                 style: Theme.of(ctx).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: nameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Template name',
+                decoration: InputDecoration(
+                  labelText: context.l10n.templateName,
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: activityType,
-                decoration: const InputDecoration(
-                  labelText: 'Activity type',
+                decoration: InputDecoration(
+                  labelText: context.l10n.activityTypeX,
                   border: OutlineInputBorder(),
                 ),
                 items: _activityTypes
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                    .map((t) => DropdownMenuItem(value: t, child: Text(activityLabel(t))))
                     .toList(),
                 onChanged: (v) => setSheet(() => activityType = v!),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Text('Duration (min):'),
+                  Text(context.l10n.durationMin),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Slider(
@@ -107,7 +108,7 @@ class _TemplatesPageState extends State<TemplatesPage> {
                       min: 5,
                       max: 120,
                       divisions: 23,
-                      label: '$duration min',
+                      label: context.l10n.nMin(duration),
                       onChanged: (v) =>
                           setSheet(() => duration = v.round()),
                     ),
@@ -117,7 +118,7 @@ class _TemplatesPageState extends State<TemplatesPage> {
               ),
               Row(
                 children: [
-                  const Text('Intensity (1–10):'),
+                  Text(context.l10n.intensity110),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Slider(
@@ -135,8 +136,8 @@ class _TemplatesPageState extends State<TemplatesPage> {
               ),
               TextField(
                 controller: notesCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
+                decoration: InputDecoration(
+                  labelText: context.l10n.notesOptional,
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 2,
@@ -147,7 +148,7 @@ class _TemplatesPageState extends State<TemplatesPage> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Cancel'),
+                    child: Text(context.l10n.cancel),
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
@@ -165,7 +166,7 @@ class _TemplatesPageState extends State<TemplatesPage> {
                         notes: notesCtrl.text.trim(),
                       );
                     },
-                    child: Text(existing == null ? 'Create' : 'Save'),
+                    child: Text(existing == null ? context.l10n.create : context.l10n.save),
                   ),
                 ],
               ),
@@ -201,17 +202,17 @@ class _TemplatesPageState extends State<TemplatesPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete template?'),
-        content: Text('Delete "${t.name}"? This cannot be undone.'),
+        title: Text(context.l10n.deleteTemplate),
+        content: Text(context.l10n.deleteNamedCannotUndo(t.name)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel')),
+              child: Text(context.l10n.cancel)),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
                 backgroundColor: Theme.of(ctx).colorScheme.error),
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -225,10 +226,10 @@ class _TemplatesPageState extends State<TemplatesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Workout Templates')),
+      appBar: AppBar(title: Text(context.l10n.workoutTemplatesX)),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showEditor(),
-        tooltip: 'New template',
+        tooltip: context.l10n.newTemplateX,
         child: const Icon(Icons.add),
       ),
       body: _loading
@@ -241,11 +242,11 @@ class _TemplatesPageState extends State<TemplatesPage> {
                       const Icon(Icons.fitness_center_outlined,
                           size: 48, color: Colors.grey),
                       const SizedBox(height: 12),
-                      const Text('No templates yet'),
+                      Text(context.l10n.noTemplatesYet),
                       const SizedBox(height: 8),
                       TextButton(
                         onPressed: () => _showEditor(),
-                        child: const Text('Create your first template'),
+                        child: Text(context.l10n.createYourFirstTemplate),
                       ),
                     ],
                   ),
@@ -257,22 +258,22 @@ class _TemplatesPageState extends State<TemplatesPage> {
                     final t = _templates[i];
                     return Card(
                       child: ListTile(
-                        leading: const Icon(Icons.fitness_center_outlined),
+                        leading: Icon(Icons.fitness_center_outlined),
                         title: Text(t.name),
                         subtitle: Text(
-                            '${t.activityType} · ${t.durationMinutes} min · intensity ${t.intensity}/10'),
+                            context.l10n.templateSummary(activityLabel(t.activityType), t.durationMinutes, t.intensity)),
                         trailing: PopupMenuButton<_Action>(
                           onSelected: (a) {
                             if (a == _Action.edit) _showEditor(existing: t);
                             if (a == _Action.delete) _delete(t);
                           },
-                          itemBuilder: (_) => const [
+                          itemBuilder: (_) => [
                             PopupMenuItem(
                                 value: _Action.edit,
-                                child: Text('Edit')),
+                                child: Text(context.l10n.edit)),
                             PopupMenuItem(
                                 value: _Action.delete,
-                                child: Text('Delete')),
+                                child: Text(context.l10n.delete)),
                           ],
                         ),
                       ),

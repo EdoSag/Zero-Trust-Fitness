@@ -4,4 +4,10 @@
     <string name="tile_water">Water</string>
     <string name="not_connected">Turn on \"Show on Wear OS watch\" in ZT Fitness on your phone.</string>
     <string name="stale">Open ZT Fitness on your phone to update.</string>
+    <string name="tile_heart_pts">Heart Pts</string>
+    <string name="tile_turn_on">Turn on in the phone app</string>
+    <string name="tile_not_updated">Not updated today</string>
+    <string name="steps_count">%1$,d steps</string>
+    <string name="of_amount">of %1$s</string>
+    <string name="add_water_amount">%1$s water</string>
 </resources>

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// Shows the Momentum score, today's adaptive Heart Points target and an
 /// explainer dialog.
@@ -15,8 +16,8 @@ class MomentumCard extends StatelessWidget {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     final status = momentum.targetHit
-        ? 'Target hit! Tomorrow\'s target grows 5%.'
-        : '${momentum.pointsToTarget} more Heart Points to hit today\'s target.';
+        ? context.l10n.targetHitTomorrowsTargetGrows
+        : context.l10n.morePointsToTarget(momentum.pointsToTarget);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -31,7 +32,7 @@ class MomentumCard extends StatelessWidget {
               const Icon(Icons.bolt_rounded, color: _accent),
               const SizedBox(width: 8),
               Text(
-                'Momentum',
+                context.l10n.momentum,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -39,7 +40,7 @@ class MomentumCard extends StatelessWidget {
               const Spacer(),
               if (momentum.gainedToday > 0)
                 Text(
-                  '+${momentum.gainedToday} today',
+                  context.l10n.gainedToday(momentum.gainedToday),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: _accent,
                     fontWeight: FontWeight.w700,
@@ -47,7 +48,7 @@ class MomentumCard extends StatelessWidget {
                 ),
               IconButton(
                 icon: Icon(Icons.info_outline_rounded, size: 20, color: muted),
-                tooltip: 'How Momentum works',
+                tooltip: context.l10n.howMomentumWorks,
                 visualDensity: VisualDensity.compact,
                 onPressed: () => _showInfo(context),
               ),
@@ -80,9 +81,9 @@ class MomentumCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Today\'s target', style: theme.textTheme.bodyMedium),
+              Text(context.l10n.todaysTarget, style: theme.textTheme.bodyMedium),
               Text(
-                '${momentum.todayPoints} / ${momentum.target} pts',
+                context.l10n.pointsOfTarget(momentum.todayPoints, momentum.target),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -113,22 +114,14 @@ class MomentumCard extends StatelessWidget {
     return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('How Momentum works'),
-        content: const Text(
-          'Your daily target starts at ${MomentumEngine.defaultTarget} Heart '
-          'Points (about 150 a week, the WHO activity guideline) and adapts to '
-          'you: hit it and it grows 5%; fall below half of it and it eases 3%.'
-          '\n\n'
-          'Momentum (0-100) is how close you came to your target over the last '
-          '7 days, with recent days counting most. Missing a day lowers it a '
-          'little instead of resetting it, and today can only push it up.'
-          '\n\n'
-          'Everything is calculated on this device.',
+        title: Text(context.l10n.howMomentumWorks),
+        content: Text(
+          context.l10n.momentumExplained(MomentumEngine.defaultTarget),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Got it'),
+            child: Text(context.l10n.gotIt),
           ),
         ],
       ),

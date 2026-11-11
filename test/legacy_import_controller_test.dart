@@ -12,6 +12,7 @@ import 'package:zerotrust_fitness/features/legacy_import/legacy_import_banner.da
 import 'package:zerotrust_fitness/main.dart';
 
 import 'support.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// The account's legacy key (what the core kept as the DEK at upgrade).
 final _accountKey = Uint8List.fromList(List.generate(32, (i) => i));
@@ -188,8 +189,11 @@ void main() {
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
       child: const MaterialApp(
+        localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
+        supportedLocales: ZtLanguages.supported,
           home: Scaffold(body: Column(children: [LegacyImportBanner()]))),
     ));
+    await tester.pump();
     expect(find.textContaining('locked with the password'), findsOneWidget);
 
     await tester.tap(find.text('Enter password'));

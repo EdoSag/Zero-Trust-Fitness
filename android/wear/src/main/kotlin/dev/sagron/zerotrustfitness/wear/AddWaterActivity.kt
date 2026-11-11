@@ -19,7 +19,7 @@ class AddWaterActivity : Activity() {
         val today = TodayStore.read(this)
         if (today.connected) {
             addGlass(this, today.glassMl)
-            Toast.makeText(this, today.glassLabel() + " water", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.add_water_amount, today.glassLabel()), Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(this, R.string.not_connected, Toast.LENGTH_LONG).show()
         }

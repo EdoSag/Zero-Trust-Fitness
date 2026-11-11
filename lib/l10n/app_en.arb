@@ -1,0 +1,1237 @@
+{
+  "@@locale": "en",
+  "couldntOpenYourFitnessData": "Couldn't open your fitness data on this device.",
+  "tryAgain": "Try again",
+  "openingYourFitnessData": "Opening your fitness data…",
+  "connectYourHealthData": "Connect your health data?",
+  "fitnessCanReadStepsWorkouts": "Fitness can read steps, workouts, heart rate, sleep and more from Health Connect. It stays encrypted on your phone and in your vault. You can change this any time in Settings.",
+  "notNow": "Not now",
+  "choosePermissions": "Choose permissions",
+  "today": "Today",
+  "trends": "Trends",
+  "journal": "Journal",
+  "settings": "Settings",
+  "syncFromHealthConnectOr": "Sync from Health Connect or log an entry manually.",
+  "permissionRequired": "Permission required",
+  "grantPermission": "Grant permission",
+  "notTracked": "Not tracked",
+  "vaultLocked": "Vault locked",
+  "unlockYourVaultToSee": "Unlock your vault to see health data.",
+  "unlock": "Unlock",
+  "retry": "Retry",
+  "noPriorWeekData": "No prior week data",
+  "dayStreak": "day streak",
+  "personalBest": "Personal best!",
+  "stepsThisWeek": "steps this week",
+  "activity": "Activity",
+  "steps": "Steps",
+  "heartPoints": "Heart Points",
+  "sleep": "Sleep",
+  "totalSleep": "Total Sleep",
+  "lightSleep": "Light Sleep",
+  "deepSleep": "Deep Sleep",
+  "remSleep": "REM Sleep",
+  "vitals": "Vitals",
+  "restingHr": "Resting HR",
+  "respiratoryRate": "Respiratory Rate",
+  "bloodOxygen": "Blood Oxygen",
+  "bpSystolic": "BP Systolic",
+  "bpDiastolic": "BP Diastolic",
+  "bloodGlucose": "Blood Glucose",
+  "body": "Body",
+  "weight": "Weight",
+  "bodyFat": "Body Fat",
+  "lifestyle": "Lifestyle",
+  "hydration": "Hydration",
+  "nutrition": "Nutrition",
+  "noTemplatesYetCreateOne": "No templates yet. Create one in Profile → Workout Templates.",
+  "chooseATemplate": "Choose a template",
+  "enterAtLeastOneWorkout": "Enter at least one workout or metric to log.",
+  "vaultIsLockedUnlockBefore": "Vault is locked. Unlock before saving data.",
+  "logHealthData": "Log Health Data",
+  "allDataIsEncryptedBefore": "All data is encrypted before leaving this device.",
+  "workout": "Workout",
+  "healthMetrics": "Health Metrics",
+  "useTemplate": "Use template",
+  "activityType": "Activity Type",
+  "duration": "Duration",
+  "minutes": "Minutes",
+  "intensity": "Intensity",
+  "light": "Light",
+  "moderate": "Moderate",
+  "vigorous": "Vigorous",
+  "lightIntensityNoHeartPoints": "Light intensity — no heart points",
+  "addsToExisting": "Adds to existing",
+  "replacesExisting": "Replaces existing",
+  "encryptVaultData": "Encrypt & Vault Data",
+  "targetHitTomorrowsTargetGrows": "Target hit! Tomorrow's target grows 5%.",
+  "momentum": "Momentum",
+  "howMomentumWorks": "How Momentum works",
+  "todaysTarget": "Today's target",
+  "gotIt": "Got it",
+  "howZeroTrustWorks": "How Zero-Trust Works",
+  "localFirstStorage": "Local-first storage",
+  "allYourHealthDataIs": "All your health data is encrypted with SQLCipher and stored only on your device. Nothing is uploaded unless you explicitly sync.",
+  "yourPasswordYourData": "Your password, your data",
+  "yourMasterPasswordDerivesThe": "Your master password derives the encryption key on-device using key stretching (PBKDF2). The password and key never leave your device.",
+  "endToEndEncryptedBackups": "End-to-end encrypted backups",
+  "ifYouChooseToSync": "If you choose to sync, data is encrypted client-side before uploading. The server stores only an encrypted blob it cannot read.",
+  "biometricUnlock": "Biometric unlock",
+  "biometricUnlockStoresOnlyA": "Biometric unlock stores only a reference to your passphrase in the OS secure enclave. Your actual health data is never accessible to the biometrics system.",
+  "optInPermissions": "Opt-in permissions",
+  "healthConnectAndLocationPermissions": "Health Connect and location permissions are always opt-in and revocable. You control exactly which metrics are read.",
+  "thisWeek": "This week",
+  "thisWeekSoFar": "This week so far",
+  "vsTheWeekBefore": "vs the week before",
+  "activeDays": "active days",
+  "timeToMove": "Time to move!",
+  "movementReminders": "Movement Reminders",
+  "stayHydrated": "Stay hydrated!",
+  "drinkAGlassOfWater": "Drink a glass of water to keep your hydration on track.",
+  "hydrationReminders": "Hydration Reminders",
+  "workoutTime": "Workout time!",
+  "workoutReminders": "Workout Reminders",
+  "bedtimeSoon": "Bedtime soon",
+  "windingDownNowSupportsBetter": "Winding down now supports better sleep quality.",
+  "sleepReminders": "Sleep Reminders",
+  "weeklyCheckIn": "Weekly check-in",
+  "timeToLogYourWeight": "Time to log your weight or other measurements.",
+  "measurementReminders": "Measurement Reminders",
+  "weeklySummary": "Weekly Summary",
+  "yourWeekOfHeartPoints": "Your week of Heart Points and steps, Mondays",
+  "youHaventBeenActiveIn": "You haven't been active in a while. A short walk counts.",
+  "yourScheduledWorkoutIsToday": "Your scheduled workout is today. Let's get moving.",
+  "noInternetConnectionCheckYour": "No internet connection. Check your network and try again.",
+  "signInFailedCheckYour": "Sign-in failed. Check your email and password.",
+  "accessDeniedPleaseSignIn": "Access denied. Please sign in again.",
+  "serverErrorPleaseTryAgain": "Server error. Please try again in a moment.",
+  "cloudBackupIsUnreadableIt": "Cloud backup is unreadable. It may have been created with a different password.",
+  "vaultCouldNotBeOpened": "Vault could not be opened. The master password may be incorrect.",
+  "locationPermissionRequiredForGps": "Location permission required for GPS tracking.",
+  "requestTimedOutCheckYour": "Request timed out. Check your connection and try again.",
+  "somethingWentWrongPleaseTry": "Something went wrong. Please try again.",
+  "fitness": "Fitness",
+  "health": "Health",
+  "milestones": "Milestones",
+  "unlocked": "Unlocked",
+  "keepGoing": "Keep going!",
+  "achievements": "Achievements",
+  "all": "All",
+  "locked": "Locked",
+  "sleepAsleep": "Sleep Asleep",
+  "sleepLight": "Sleep Light",
+  "sleepDeep": "Sleep Deep",
+  "sleepRem": "Sleep REM",
+  "respiratory": "Respiratory",
+  "glucose": "Glucose",
+  "workoutPaused": "Workout paused.",
+  "workoutResumed": "Workout resumed.",
+  "gpsWorkout": "GPS workout",
+  "timeDistanceAndControlsWhile": "Time, distance and controls while recording",
+  "resume": "Resume",
+  "pause": "Pause",
+  "lap": "Lap",
+  "unstoppable": "Unstoppable",
+  "steady": "Steady",
+  "building": "Building",
+  "gettingStarted": "Getting started",
+  "bringingOverYourDataFrom": "Bringing over your data from the previous version…",
+  "yourDataFromThePrevious": "Your data from the previous version hasn't been brought over yet: the server couldn't be reached. Check your connection and try again.",
+  "thatPasswordDidntOpenYour": "That password didn't open your data from the previous version either. Try another password you used before, or skip it.",
+  "yourDataFromThePreviousX": "Your data from the previous version is locked with the password you used before this update. Enter it once to bring it over.",
+  "skip": "Skip",
+  "enterPassword": "Enter password",
+  "yourDataFromThePreviousXX": "Your data from the previous version hasn't been brought over yet. Something went wrong; try again.",
+  "skipTheLockedData": "Skip the locked data?",
+  "whateverNoPasswordOpenedStays": "Whatever no password opened stays where it is (the old file is kept on this phone) but won't show in the app. Everything else from the previous version is brought over.",
+  "cancel": "Cancel",
+  "yourDataFromThePreviousXXX": "Your data from the previous version is here.",
+  "stillCouldntReachTheServer": "Still couldn't reach the server. Check your connection.",
+  "thatPasswordDidntOpenIt": "That password didn't open it. Try another one you used before.",
+  "thatDidntWorkTryAgain": "That didn't work. Try again in a moment.",
+  "passwordFromBeforeTheUpdate": "Password from before the update",
+  "thePasswordZeroTrustFitness": "The password Zero-Trust Fitness used before this update. It only unlocks your old data on this phone; it isn't sent anywhere and doesn't change your account.",
+  "oldPassword": "Old password",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "sameAsLastWeek": " (same as last week)",
+  "yourWeekInFitness": "Your week in Fitness",
+  "noActivityLoggedThisWeek": "No activity logged this week. A short walk is a good start.",
+  "allMetrics": "All Metrics",
+  "logAWorkoutOrHealth": "Log a workout or health metric",
+  "couldNotReadSelectedFile": "Could not read selected file.",
+  "failedToReadFile": "Failed to read file.",
+  "invalidOrUnsupportedExportFile": "Invalid or unsupported export file (version too new?).",
+  "restoreFromBackup": "Restore from backup?",
+  "workoutsMissingHereAreAdded": "Workouts missing here are added, days in the file replace the same days here, and goals are set. It syncs to your other devices.",
+  "exported": "Exported",
+  "workouts": "Workouts",
+  "metricDays": "Metric days",
+  "goals": "Goals",
+  "restore": "Restore",
+  "exportRestore": "Export & Restore",
+  "exportLabel": "Export",
+  "exportFullBackupJson": "Export full backup (JSON)",
+  "allWorkoutsMetricsGoalsAnd": "All workouts, metrics, goals and medals. Not encrypted: keep it safe.",
+  "exportMetricsCsv": "Export metrics (CSV)",
+  "dailyHealthMetricsAsA": "Daily health metrics as a spreadsheet, for analysis",
+  "restoreFromJson": "Restore from JSON",
+  "bringAFullBackupBack": "Bring a full backup back in. Nothing here is deleted.",
+  "yourDataIsSyncedEnd": "Your data is synced, end-to-end encrypted, to your other devices as you go. To be able to get back in if you forget your password, keep your recovery key safe (Settings → New recovery key).",
+  "enterAValidTargetValue": "Enter a valid target value.",
+  "active": "Active",
+  "period": "Period",
+  "daily": "Daily",
+  "weekly": "Weekly",
+  "remove": "Remove",
+  "save": "Save",
+  "noGoogleFitDataFound": "No Google Fit data found in that file. Choose the Takeout .zip, or the \"Daily activity metrics.csv\" file from its Fit folder.",
+  "importFromGoogleFit": "Import from Google Fit",
+  "bringYourGoogleFitHistory": "Bring your Google Fit history with you",
+  "s1GoToTakeoutGoogle": "1. Go to takeout.google.com and choose only \"Fit\".\n2. Download the .zip Google emails you.\n3. Choose it here (or the \"Daily activity metrics.csv\" inside).",
+  "theFileIsReadOn": "The file is read on this phone. Your steps, Heart Points, weight and workouts are added to your encrypted vault, and days already counted aren't counted twice. Importing again adds nothing new.",
+  "addingToYourVault": "Adding to your vault…",
+  "readingTheExport": "Reading the export…",
+  "done": "Done",
+  "found": "Found",
+  "importLabel": "Import",
+  "chooseAnotherFile": "Choose another file",
+  "chooseTakeoutFile": "Choose Takeout file",
+  "fitnessNeedsLocationAccessTo": "Fitness needs location access to record a GPS workout. You can allow it in your phone's settings.",
+  "finishWorkout": "Finish workout?",
+  "discardWorkout": "Discard workout?",
+  "itsSavedToYourJournal": "It's saved to your journal.",
+  "thisWorkoutWontBeSaved": "This workout won't be saved.",
+  "keepGoingX": "Keep going",
+  "finish": "Finish",
+  "discard": "Discard",
+  "vaultLockedWorkoutNotSaved": "Vault locked, workout not saved.",
+  "voiceCuesOn": "Voice cues on",
+  "voiceCuesOff": "Voice cues off",
+  "more": "More",
+  "autoPause": "Auto-pause",
+  "discardWorkoutX": "Discard workout",
+  "stopsTheClockWhenYou": "Stops the clock when you stop moving",
+  "voiceCues": "Voice cues",
+  "yourRouteStaysEncryptedIn": "Your route stays encrypted in your vault. While you record, a notification shows time and distance, with Pause and Lap buttons on the lock screen.",
+  "findingGps": "Finding GPS…",
+  "start": "Start",
+  "autoPaused": "AUTO-PAUSED",
+  "paused": "PAUSED",
+  "avgPace": "avg pace",
+  "waitingForGps": "Waiting for GPS…",
+  "noTracksWithAtLeast": "No tracks with at least two points in that file.",
+  "enterHowLongEachWorkout": "Enter how long each workout took.",
+  "importGpxRoutes": "Import GPX routes",
+  "bringInWorkoutsFromStrava": "Bring in workouts from Strava, Komoot, Garmin or any app that exports .gpx files. The file is read on this phone and saved encrypted, like everything else.",
+  "chooseGpxFiles": "Choose GPX files",
+  "track": "Track",
+  "alreadyImported": "already imported",
+  "thisFileHasNoTimes": "This file has no times. When was it, and how long did it take?",
+  "countHeartPoints": "Count Heart Points",
+  "turnOffIfTheseWorkouts": "Turn off if these workouts are already in your health app, so they don't count twice",
+  "yourDataYourKeysYour": "Your data, your keys, your privacy. Track activity, workouts and health, encrypted on your phone before anything is synced.",
+  "getStarted": "Get started",
+  "learnMoreAboutZeroTrust": "Learn more about Zero-Trust",
+  "unknownDate": "Unknown date",
+  "yesterday": "Yesterday",
+  "nothingLoggedYet": "Nothing logged yet",
+  "workoutsAndMeasurementsYouLog": "Workouts and measurements you log, record or import show up here.",
+  "logAWorkoutOrMeasurement": "Log a workout or measurement",
+  "searchTheJournal": "Search the journal…",
+  "clear": "Clear",
+  "measurements": "Measurements",
+  "edit": "Edit",
+  "delete": "Delete",
+  "thisDeletesItOnAll": "This deletes it on all your devices.",
+  "distance": "Distance",
+  "avgPaceX": "Avg pace",
+  "splits": "Splits",
+  "laps": "Laps",
+  "exportRouteGpx": "Export route (GPX)",
+  "valuesFromHealthConnectFor": "Values from Health Connect for that day stay.",
+  "last7Days": "Last 7 Days",
+  "s7DayAverage": "7-day average",
+  "s30DayAverage": "30-day average",
+  "goal": "Goal",
+  "notSet": "Not set",
+  "setGoal": "Set goal",
+  "sourceBreakdown": "Source Breakdown",
+  "manualEntries": "Manual entries",
+  "last30Days": "Last 30 Days",
+  "yourRoutesMapsWereAlready": "Your routes' maps were already on this phone.",
+  "offlineMaps": "Offline maps",
+  "routeMapsComeFromOpenstreetmap": "Route maps come from OpenStreetMap. Each map tile is kept on this phone the first time it is shown, so the map server is asked once at most, not every time you open a workout.",
+  "offlineMapsOnly": "Offline maps only",
+  "neverContactTheMapServer": "Never contact the map server. Areas you haven't saved show the route on a blank background.",
+  "saveMapsOfMyRoutes": "Save maps of my routes",
+  "noGpsRoutesYet": "No GPS routes yet",
+  "deleteSavedMaps": "Delete saved maps",
+  "readDailyStepCounts": "Read daily step counts.",
+  "heartRate": "Heart Rate",
+  "readHeartRateSamples": "Read heart-rate samples.",
+  "exerciseSessions": "Exercise Sessions",
+  "readWorkoutsAndActiveMinutes": "Read workouts and active minutes.",
+  "readSleepAsleepDuration": "Read sleep-asleep duration.",
+  "readLightSleepDuration": "Read light sleep duration.",
+  "readDeepSleepDuration": "Read deep sleep duration.",
+  "readRemSleepDuration": "Read REM sleep duration.",
+  "restingHeartRate": "Resting Heart Rate",
+  "readRestingBpm": "Read resting BPM.",
+  "readRespirationsPerMinute": "Read respirations per minute.",
+  "readOxygenSaturationSpo2": "Read oxygen saturation (SpO2).",
+  "readBodyWeight": "Read body weight.",
+  "bodyMassIndex": "Body Mass Index",
+  "readBmiValues": "Read BMI values.",
+  "bodyFatX": "Body Fat %",
+  "readBodyFatPercentage": "Read body fat percentage.",
+  "readWaterIntake": "Read water intake.",
+  "readNutritionEntries": "Read nutrition entries.",
+  "bloodPressureSystolic": "Blood Pressure Systolic",
+  "readSystolicBloodPressure": "Read systolic blood pressure.",
+  "bloodPressureDiastolic": "Blood Pressure Diastolic",
+  "readDiastolicBloodPressure": "Read diastolic blood pressure.",
+  "readBloodGlucoseSamples": "Read blood glucose samples.",
+  "permissionsCenter": "Permissions Center",
+  "refreshPermissionStates": "Refresh permission states",
+  "controlEachPermissionDirectlyFrom": "Control each permission directly from here.",
+  "installHealthConnect": "Install Health Connect",
+  "location": "Location",
+  "enableRealTimeGpsRun": "Enable real-time GPS run/cycle tracking.",
+  "backgroundHealthSync": "Background Health Sync",
+  "allowPeriodicBackgroundHealthData": "Allow periodic background health data reads.",
+  "granted": "Granted",
+  "denied": "Denied",
+  "unknown": "Unknown",
+  "turnOn": "Turn On",
+  "turnOff": "Turn Off",
+  "medals": "Medals",
+  "templates": "Templates",
+  "meals": "Meals",
+  "privacyDashboard": "Privacy Dashboard",
+  "everythingIsEncryptedOnThis": "Everything is encrypted on this phone with a key only your password or recovery key can open. The server, and the developer, see only ciphertext.",
+  "storedInYourVault": "Stored in your vault",
+  "howYourDataIsProtected": "How your data is protected",
+  "encryptionSyncAndWhatThe": "Encryption, sync and what the server sees",
+  "yourDataRights": "Your Data Rights",
+  "youOwnAllYourData": "You own all your data. Only your devices can read it.",
+  "exportAFullBackupAt": "Export a full backup at any time from Export & Restore.",
+  "deleteActivityDataFromSettings": "Delete activity data from Settings → Delete activity data.",
+  "deletingYourAccountRemovesEverything": "Deleting your account removes everything from the server.",
+  "notificationPermissionRequiredForReminders": "Notification permission required for reminders.",
+  "reminders": "Reminders",
+  "summary": "Summary",
+  "weeklySummaryX": "Weekly summary",
+  "mondaysAt900Heart": "Mondays at 9:00: Heart Points, steps and workouts, compared with the week before",
+  "movementNudge": "Movement nudge",
+  "hourlyReminderToStayActive": "Hourly reminder to stay active",
+  "hydrationReminder": "Hydration reminder",
+  "hourlyPromptToDrinkWater": "Hourly prompt to drink water",
+  "workoutReminder": "Workout reminder",
+  "chooseDaysAndTime": "Choose days and time",
+  "reminderTime": "Reminder time",
+  "bedtimeReminder": "Bedtime reminder",
+  "dailyWindDownPrompt": "Daily wind-down prompt",
+  "bedtime": "Bedtime",
+  "bodyMeasurements": "Body Measurements",
+  "weeklyReminderToLogWeight": "Weekly reminder to log weight or measurements",
+  "allRemindersAreLocalOnly": "All reminders are local-only and never leave your device. Your data is locked while Fitness is closed, so the weekly summary is prepared each time you open the app.",
+  "copyPastWorkoutsToo": "Copy past workouts too?",
+  "onlyNewOnes": "Only new ones",
+  "copyThem": "Copy them",
+  "unitsFormat": "Units & Format",
+  "metricKmKg": "Metric (km, kg)",
+  "imperialMiLbs": "Imperial (mi, lbs)",
+  "timeFormat": "Time format",
+  "s12HourAmPm": "12-hour (AM/PM)",
+  "noMedalsYetKeepMoving": "No medals yet — keep moving!",
+  "deleteActivityData": "Delete activity data?",
+  "deletesYourWorkoutsDailyMetrics": "Deletes your workouts, daily metrics and medals on every device signed in to this account. Goals and templates stay. Health Connect data on the phone is not touched. This can't be undone.",
+  "activityDataDeleted": "Activity data deleted.",
+  "setDailyAndWeeklyTargets": "Set daily and weekly targets",
+  "weeklySummaryMovementWaterWorkouts": "Weekly summary, movement, water, workouts & sleep",
+  "workoutTemplates": "Workout templates",
+  "createAndReuseWorkoutRoutines": "Create and reuse workout routines",
+  "healthPermissions": "Health permissions",
+  "chooseWhatFitnessMayRead": "Choose what Fitness may read",
+  "saveWorkoutsToAppleHealth": "Save workouts to Apple Health",
+  "saveWorkoutsToHealthConnect": "Save workouts to Health Connect",
+  "workoutsYouLogOrRecord": "Workouts you log or record here show up in your other apps",
+  "showOnWearOsWatch": "Show on Wear OS watch",
+  "todaysHeartPointsStepsAnd": "Today's Heart Points, steps and water on your paired watch, and add water from it. Sent only to the watch.",
+  "unitsFormatX": "Units & format",
+  "keepRouteMapsOnThis": "Keep route maps on this phone",
+  "privacyDashboardX": "Privacy dashboard",
+  "whatYourVaultHoldsAnd": "What your vault holds and how it is protected",
+  "exportRestoreX": "Export & restore",
+  "backUpToAFile": "Back up to a file or bring a backup back in",
+  "yourHistoryFromAGoogle": "Your history from a Google Takeout export",
+  "fromStravaKomootGarminAnd": "From Strava, Komoot, Garmin and others",
+  "shareReport": "Share report",
+  "aScopedHealthReportTo": "A scoped health report to share",
+  "deleteActivityDataX": "Delete activity data",
+  "workoutsMetricsAndMedalsOn": "Workouts, metrics and medals, on every device",
+  "selectAtLeastOneMetric": "Select at least one metric.",
+  "shareReportX": "Share Report",
+  "dateRange": "Date range",
+  "change": "Change",
+  "metricsToInclude": "Metrics to include",
+  "theReportIsAPlain": "The report is a plain-text file — not encrypted. Only share with people you trust. Informational only — not medical advice.",
+  "generating": "Generating…",
+  "generateShare": "Generate & Share",
+  "newTemplate": "New Template",
+  "editTemplate": "Edit Template",
+  "templateName": "Template name",
+  "activityTypeX": "Activity type",
+  "durationMin": "Duration (min):",
+  "intensity110": "Intensity (1–10):",
+  "notesOptional": "Notes (optional)",
+  "create": "Create",
+  "deleteTemplate": "Delete template?",
+  "workoutTemplatesX": "Workout Templates",
+  "newTemplateX": "New template",
+  "noTemplatesYet": "No templates yet",
+  "createYourFirstTemplate": "Create your first template",
+  "syncing": "Syncing…",
+  "notSynced": "Not synced",
+  "synced": "Synced",
+  "syncPending": "Sync pending",
+  "vaultUnlocked": "Vault unlocked",
+  "vaultIsUnlockedAndData": "Vault is unlocked and data is accessible",
+  "vaultIsLockedTapUnlock": "Vault is locked — tap Unlock to access data",
+  "gpsActive": "GPS active",
+  "gpsTrackingIsActive": "GPS tracking is active",
+  "stepsToday": "Steps Today",
+  "heartToday": "Heart Today",
+  "keyMetrics": "Key Metrics",
+  "moreMetrics": "More metrics",
+  "water": "Water",
+  "foodEntry": "Food entry",
+  "foodEntries": "Food entries",
+  "gpsWorkoutActive": "GPS Workout Active",
+  "startGpsWorkout": "Start GPS Workout",
+  "trackRoutePaceDistance": "Track route, pace & distance",
+  "lockVault": "Lock vault",
+  "trendData": "trend data",
+  "s30DayBaselines": "30-Day Baselines",
+  "sleepSteps": "Sleep & Steps",
+  "stepsHeartPointsTodayHourly": "Steps & Heart Points (Today, Hourly)",
+  "stepsHeartPointsThisWeek": "Steps & Heart Points (This Week)",
+  "stepsHeartPointsLast30": "Steps & Heart Points (Last 30 Days)",
+  "selectedMetricWeek": "Selected Metric (Week)",
+  "selectedMetricMonth": "Selected Metric (Month)",
+  "analytics": "Analytics",
+  "day": "Day",
+  "week": "Week",
+  "month": "Month",
+  "informational": "Informational",
+  "notMedicalAdviceBasedOn": "Not medical advice · based on your logged data",
+  "dismiss": "Dismiss",
+  "breakfast": "Breakfast",
+  "lunch": "Lunch",
+  "dinner": "Dinner",
+  "snacks": "Snacks",
+  "addWater": "Add water",
+  "add": "Add",
+  "waterFood": "Water & food",
+  "food": "Food",
+  "unlockToLogWaterAnd": "Unlock to log water and food.",
+  "previousDay": "Previous day",
+  "nextDay": "Next day",
+  "last7DaysX": "Last 7 days",
+  "logAgain": "Log again",
+  "logFood": "Log food",
+  "nothingLogged": "Nothing logged",
+  "editFood": "Edit food",
+  "whatDidYouEat": "What did you eat?",
+  "calories": "Calories",
+  "protein": "Protein",
+  "carbs": "Carbs",
+  "fat": "Fat",
+  "caloriesAndMacrosAreOptional": "Calories and macros are optional.",
+  "actRunning": "Running",
+  "actCycling": "Cycling",
+  "actSwimming": "Swimming",
+  "actWalking": "Walking",
+  "actHiking": "Hiking",
+  "actStrengthTraining": "Strength Training",
+  "actYogaStretching": "Yoga/Stretching",
+  "actOther": "Other",
+  "actStrength": "Strength",
+  "actHiit": "HIIT",
+  "actYoga": "Yoga",
+  "srcManual": "MANUAL",
+  "srcHealth": "HEALTH",
+  "srcGoogleFit": "GOOGLE FIT",
+  "medalUnlocked": "Medal unlocked: {name}!",
+  "@medalUnlocked": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "percentOfGoal": "{percent}% of goal",
+  "@percentOfGoal": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "noMetricData": "No {metric} data",
+  "@noMetricData": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "metricAccessNotGranted": "{metric} access is not granted. Enable it in Permissions.",
+  "@metricAccessNotGranted": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "metricNotSupported": "{metric} is not supported on this device.",
+  "@metricNotSupported": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "vsLastWeek": "{change} vs last week",
+  "@vsLastWeek": {
+    "placeholders": {
+      "change": {
+        "type": "String"
+      }
+    }
+  },
+  "bestStreak": "Best: {count}",
+  "@bestStreak": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "templateSummary": "{activity} · {minutes} min · intensity {intensity}/10",
+  "@templateSummary": {
+    "placeholders": {
+      "activity": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      },
+      "intensity": {
+        "type": "int"
+      }
+    }
+  },
+  "failedToSave": "Failed to save: {error}",
+  "@failedToSave": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "heartPointsEarnedPreview": "≈ {count} heart points earned",
+  "@heartPointsEarnedPreview": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "morePointsToTarget": "{count} more Heart Points to hit today's target.",
+  "@morePointsToTarget": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "momentumExplained": "Your daily target starts at {target} Heart Points (about 150 a week, the WHO activity guideline) and adapts to you: hit it and it grows 5%; fall below half of it and it eases 3%.\n\nMomentum (0-100) is how close you came to your target over the last 7 days, with recent days counting most. Missing a day lowers it a little instead of resetting it, and today can only push it up.\n\nEverything is calculated on this device.",
+  "@momentumExplained": {
+    "placeholders": {
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "gainedToday": "+{count} today",
+  "@gainedToday": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pointsOfTarget": "{points} / {target} pts",
+  "@pointsOfTarget": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "changeUp": " (up {percent}%)",
+  "@changeUp": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "changeDown": " (down {percent}%)",
+  "@changeDown": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "yourWeekActiveDays": "{count, plural, =1{Your week: 1 active day} other{Your week: {count} active days}}",
+  "@yourWeekActiveDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nHeartPoints": "{count} Heart Points",
+  "@nHeartPoints": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "nSteps": "{count} steps",
+  "@nSteps": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "nWorkouts": "{count, plural, =1{1 workout} other{{count} workouts}}",
+  "@nWorkouts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "throughDay": " (through {day})",
+  "@throughDay": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "cueSplitKm": "{count, plural, =1{1 kilometre} other{{count} kilometres}}. Time {total}. Split {split} per kilometre.",
+  "@cueSplitKm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      },
+      "split": {
+        "type": "String"
+      }
+    }
+  },
+  "cueSplitMile": "{count, plural, =1{1 mile} other{{count} miles}}. Time {total}. Split {split} per mile.",
+  "@cueSplitMile": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      },
+      "split": {
+        "type": "String"
+      }
+    }
+  },
+  "cueLap": "Lap {index}. {time}.",
+  "@cueLap": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "spokenHours": "{count, plural, =1{1 hour} other{{count} hours}}",
+  "@spokenHours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spokenMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
+  "@spokenMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spokenSeconds": "{count, plural, =1{1 second} other{{count} seconds}}",
+  "@spokenSeconds": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityAutoPaused": "{activity} · auto-paused",
+  "@activityAutoPaused": {
+    "placeholders": {
+      "activity": {
+        "type": "String"
+      }
+    }
+  },
+  "activityPaused": "{activity} · paused",
+  "@activityPaused": {
+    "placeholders": {
+      "activity": {
+        "type": "String"
+      }
+    }
+  },
+  "unlockedOn": "Unlocked on {date}",
+  "@unlockedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "percentToward": "{percent}% toward {name}",
+  "@percentToward": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "restoredSummary": "Restored {workouts} workouts, {days} days of metrics, {goals} goals.",
+  "@restoredSummary": {
+    "placeholders": {
+      "workouts": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      },
+      "goals": {
+        "type": "int"
+      }
+    }
+  },
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreFailed": "Restore failed: {error}",
+  "@restoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "goalSavedFor": "Goal saved for {metric}",
+  "@goalSavedFor": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToLoadGoals": "Failed to load goals: {error}",
+  "@failedToLoadGoals": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "targetLabel": "Target",
+  "couldntReadThatFile": "Couldn't read that file ({error}).",
+  "@couldntReadThatFile": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "importFailed": "Import failed: {error}",
+  "@importFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "addedWorkoutsAndDays": "Added {workouts} workouts and {days} days",
+  "@addedWorkoutsAndDays": {
+    "placeholders": {
+      "workouts": {
+        "type": "int"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "workoutsAlreadyHere": "{count} workouts were already here",
+  "@workoutsAlreadyHere": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "daysOfStepsAndPoints": "{count} days of steps and Heart Points",
+  "@daysOfStepsAndPoints": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dateRangeTo": " ({from} to {to})",
+  "@dateRangeTo": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "couldntStart": "Couldn't start: {error}",
+  "@couldntStart": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "workoutSavedDistance": "Workout saved: {distance} in {time}",
+  "@workoutSavedDistance": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cuesEveryKm": "Time and pace every kilometre",
+  "cuesEveryMile": "Time and pace every mile",
+  "lastSplit": "Last {unit}: {time}",
+  "@lastSplit": {
+    "placeholders": {
+      "unit": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "couldntReadAsGpx": "Couldn't read {files} as GPX.",
+  "@couldntReadAsGpx": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "skippedNotGpx": "Skipped {files}: not GPX.",
+  "@skippedNotGpx": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "importedWorkouts": "{count, plural, =1{Imported 1 workout. You'll find it in your Journal.} other{Imported {count} workouts. You'll find them in your Journal.}}",
+  "@importedWorkouts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nPoints": "{count} points",
+  "@nPoints": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nMin": "{count} min",
+  "@nMin": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importNWorkouts": "{count, plural, =1{Import 1 workout} other{Import {count} workouts}}",
+  "@importNWorkouts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nothingMatches": "Nothing matches \"{query}\"",
+  "@nothingMatches": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "nPts": "{count} pts",
+  "@nPts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteThisItem": "Delete this {name}?",
+  "@deleteThisItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "itsPointsComeOff": "Its {count} Heart Points come off that day too. This deletes it on all your devices.",
+  "@itsPointsComeOff": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lapN": "Lap {index}",
+  "@lapN": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteThisEntry": "Delete this {name} entry?",
+  "@deleteThisEntry": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editItem": "Edit {name}",
+  "@editItem": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "goalPeriod": "Goal ({period})",
+  "@goalPeriod": {
+    "placeholders": {
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "savedMapTiles": "Saved {count} map tiles.",
+  "@savedMapTiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mapTilesCapped": " That's the most at once; run it again later for the rest.",
+  "areasAroundRoutes": "{count, plural, =1{The areas around your route, ready offline} other{The areas around your {count} routes, ready offline}}",
+  "@areasAroundRoutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tilesAndSize": "{count} tiles, {size}",
+  "@tilesAndSize": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "permissionActionFailed": "Permission action failed: {error}",
+  "@permissionActionFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "nOfMGranted": "{granted} / {total} granted",
+  "@nOfMGranted": {
+    "placeholders": {
+      "granted": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "healthDidntAllow": "{health} didn't allow Fitness to save workouts.",
+  "@healthDidntAllow": {
+    "placeholders": {
+      "health": {
+        "type": "String"
+      }
+    }
+  },
+  "newWorkoutsSavedTo": "New workouts are saved to {health} from now on. Fitness can also copy the workouts already in your journal.",
+  "@newWorkoutsSavedTo": {
+    "placeholders": {
+      "health": {
+        "type": "String"
+      }
+    }
+  },
+  "copiedWorkoutsTo": "Copied {count} workouts to {health}.",
+  "@copiedWorkoutsTo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "health": {
+        "type": "String"
+      }
+    }
+  },
+  "viewAllCount": "View All ({count})",
+  "@viewAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unitMetric": "Metric",
+  "unitImperial": "Imperial",
+  "failedError": "Failed: {error}",
+  "@failedError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteNamedCannotUndo": "Delete \"{name}\"? This cannot be undone.",
+  "@deleteNamedCannotUndo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addWaterAmount": "Add {amount} of water",
+  "@addWaterAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "restingHrAvg": "Resting HR avg: {bpm} bpm",
+  "@restingHrAvg": {
+    "placeholders": {
+      "bpm": {
+        "type": "String"
+      }
+    }
+  },
+  "dailyStepsAvg": "Daily steps avg: {steps}",
+  "@dailyStepsAvg": {
+    "placeholders": {
+      "steps": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepStepsCorrelation": "Your sleep duration shows a {strength, select, strong{strong} moderate{moderate} other{weak}} {direction, select, positive{positive} other{negative}} correlation with your daily step count.",
+  "@sleepStepsCorrelation": {
+    "placeholders": {
+      "strength": {
+        "type": "String"
+      },
+      "direction": {
+        "type": "String"
+      }
+    }
+  },
+  "loggedName": "Logged {name}",
+  "@loggedName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "ofGoalAmount": "of {amount}",
+  "@ofGoalAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "waterLoggedHereAndHealth": "{here} logged here · {health} from your health app",
+  "@waterLoggedHereAndHealth": {
+    "placeholders": {
+      "here": {
+        "type": "String"
+      },
+      "health": {
+        "type": "String"
+      }
+    }
+  },
+  "takeOffAmount": "Take off {amount}",
+  "@takeOffAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "kcalUnit": "kcal",
+  "proteinShort": "protein",
+  "carbsShort": "carbs",
+  "fatShort": "fat",
+  "plusHealthEntries": "{count, plural, =1{Plus 1 entry from your health app.} other{Plus {count} entries from your health app.}}",
+  "@plusHealthEntries": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "medalFirstSteps": "First Steps",
+  "medalFirstStepsDesc": "Log your first steps data.",
+  "medalStepSeeker": "Step Seeker",
+  "medalStepSeekerDesc": "Walk 5,000 steps in a single day.",
+  "medalStepChampion": "Step Champion",
+  "medalStepChampionDesc": "Walk 10,000 steps in a single day.",
+  "medalStepLegend": "Step Legend",
+  "medalStepLegendDesc": "Walk 20,000 steps in a single day.",
+  "medalHeartStarter": "Heart Starter",
+  "medalHeartStarterDesc": "Earn 10 heart points in a single day.",
+  "medalHeartWarrior": "Heart Warrior",
+  "medalHeartWarriorDesc": "Earn 25 heart points in a single day.",
+  "medalHeartLegend": "Heart Legend",
+  "medalHeartLegendDesc": "Earn 50 heart points in a single day.",
+  "medalActiveWeek": "Active Week",
+  "medalActiveWeekDesc": "Earn 150 heart points across any 7-day period.",
+  "medalOnTarget": "On Target",
+  "medalOnTargetDesc": "Hit your daily Heart Points target for the first time.",
+  "medalTargetStreak3": "Hat Trick",
+  "medalTargetStreak3Desc": "Hit your daily target 3 days in a row.",
+  "medalTargetStreak7": "Locked In",
+  "medalTargetStreak7Desc": "Hit your daily target 7 days in a row.",
+  "medalComeback": "Comeback",
+  "medalComebackDesc": "Hit your target after 3 or more days without hitting it.",
+  "medalTarget40": "Raising the Bar",
+  "medalTarget40Desc": "Grow your daily target to 40 Heart Points.",
+  "medalMomentum50": "Steady",
+  "medalMomentum50Desc": "Reach a Momentum score of 50.",
+  "medalMomentum75": "Unstoppable",
+  "medalMomentum75Desc": "Reach a Momentum score of 75.",
+  "medalMomentumWeek75": "Perpetual Motion",
+  "medalMomentumWeek75Desc": "End 7 days in a row with Momentum of 75 or higher.",
+  "medalNightLogged": "Night Logged",
+  "medalNightLoggedDesc": "Log sleep data for the first time.",
+  "medalWellRested": "Well Rested",
+  "medalWellRestedDesc": "Get 7+ hours of sleep in a single night.",
+  "medalDeepDreamer": "Deep Dreamer",
+  "medalDeepDreamerDesc": "Get 1+ hour of deep sleep in a single night.",
+  "medalSleepChampion": "Sleep Champion",
+  "medalSleepChampionDesc": "Get 8+ hours of sleep in a single night.",
+  "medalHydrated": "Hydrated",
+  "medalHydratedDesc": "Log 2+ litres of water in a single day.",
+  "medalHealthyHeart": "Healthy Heart",
+  "medalHealthyHeartDesc": "Record a resting heart rate of 60 bpm or lower.",
+  "medalOxygenCheck": "Oxygen Check",
+  "medalOxygenCheckDesc": "Log blood oxygen (SpO2) data.",
+  "medalFirstSync": "First Sync",
+  "medalFirstSyncDesc": "Sync your health data for the first time.",
+  "medalDedicated": "Dedicated",
+  "medalDedicatedDesc": "Sync data on 7 different days.",
+  "medalCommitted": "Committed",
+  "medalCommittedDesc": "Sync data on 30 different days.",
+  "medalStepMillionaire": "Step Millionaire",
+  "medalStepMillionaireDesc": "Walk a total of 1,000,000 steps.",
+  "medalElite": "Elite",
+  "medalEliteDesc": "Earn a total of 1,000 heart points.",
+  "medalStreak3": "Consistent",
+  "medalStreak3Desc": "Log your health data 3 days in a row.",
+  "medalStreak7": "Week Streak",
+  "medalStreak7Desc": "Log your health data every day for a week.",
+  "medalStreak30": "Iron Habit",
+  "medalStreak30Desc": "Log your health data every day for 30 days.",
+  "widgetHeartPts": "Heart Pts",
+  "widgetLocked": "Open ZT Fitness to see today",
+  "widgetLockedShort": "Locked",
+  "widgetHpGoal": "of %1$s Heart Pts",
+  "widgetStepsGoal": "of %1$s steps",
+  "widgetMomentum": "Momentum %1$s",
+  "widgetSummary": "%1$s of %2$s Heart Points, %3$s of %4$s steps"
+}

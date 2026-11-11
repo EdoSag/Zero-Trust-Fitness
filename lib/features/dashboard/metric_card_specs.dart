@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class MetricCardSpec {
-  const MetricCardSpec({
+  MetricCardSpec({
     required this.key,
     required this.title,
     required this.unit,
@@ -16,73 +17,73 @@ class MetricCardSpec {
   final List<Color> gradientColors;
 }
 
-const metricCardSpecs = <MetricCardSpec>[
+List<MetricCardSpec> get metricCardSpecs => <MetricCardSpec>[
   MetricCardSpec(
     key: 'steps',
-    title: 'Steps',
+    title: currentL10n.steps,
     unit: '',
     icon: Icons.directions_walk,
     gradientColors: [Color(0xFF3B82F6), Color(0xFF6366F1)],
   ),
   MetricCardSpec(
     key: 'heart_points',
-    title: 'Heart Points',
+    title: currentL10n.heartPoints,
     unit: '',
     icon: Icons.favorite,
     gradientColors: [Color(0xFFF43F5E), Color(0xFFFB7185)],
   ),
   MetricCardSpec(
     key: 'sleep_asleep_min',
-    title: 'Sleep Asleep',
+    title: currentL10n.sleepAsleep,
     unit: 'min',
     icon: Icons.nights_stay_outlined,
     gradientColors: [Color(0xFF0EA5E9), Color(0xFF0284C7)],
   ),
   MetricCardSpec(
     key: 'sleep_light_min',
-    title: 'Sleep Light',
+    title: currentL10n.sleepLight,
     unit: 'min',
     icon: Icons.bedtime_outlined,
     gradientColors: [Color(0xFF38BDF8), Color(0xFF0EA5E9)],
   ),
   MetricCardSpec(
     key: 'sleep_deep_min',
-    title: 'Sleep Deep',
+    title: currentL10n.sleepDeep,
     unit: 'min',
     icon: Icons.hotel_outlined,
     gradientColors: [Color(0xFF1D4ED8), Color(0xFF1E40AF)],
   ),
   MetricCardSpec(
     key: 'sleep_rem_min',
-    title: 'Sleep REM',
+    title: currentL10n.sleepRem,
     unit: 'min',
     icon: Icons.bed_outlined,
     gradientColors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
   ),
   MetricCardSpec(
     key: 'resting_hr_bpm_avg',
-    title: 'Resting HR',
+    title: currentL10n.restingHr,
     unit: 'bpm',
     icon: Icons.monitor_heart_outlined,
     gradientColors: [Color(0xFFEC4899), Color(0xFFDB2777)],
   ),
   MetricCardSpec(
     key: 'respiratory_rate_avg',
-    title: 'Respiratory',
+    title: currentL10n.respiratory,
     unit: 'rpm',
     icon: Icons.air_outlined,
     gradientColors: [Color(0xFF14B8A6), Color(0xFF0F766E)],
   ),
   MetricCardSpec(
     key: 'blood_oxygen_pct_avg',
-    title: 'Blood Oxygen',
+    title: currentL10n.bloodOxygen,
     unit: '%',
     icon: Icons.bloodtype_outlined,
     gradientColors: [Color(0xFF06B6D4), Color(0xFF0E7490)],
   ),
   MetricCardSpec(
     key: 'weight_kg',
-    title: 'Weight',
+    title: currentL10n.weight,
     unit: 'kg',
     icon: Icons.monitor_weight_outlined,
     gradientColors: [Color(0xFF84CC16), Color(0xFF65A30D)],
@@ -96,42 +97,42 @@ const metricCardSpecs = <MetricCardSpec>[
   ),
   MetricCardSpec(
     key: 'body_fat_pct',
-    title: 'Body Fat',
+    title: currentL10n.bodyFat,
     unit: '%',
     icon: Icons.accessibility_new_outlined,
     gradientColors: [Color(0xFFF97316), Color(0xFFEA580C)],
   ),
   MetricCardSpec(
     key: 'water_l',
-    title: 'Hydration',
+    title: currentL10n.hydration,
     unit: 'L',
     icon: Icons.water_drop_outlined,
     gradientColors: [Color(0xFF0EA5E9), Color(0xFF2563EB)],
   ),
   MetricCardSpec(
     key: 'nutrition_entries',
-    title: 'Nutrition',
+    title: currentL10n.nutrition,
     unit: 'entries',
     icon: Icons.restaurant_menu_outlined,
     gradientColors: [Color(0xFF22C55E), Color(0xFF16A34A)],
   ),
   MetricCardSpec(
     key: 'blood_pressure_systolic_mmhg',
-    title: 'BP Systolic',
+    title: currentL10n.bpSystolic,
     unit: 'mmHg',
     icon: Icons.monitor_heart,
     gradientColors: [Color(0xFFE11D48), Color(0xFFBE123C)],
   ),
   MetricCardSpec(
     key: 'blood_pressure_diastolic_mmhg',
-    title: 'BP Diastolic',
+    title: currentL10n.bpDiastolic,
     unit: 'mmHg',
     icon: Icons.favorite_border,
     gradientColors: [Color(0xFFF43F5E), Color(0xFFE11D48)],
   ),
   MetricCardSpec(
     key: 'blood_glucose_mg_dl',
-    title: 'Glucose',
+    title: currentL10n.glucose,
     unit: 'mg/dL',
     icon: Icons.science_outlined,
     gradientColors: [Color(0xFFA855F7), Color(0xFF7E22CE)],

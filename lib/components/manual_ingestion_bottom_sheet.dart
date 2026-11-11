@@ -2,10 +2,12 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
 import 'package:zerotrust_fitness/heart_point_calculator.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 // Metric definitions mirrored from dashboard to drive the metrics tab UI.
 class _MetricSpec {
@@ -61,11 +63,11 @@ IconData _iconForActivity(String type) {
   }
 }
 
-const _metricSections = <String, List<_MetricSpec>>{
-  'Activity': [
+Map<String, List<_MetricSpec>> get _metricSections => <String, List<_MetricSpec>>{
+  currentL10n.activity: [
     _MetricSpec(
       key: 'steps',
-      title: 'Steps',
+      title: currentL10n.steps,
       unit: 'steps',
       icon: Icons.directions_walk,
       iconColor: Color(0xFF3B82F6),
@@ -73,17 +75,17 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'heart_points',
-      title: 'Heart Points',
+      title: currentL10n.heartPoints,
       unit: 'pts',
       icon: Icons.favorite,
       iconColor: Color(0xFFF43F5E),
       isAdditive: true,
     ),
   ],
-  'Sleep': [
+  currentL10n.sleep: [
     _MetricSpec(
       key: 'sleep_asleep_min',
-      title: 'Total Sleep',
+      title: currentL10n.totalSleep,
       unit: 'min',
       icon: Icons.nights_stay_outlined,
       iconColor: Color(0xFF0EA5E9),
@@ -91,7 +93,7 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'sleep_light_min',
-      title: 'Light Sleep',
+      title: currentL10n.lightSleep,
       unit: 'min',
       icon: Icons.bedtime_outlined,
       iconColor: Color(0xFF38BDF8),
@@ -99,7 +101,7 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'sleep_deep_min',
-      title: 'Deep Sleep',
+      title: currentL10n.deepSleep,
       unit: 'min',
       icon: Icons.hotel_outlined,
       iconColor: Color(0xFF1D4ED8),
@@ -107,17 +109,17 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'sleep_rem_min',
-      title: 'REM Sleep',
+      title: currentL10n.remSleep,
       unit: 'min',
       icon: Icons.bed_outlined,
       iconColor: Color(0xFF8B5CF6),
       isAdditive: true,
     ),
   ],
-  'Vitals': [
+  currentL10n.vitals: [
     _MetricSpec(
       key: 'resting_hr_bpm_avg',
-      title: 'Resting HR',
+      title: currentL10n.restingHr,
       unit: 'bpm',
       icon: Icons.monitor_heart_outlined,
       iconColor: Color(0xFFEC4899),
@@ -125,7 +127,7 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'respiratory_rate_avg',
-      title: 'Respiratory Rate',
+      title: currentL10n.respiratoryRate,
       unit: 'rpm',
       icon: Icons.air_outlined,
       iconColor: Color(0xFF14B8A6),
@@ -133,7 +135,7 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'blood_oxygen_pct_avg',
-      title: 'Blood Oxygen',
+      title: currentL10n.bloodOxygen,
       unit: '%',
       icon: Icons.bloodtype_outlined,
       iconColor: Color(0xFF06B6D4),
@@ -141,7 +143,7 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'blood_pressure_systolic_mmhg',
-      title: 'BP Systolic',
+      title: currentL10n.bpSystolic,
       unit: 'mmHg',
       icon: Icons.monitor_heart,
       iconColor: Color(0xFFE11D48),
@@ -149,7 +151,7 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'blood_pressure_diastolic_mmhg',
-      title: 'BP Diastolic',
+      title: currentL10n.bpDiastolic,
       unit: 'mmHg',
       icon: Icons.favorite_border,
       iconColor: Color(0xFFF43F5E),
@@ -157,17 +159,17 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'blood_glucose_mg_dl',
-      title: 'Blood Glucose',
+      title: currentL10n.bloodGlucose,
       unit: 'mg/dL',
       icon: Icons.science_outlined,
       iconColor: Color(0xFFA855F7),
       isAdditive: false,
     ),
   ],
-  'Body': [
+  currentL10n.body: [
     _MetricSpec(
       key: 'weight_kg',
-      title: 'Weight',
+      title: currentL10n.weight,
       unit: 'kg',
       icon: Icons.monitor_weight_outlined,
       iconColor: Color(0xFF84CC16),
@@ -183,17 +185,17 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'body_fat_pct',
-      title: 'Body Fat',
+      title: currentL10n.bodyFat,
       unit: '%',
       icon: Icons.accessibility_new_outlined,
       iconColor: Color(0xFFF97316),
       isAdditive: false,
     ),
   ],
-  'Lifestyle': [
+  currentL10n.lifestyle: [
     _MetricSpec(
       key: 'water_l',
-      title: 'Hydration',
+      title: currentL10n.hydration,
       unit: 'L',
       icon: Icons.water_drop_outlined,
       iconColor: Color(0xFF0EA5E9),
@@ -201,7 +203,7 @@ const _metricSections = <String, List<_MetricSpec>>{
     ),
     _MetricSpec(
       key: 'nutrition_entries',
-      title: 'Nutrition',
+      title: currentL10n.nutrition,
       unit: 'entries',
       icon: Icons.restaurant_menu_outlined,
       iconColor: Color(0xFF22C55E),
@@ -336,9 +338,9 @@ class _ManualIngestionBottomSheetState
   Future<void> _pickTemplate() async {
     if (_availableTemplates.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-              'No templates yet. Create one in Profile → Workout Templates.'),
+              context.l10n.noTemplatesYetCreateOne),
         ),
       );
       return;
@@ -350,7 +352,7 @@ class _ManualIngestionBottomSheetState
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 12),
-            Text('Choose a template',
+            Text(context.l10n.chooseATemplate,
                 style: Theme.of(ctx).textTheme.titleMedium),
             const SizedBox(height: 4),
             ..._availableTemplates.map(
@@ -358,7 +360,7 @@ class _ManualIngestionBottomSheetState
                 leading: const Icon(Icons.fitness_center_outlined),
                 title: Text(t.name),
                 subtitle: Text(
-                    '${t.activityType} · ${t.durationMinutes} min · intensity ${t.intensity}/10'),
+                    context.l10n.templateSummary(activityLabel(t.activityType), t.durationMinutes, t.intensity)),
                 onTap: () => Navigator.pop(ctx, t),
               ),
             ),
@@ -388,11 +390,7 @@ class _ManualIngestionBottomSheetState
   }
 
   String _formatDate(DateTime dt) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+    return DateFormat.yMMMd().format(dt);
   }
 
   String _formatTime(DateTime dt) {
@@ -456,8 +454,8 @@ class _ManualIngestionBottomSheetState
 
     if (!hasWorkout && !hasMetrics) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter at least one workout or metric to log.'),
+        SnackBar(
+          content: Text(context.l10n.enterAtLeastOneWorkout),
         ),
       );
       return;
@@ -469,7 +467,7 @@ class _ManualIngestionBottomSheetState
     try {
       final vault = widget.vault;
       if (vault == null) {
-        throw StateError('Vault is locked. Unlock before saving data.');
+        throw StateError(context.l10n.vaultIsLockedUnlockBefore);
       }
 
       final dateKey = _dateKey(_selectedDateTime);
@@ -517,7 +515,7 @@ class _ManualIngestionBottomSheetState
       debugPrint('Save error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
+          SnackBar(content: Text(context.l10n.failedToSave('$e'))),
         );
       }
     } finally {
@@ -590,13 +588,13 @@ class _ManualIngestionBottomSheetState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Log Health Data',
+            context.l10n.logHealthData,
             style: theme.textTheme.headlineSmall
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
-            'All data is encrypted before leaving this device.',
+            context.l10n.allDataIsEncryptedBefore,
             style: theme.textTheme.bodyMedium
                 ?.copyWith(color: theme.hintColor),
           ),
@@ -625,7 +623,7 @@ class _ManualIngestionBottomSheetState
                 onTap: _pickDate,
                 borderRadius: BorderRadius.circular(8),
                 child: Text(
-                  isToday ? 'Today' : _formatDate(_selectedDateTime),
+                  isToday ? context.l10n.today : _formatDate(_selectedDateTime),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: isToday
                         ? theme.colorScheme.primary
@@ -663,7 +661,7 @@ class _ManualIngestionBottomSheetState
 
   Widget _buildTabBar(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
       child: TabBar(
         controller: _tabController,
         dividerColor: Colors.transparent,
@@ -678,9 +676,9 @@ class _ManualIngestionBottomSheetState
         unselectedLabelColor: theme.hintColor,
         labelStyle:
             theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-        tabs: const [
-          Tab(text: 'Workout'),
-          Tab(text: 'Health Metrics'),
+        tabs: [
+          Tab(text: context.l10n.workout),
+          Tab(text: context.l10n.healthMetrics),
         ],
       ),
     );
@@ -700,16 +698,16 @@ class _ManualIngestionBottomSheetState
             child: OutlinedButton.icon(
               onPressed: _pickTemplate,
               icon: const Icon(Icons.library_books_outlined, size: 18),
-              label: const Text('Use template'),
+              label: Text(context.l10n.useTemplate),
               style: OutlinedButton.styleFrom(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerStart,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
             ),
           ),
-        Text('Activity Type',
+        Text(context.l10n.activityType,
             style: theme.textTheme.labelLarge
                 ?.copyWith(color: theme.hintColor)),
         const SizedBox(height: 12),
@@ -733,7 +731,7 @@ class _ManualIngestionBottomSheetState
                           ? Colors.white
                           : theme.colorScheme.onSurface),
                   const SizedBox(width: 6),
-                  Text(type),
+                  Text(activityLabel(type)),
                 ],
               ),
               selected: selected,
@@ -757,7 +755,7 @@ class _ManualIngestionBottomSheetState
           }).toList(),
         ),
         const SizedBox(height: 24),
-        Text('Duration',
+        Text(context.l10n.duration,
             style: theme.textTheme.labelLarge
                 ?.copyWith(color: theme.hintColor)),
         const SizedBox(height: 10),
@@ -765,7 +763,7 @@ class _ManualIngestionBottomSheetState
           controller: _durationController,
           keyboardType: TextInputType.number,
           decoration: InputDecoration(
-            hintText: 'Minutes',
+            hintText: context.l10n.minutes,
             prefixIcon: const Icon(Icons.timer_outlined),
             filled: true,
             fillColor: theme.cardTheme.color,
@@ -779,7 +777,7 @@ class _ManualIngestionBottomSheetState
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Intensity',
+            Text(context.l10n.intensity,
                 style: theme.textTheme.labelLarge
                     ?.copyWith(color: theme.hintColor)),
             Text(
@@ -812,13 +810,13 @@ class _ManualIngestionBottomSheetState
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Light',
+              Text(context.l10n.light,
                   style: theme.textTheme.labelSmall
                       ?.copyWith(color: theme.hintColor)),
-              Text('Moderate',
+              Text(context.l10n.moderate,
                   style: theme.textTheme.labelSmall
                       ?.copyWith(color: theme.hintColor)),
-              Text('Vigorous',
+              Text(context.l10n.vigorous,
                   style: theme.textTheme.labelSmall
                       ?.copyWith(color: theme.hintColor)),
             ],
@@ -846,8 +844,8 @@ class _ManualIngestionBottomSheetState
                 const SizedBox(width: 8),
                 Text(
                   _previewHeartPoints > 0
-                      ? '≈ $_previewHeartPoints heart points earned'
-                      : 'Light intensity — no heart points',
+                      ? context.l10n.heartPointsEarnedPreview(_previewHeartPoints)
+                      : context.l10n.lightIntensityNoHeartPoints,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xFFF43F5E),
                     fontWeight: FontWeight.w500,
@@ -913,7 +911,7 @@ class _ManualIngestionBottomSheetState
           const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: label,
-        hintText: spec.isAdditive ? 'Adds to existing' : 'Replaces existing',
+        hintText: spec.isAdditive ? context.l10n.addsToExisting : context.l10n.replacesExisting,
         prefixIcon: Icon(spec.icon, color: spec.iconColor, size: 20),
         filled: true,
         fillColor: theme.cardTheme.color,
@@ -952,7 +950,7 @@ class _ManualIngestionBottomSheetState
                 width: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Text('Encrypt & Vault Data'),
+            : Text(context.l10n.encryptVaultData),
       ),
     );
   }
