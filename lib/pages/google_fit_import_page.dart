@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/import/google_fit_takeout.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// Brings a person's Google Fit history in from a Google Takeout export:
 /// daily steps, Heart Points and weight, and every workout (with its GPS
@@ -54,13 +55,11 @@ class _GoogleFitImportPageState extends ConsumerState<GoogleFitImportPage> {
       setState(() {
         _preview = takeout;
         if (takeout.isEmpty) {
-          _error = 'No Google Fit data found in that file. Choose the '
-              'Takeout .zip, or the "Daily activity metrics.csv" file from '
-              'its Fit folder.';
+          _error = context.l10n.noGoogleFitDataFound;
         }
       });
     } on Object catch (e) {
-      if (mounted) setState(() => _error = 'Couldn\'t read that file ($e).');
+      if (mounted) setState(() => _error = currentL10n.couldntReadThatFile('$e'));
     } finally {
       if (mounted) setState(() => _reading = false);
     }
@@ -90,7 +89,7 @@ class _GoogleFitImportPageState extends ConsumerState<GoogleFitImportPage> {
         });
       }
     } on Object catch (e) {
-      if (mounted) setState(() => _error = 'Import failed: ${ztErrorMessage(e)}');
+      if (mounted) setState(() => _error = currentL10n.importFailed(ztErrorMessage(e)));
     } finally {
       if (mounted) setState(() => _importing = false);
     }
@@ -102,46 +101,41 @@ class _GoogleFitImportPageState extends ConsumerState<GoogleFitImportPage> {
     final preview = _preview;
     final result = _result;
     return Scaffold(
-      appBar: AppBar(title: const Text('Import from Google Fit')),
+      appBar: AppBar(title: Text(context.l10n.importFromGoogleFit)),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
           Text(
-            'Bring your Google Fit history with you',
+            context.l10n.bringYourGoogleFitHistory,
             style: theme.textTheme.titleLarge,
           ),
           const SizedBox(height: 12),
-          const Text(
-            '1. Go to takeout.google.com and choose only "Fit".\n'
-            '2. Download the .zip Google emails you.\n'
-            '3. Choose it here (or the "Daily activity metrics.csv" inside).',
+          Text(
+            context.l10n.s1GoToTakeoutGoogle,
           ),
           const SizedBox(height: 8),
           Text(
-            'The file is read on this phone. Your steps, Heart Points, weight '
-            'and workouts are added to your encrypted vault, and days already '
-            'counted aren\'t counted twice. Importing again adds nothing new.',
+            context.l10n.theFileIsReadOn,
             style: TextStyle(color: theme.hintColor),
           ),
           const SizedBox(height: 24),
           if (_reading || _importing) ...[
             LinearProgressIndicator(value: _importing ? _progress : null),
             const SizedBox(height: 8),
-            Text(_importing ? 'Adding to your vault…' : 'Reading the export…'),
+            Text(_importing ? context.l10n.addingToYourVault : context.l10n.readingTheExport),
           ] else if (result != null) ...[
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.check_circle, color: Colors.green),
-              title: Text('Added ${result.workoutsAdded} workouts and '
-                  '${result.days} days'),
+              title: Text(context.l10n.addedWorkoutsAndDays(result.workoutsAdded, result.days)),
               subtitle: result.workoutsSkipped > 0
-                  ? Text('${result.workoutsSkipped} workouts were already here')
+                  ? Text(context.l10n.workoutsAlreadyHere(result.workoutsSkipped))
                   : null,
             ),
             const SizedBox(height: 12),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Done'),
+              child: Text(context.l10n.done),
             ),
           ] else if (preview != null && !preview.isEmpty) ...[
             Card(
@@ -150,11 +144,11 @@ class _GoogleFitImportPageState extends ConsumerState<GoogleFitImportPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Found', style: theme.textTheme.titleMedium),
+                    Text(context.l10n.found, style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
-                    Text('${preview.sessions.length} workouts'
+                    Text('${context.l10n.nWorkouts(preview.sessions.length)}'
                         '${_range(preview.sessions.map((s) => s.start))}'),
-                    Text('${preview.days.length} days of steps and Heart Points'
+                    Text('${context.l10n.daysOfStepsAndPoints(preview.days.length)}'
                         '${_range(preview.days.keys.map(DateTime.parse))}'),
                   ],
                 ),
@@ -164,14 +158,14 @@ class _GoogleFitImportPageState extends ConsumerState<GoogleFitImportPage> {
             FilledButton.icon(
               onPressed: _import,
               icon: const Icon(Icons.download_done),
-              label: const Text('Import'),
+              label: Text(context.l10n.importLabel),
             ),
-            TextButton(onPressed: _pick, child: const Text('Choose another file')),
+            TextButton(onPressed: _pick, child: Text(context.l10n.chooseAnotherFile)),
           ] else
             FilledButton.icon(
               onPressed: _pick,
               icon: const Icon(Icons.folder_open),
-              label: const Text('Choose Takeout file'),
+              label: Text(context.l10n.chooseTakeoutFile),
             ),
           if (_error != null) ...[
             const SizedBox(height: 16),
@@ -187,7 +181,7 @@ class _GoogleFitImportPageState extends ConsumerState<GoogleFitImportPage> {
     final sorted = dates.toList()..sort();
     String y(DateTime d) => '${d.year}';
     final a = y(sorted.first), b = y(sorted.last);
-    return a == b ? ' ($a)' : ' ($a to $b)';
+    return a == b ? ' ($a)' : currentL10n.dateRangeTo(a, b);
   }
 }
 

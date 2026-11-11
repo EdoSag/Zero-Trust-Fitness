@@ -1,10 +1,12 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zerotrust_fitness/components/empty_state_widget.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
 import 'package:zerotrust_fitness/pages/goals_page.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class MetricDetailPage extends ConsumerStatefulWidget {
   const MetricDetailPage({
@@ -80,8 +82,8 @@ class _MetricDetailPageState extends ConsumerState<MetricDetailPage> {
       final key = _dateKey(date);
       final row = byDate[key];
       final label = days <= 7
-          ? const ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.weekday % 7]
-          : '${date.month}/${date.day}';
+          ? DateFormat.E().format(date)
+          : DateFormat.Md().format(date);
       return (label: label, value: _valueFromRow(row, widget.metricKey).toDouble());
     }, growable: false);
   }
@@ -248,7 +250,7 @@ class _MetricDetailPageState extends ConsumerState<MetricDetailPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 7-day chart
-                  Text('Last 7 Days',
+                  Text(context.l10n.last7Days,
                       style: theme.textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 12),
@@ -273,18 +275,18 @@ class _MetricDetailPageState extends ConsumerState<MetricDetailPage> {
                     child: Column(
                       children: [
                         _buildStatTile(
-                          '7-day average',
+                          context.l10n.s7DayAverage,
                           '${avg7.toStringAsFixed(1)}$unitSuffix',
                         ),
                         const Divider(height: 1),
                         _buildStatTile(
-                          '30-day average',
+                          context.l10n.s30DayAverage,
                           '${avg30.toStringAsFixed(1)}$unitSuffix',
                         ),
                         if (goal != null) ...[
                           const Divider(height: 1),
                           _buildStatTile(
-                            'Goal (${goal.period})',
+                            context.l10n.goalPeriod(goal.period == 'weekly' ? context.l10n.weekly : goal.period == 'daily' ? context.l10n.daily : goal.period),
                             '${goal.targetValue}$unitSuffix',
                             trailing: TextButton(
                               onPressed: () =>
@@ -292,7 +294,7 @@ class _MetricDetailPageState extends ConsumerState<MetricDetailPage> {
                                 MaterialPageRoute<void>(
                                     builder: (_) => const GoalsPage()),
                               ),
-                              child: const Text('Edit'),
+                              child: Text(context.l10n.edit),
                             ),
                           ),
                           if (goalProgress != null) ...[
@@ -326,15 +328,15 @@ class _MetricDetailPageState extends ConsumerState<MetricDetailPage> {
                         ] else ...[
                           const Divider(height: 1),
                           _buildStatTile(
-                            'Goal',
-                            'Not set',
+                            context.l10n.goal,
+                            context.l10n.notSet,
                             trailing: TextButton(
                               onPressed: () =>
                                   Navigator.of(context).push(
                                 MaterialPageRoute<void>(
                                     builder: (_) => const GoalsPage()),
                               ),
-                              child: const Text('Set goal'),
+                              child: Text(context.l10n.setGoal),
                             ),
                           ),
                         ],
@@ -344,7 +346,7 @@ class _MetricDetailPageState extends ConsumerState<MetricDetailPage> {
                   // Source breakdown (only show if any data exists)
                   if (totals.hc > 0 || totals.manual > 0) ...[
                     const SizedBox(height: 24),
-                    Text('Source Breakdown',
+                    Text(context.l10n.sourceBreakdown,
                         style: theme.textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.w700)),
                     const SizedBox(height: 12),
@@ -366,7 +368,7 @@ class _MetricDetailPageState extends ConsumerState<MetricDetailPage> {
                           ),
                           const Divider(height: 1),
                           _buildStatTile(
-                            'Manual entries',
+                            context.l10n.manualEntries,
                             '${totals.manual.toStringAsFixed(1)}$unitSuffix',
                           ),
                         ],
@@ -375,7 +377,7 @@ class _MetricDetailPageState extends ConsumerState<MetricDetailPage> {
                   ],
                   // 30-day chart
                   const SizedBox(height: 24),
-                  Text('Last 30 Days',
+                  Text(context.l10n.last30Days,
                       style: theme.textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.w700)),
                   const SizedBox(height: 12),

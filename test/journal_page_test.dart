@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/pages/gps_workout_page.dart';
 import 'package:zerotrust_fitness/pages/journal_page.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
+import 'package:zero_trust_core/zero_trust_core.dart';
 
 void main() {
   final today = DateTime.now();
@@ -15,6 +17,8 @@ void main() {
     bool canEdit = true,
   }) =>
       MaterialApp(
+        localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
+        supportedLocales: ZtLanguages.supported,
         home: JournalPage(
           workouts: [
             {
@@ -60,6 +64,7 @@ void main() {
   testWidgets('shows workouts and measurements by day, with filters',
       (tester) async {
     await tester.pumpWidget(journal(deleted: []));
+    await tester.pump();
     expect(find.text('Today'), findsOneWidget);
     expect(find.text('Running'), findsOneWidget);
     expect(find.text('GPS'), findsOneWidget);
@@ -81,6 +86,7 @@ void main() {
       (tester) async {
     final deleted = <String>[];
     await tester.pumpWidget(journal(deleted: deleted));
+    await tester.pump();
     await tester.tap(find.text('Running'));
     await tester.pumpAndSettle();
     expect(find.text('Splits'), findsOneWidget);
@@ -95,13 +101,17 @@ void main() {
 
   testWidgets('locked: no edit menus', (tester) async {
     await tester.pumpWidget(journal(deleted: [], canEdit: false));
+    await tester.pump();
     expect(find.byTooltip('More'), findsNothing);
   });
 
   testWidgets('GPS screen starts on the setup step', (tester) async {
     SharedPreferences.setMockInitialValues({'gps_last_activity': 'Cycling'});
     await tester.pumpWidget(
-        const ProviderScope(child: MaterialApp(home: GpsWorkoutPage())));
+        const ProviderScope(child: MaterialApp(
+          localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
+          supportedLocales: ZtLanguages.supported,
+          home: GpsWorkoutPage())));
     await tester.pumpAndSettle();
     expect(find.text('Start'), findsOneWidget);
     expect(find.text('Auto-pause'), findsOneWidget);

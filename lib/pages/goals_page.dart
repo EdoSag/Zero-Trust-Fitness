@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zerotrust_fitness/components/inline_button_style.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class GoalsPage extends ConsumerStatefulWidget {
   const GoalsPage({super.key});
@@ -45,7 +46,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final value = num.tryParse(raw);
     if (value == null || value <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid target value.')),
+        SnackBar(content: Text(context.l10n.enterAValidTargetValue)),
       );
       return;
     }
@@ -53,7 +54,7 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     await ref.read(goalsProvider.notifier).upsert(metricKey, value, period);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Goal saved for $metricKey')),
+        SnackBar(content: Text(context.l10n.goalSavedFor(metricCardSpecs.where((s) => s.key == metricKey).firstOrNull?.title ?? metricKey))),
       );
     }
   }
@@ -70,11 +71,11 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
     final goalsAsync = ref.watch(goalsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Goals')),
+      appBar: AppBar(title: Text(context.l10n.goals)),
       body: goalsAsync.when(
         loading: () =>
             const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        error: (e, _) => Center(child: Text('Failed to load goals: $e')),
+        error: (e, _) => Center(child: Text(context.l10n.failedToLoadGoals('$e'))),
         data: (state) => ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           itemCount: metricCardSpecs.length,
@@ -111,8 +112,8 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                               color: Colors.green.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(99),
                             ),
-                            child: const Text(
-                              'Active',
+                            child: Text(
+                              context.l10n.active,
                               style: TextStyle(
                                   color: Colors.green,
                                   fontSize: 11,
@@ -132,17 +133,17 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                                 decimal: true),
                             decoration: InputDecoration(
                               labelText:
-                                  'Target${spec.unit.isNotEmpty ? ' (${spec.unit})' : ''}',
+                                  '${context.l10n.targetLabel}${spec.unit.isNotEmpty ? ' (${spec.unit})' : ''}',
                               isDense: true,
                               border: const OutlineInputBorder(),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Expanded(
                           child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'Period',
+                            decoration: InputDecoration(
+                              labelText: context.l10n.period,
                               isDense: true,
                               border: OutlineInputBorder(),
                               contentPadding: EdgeInsets.symmetric(
@@ -153,11 +154,11 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                                 value: period,
                                 isExpanded: true,
                                 isDense: true,
-                                items: const [
+                                items: [
                                   DropdownMenuItem(
-                                      value: 'daily', child: Text('Daily')),
+                                      value: 'daily', child: Text(context.l10n.daily)),
                                   DropdownMenuItem(
-                                      value: 'weekly', child: Text('Weekly')),
+                                      value: 'weekly', child: Text(context.l10n.weekly)),
                                 ],
                                 onChanged: (v) {
                                   if (v == null) return;
@@ -176,14 +177,14 @@ class _GoalsPageState extends ConsumerState<GoalsPage> {
                         if (hasGoal)
                           TextButton(
                             onPressed: () => _delete(spec.key),
-                            child: const Text('Remove',
+                            child: Text(context.l10n.remove,
                                 style: TextStyle(color: Colors.redAccent)),
                           ),
                         const SizedBox(width: 8),
                         FilledButton(
                           onPressed: () => _save(spec.key),
                           style: inlineButtonStyle,
-                          child: const Text('Save'),
+                          child: Text(context.l10n.save),
                         ),
                       ],
                     ),

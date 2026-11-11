@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// Shows how bringing over data from the previous version is going, and
 /// what to do when it's stuck: try again when offline, type the old
@@ -29,10 +30,10 @@ class LegacyImportBanner extends ConsumerWidget {
       // Once it's done it is checked again on every unlock, which takes
       // a moment, so only a run that takes a while shows.
       if (!status.running || !hasOldData) return const SizedBox.shrink();
-      return const _AfterAMoment(
+      return _AfterAMoment(
         child: _Banner(
           icon: Icons.cloud_sync_outlined,
-          text: 'Bringing over your data from the previous version…',
+          text: context.l10n.bringingOverYourDataFrom,
           busy: true,
           actions: [],
         ),
@@ -45,49 +46,42 @@ class LegacyImportBanner extends ConsumerWidget {
       LegacyImportProblem.offline => _Banner(
         icon: Icons.cloud_off_outlined,
         text:
-            'Your data from the previous version hasn\'t been brought '
-            'over yet: the server couldn\'t be reached. Check your '
-            'connection and try again.',
+            context.l10n.yourDataFromThePrevious,
         busy: busy,
         actions: [
           TextButton(
             onPressed: busy ? null : () => _retry(context, controller),
-            child: const Text('Try again'),
+            child: Text(context.l10n.tryAgain),
           ),
         ],
       ),
       LegacyImportProblem.locked => _Banner(
         icon: Icons.lock_outline,
         text: status.passwordTried
-            ? 'That password didn\'t open your data from the previous '
-                  'version either. Try another password you used before, '
-                  'or skip it.'
-            : 'Your data from the previous version is locked with the '
-                  'password you used before this update. Enter it once to '
-                  'bring it over.',
+            ? context.l10n.thatPasswordDidntOpenYour
+            : context.l10n.yourDataFromThePreviousX,
         busy: busy,
         actions: [
           if (status.passwordTried)
             TextButton(
               onPressed: busy ? null : () => _skip(context, controller),
-              child: const Text('Skip'),
+              child: Text(context.l10n.skip),
             ),
           TextButton(
             onPressed: busy ? null : () => _askPassword(context, controller),
-            child: const Text('Enter password'),
+            child: Text(context.l10n.enterPassword),
           ),
         ],
       ),
       LegacyImportProblem.failed => _Banner(
         icon: Icons.error_outline,
         text:
-            'Your data from the previous version hasn\'t been brought '
-            'over yet. Something went wrong; try again.',
+            context.l10n.yourDataFromThePreviousXX,
         busy: busy,
         actions: [
           TextButton(
             onPressed: busy ? null : () => _retry(context, controller),
-            child: const Text('Try again'),
+            child: Text(context.l10n.tryAgain),
           ),
         ],
       ),
@@ -125,20 +119,18 @@ class LegacyImportBanner extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Skip the locked data?'),
-        content: const Text(
-          'Whatever no password opened stays where it is (the old file is '
-          'kept on this phone) but won\'t show in the app. Everything else '
-          'from the previous version is brought over.',
+        title: Text(context.l10n.skipTheLockedData),
+        content: Text(
+          context.l10n.whateverNoPasswordOpenedStays,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Skip'),
+            child: Text(context.l10n.skip),
           ),
         ],
       ),
@@ -150,14 +142,14 @@ class LegacyImportBanner extends ConsumerWidget {
   /// Says what happened, so a tap is never silent.
   static void _report(ScaffoldMessengerState messenger, Object? error) {
     final text = switch (error) {
-      null => 'Your data from the previous version is here.',
+      null => currentL10n.yourDataFromThePreviousXXX,
       VaultIsLocked() => null,
       _ => switch (LegacyImportStatus(error: error).problem) {
         LegacyImportProblem.offline =>
-          'Still couldn\'t reach the server. Check your connection.',
+          currentL10n.stillCouldntReachTheServer,
         LegacyImportProblem.locked =>
-          'That password didn\'t open it. Try another one you used before.',
-        _ => 'That didn\'t work. Try again in a moment.',
+          currentL10n.thatPasswordDidntOpenIt,
+        _ => currentL10n.thatDidntWorkTryAgain,
       },
     };
     if (text == null) return;
@@ -251,15 +243,13 @@ class _OldPasswordDialogState extends State<_OldPasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Password from before the update'),
+      title: Text(context.l10n.passwordFromBeforeTheUpdate),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'The password Zero-Trust Fitness used before this update. It '
-            'only unlocks your old data on this phone; it isn\'t sent '
-            'anywhere and doesn\'t change your account.',
+          Text(
+            context.l10n.thePasswordZeroTrustFitness,
           ),
           const SizedBox(height: 16),
           TextField(
@@ -269,9 +259,9 @@ class _OldPasswordDialogState extends State<_OldPasswordDialog> {
             autofillHints: const [AutofillHints.password],
             onSubmitted: (_) => _submit(),
             decoration: InputDecoration(
-              labelText: 'Old password',
+              labelText: context.l10n.oldPassword,
               suffixIcon: IconButton(
-                tooltip: _obscured ? 'Show password' : 'Hide password',
+                tooltip: _obscured ? context.l10n.showPassword : context.l10n.hidePassword,
                 icon: Icon(_obscured ? Icons.visibility : Icons.visibility_off),
                 onPressed: () => setState(() => _obscured = !_obscured),
               ),
@@ -282,9 +272,9 @@ class _OldPasswordDialogState extends State<_OldPasswordDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(context.l10n.cancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Unlock')),
+        FilledButton(onPressed: _submit, child: Text(context.l10n.unlock)),
       ],
     );
   }

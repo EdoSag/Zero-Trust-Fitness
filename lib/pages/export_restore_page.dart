@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/core/services/export_service.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// Export to a file, or bring a file back in. Cloud backup is no longer a
 /// separate step: every change is synced, encrypted, as it happens.
@@ -34,7 +35,7 @@ class _ExportRestorePageState extends ConsumerState<ExportRestorePage> {
     try {
       await _systemUi(() => ExportService().exportJson(widget.vault));
     } catch (e) {
-      _snack('Export failed: ${ztErrorMessage(e)}');
+      _snack(currentL10n.exportFailed(ztErrorMessage(e)));
     } finally {
       if (mounted) setState(() => _exportingJson = false);
     }
@@ -45,7 +46,7 @@ class _ExportRestorePageState extends ConsumerState<ExportRestorePage> {
     try {
       await _systemUi(() => ExportService().exportCsv(widget.vault));
     } catch (e) {
-      _snack('Export failed: ${ztErrorMessage(e)}');
+      _snack(currentL10n.exportFailed(ztErrorMessage(e)));
     } finally {
       if (mounted) setState(() => _exportingCsv = false);
     }
@@ -60,7 +61,7 @@ class _ExportRestorePageState extends ConsumerState<ExportRestorePage> {
 
     final path = result.first.path;
     if (path == null) {
-      _snack('Could not read selected file.');
+      _snack(currentL10n.couldNotReadSelectedFile);
       return;
     }
 
@@ -68,13 +69,13 @@ class _ExportRestorePageState extends ConsumerState<ExportRestorePage> {
     try {
       content = await File(path).readAsString();
     } catch (e) {
-      _snack('Failed to read file.');
+      _snack(currentL10n.failedToReadFile);
       return;
     }
 
     final preview = ExportService().parsePreview(content);
     if (preview == null) {
-      _snack('Invalid or unsupported export file (version too new?).');
+      _snack(currentL10n.invalidOrUnsupportedExportFile);
       return;
     }
 
@@ -82,31 +83,29 @@ class _ExportRestorePageState extends ConsumerState<ExportRestorePage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Restore from backup?'),
+        title: Text(context.l10n.restoreFromBackup),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-                'Workouts missing here are added, days in the file replace '
-                'the same days here, and goals are set. It syncs to your '
-                'other devices.'),
+            Text(
+                context.l10n.workoutsMissingHereAreAdded),
             const SizedBox(height: 12),
-            _previewRow('Exported', _formatDate(preview.exportedAt)),
-            _previewRow('Workouts', '${preview.workoutCount}'),
-            _previewRow('Metric days', '${preview.metricDayCount}'),
-            _previewRow('Achievements', '${preview.achievementCount}'),
-            _previewRow('Goals', '${preview.goalCount}'),
+            _previewRow(context.l10n.exported, _formatDate(preview.exportedAt)),
+            _previewRow(context.l10n.workouts, '${preview.workoutCount}'),
+            _previewRow(context.l10n.metricDays, '${preview.metricDayCount}'),
+            _previewRow(context.l10n.achievements, '${preview.achievementCount}'),
+            _previewRow(context.l10n.goals, '${preview.goalCount}'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Restore'),
+            child: Text(context.l10n.restore),
           ),
         ],
       ),
@@ -119,7 +118,7 @@ class _ExportRestorePageState extends ConsumerState<ExportRestorePage> {
       final msg = await ExportService().restoreFromJson(content, widget.vault);
       _snack(msg);
     } catch (e) {
-      _snack('Restore failed: ${ztErrorMessage(e)}');
+      _snack(currentL10n.restoreFailed(ztErrorMessage(e)));
     } finally {
       if (mounted) setState(() => _restoring = false);
     }
@@ -178,44 +177,42 @@ class _ExportRestorePageState extends ConsumerState<ExportRestorePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Export & Restore')),
+      appBar: AppBar(title: Text(context.l10n.exportRestore)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Export',
+          Text(context.l10n.exportLabel,
               style: theme.textTheme.titleSmall?.copyWith(color: theme.hintColor)),
           const SizedBox(height: 8),
           _buildActionTile(
             icon: Icons.file_download_outlined,
-            title: 'Export full backup (JSON)',
+            title: context.l10n.exportFullBackupJson,
             subtitle:
-                'All workouts, metrics, goals and medals. Not encrypted: keep it safe.',
+                context.l10n.allWorkoutsMetricsGoalsAnd,
             onTap: _exportJson,
             loading: _exportingJson,
           ),
           _buildActionTile(
             icon: Icons.table_chart_outlined,
-            title: 'Export metrics (CSV)',
-            subtitle: 'Daily health metrics as a spreadsheet, for analysis',
+            title: context.l10n.exportMetricsCsv,
+            subtitle: context.l10n.dailyHealthMetricsAsA,
             onTap: _exportCsv,
             loading: _exportingCsv,
           ),
           const SizedBox(height: 20),
-          Text('Restore',
+          Text(context.l10n.restore,
               style: theme.textTheme.titleSmall?.copyWith(color: theme.hintColor)),
           const SizedBox(height: 8),
           _buildActionTile(
             icon: Icons.file_upload_outlined,
-            title: 'Restore from JSON',
-            subtitle: 'Bring a full backup back in. Nothing here is deleted.',
+            title: context.l10n.restoreFromJson,
+            subtitle: context.l10n.bringAFullBackupBack,
             onTap: _restore,
             loading: _restoring,
           ),
           const SizedBox(height: 20),
           Text(
-            'Your data is synced, end-to-end encrypted, to your other devices '
-            'as you go. To be able to get back in if you forget your password, '
-            'keep your recovery key safe (Settings → New recovery key).',
+            context.l10n.yourDataIsSyncedEnd,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
           ),
         ],

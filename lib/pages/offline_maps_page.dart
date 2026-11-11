@@ -3,6 +3,7 @@ import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/maps/tile_cache.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// Map tiles on the phone: save the areas of past routes, go offline-only so
 /// the tile server never learns where you are, or free the space.
@@ -70,9 +71,9 @@ class _OfflineMapsPageState extends State<OfflineMapsPage> {
         if (mounted) setState(() => _progress = (i + 1) / routes.length);
       }
       _message = fetched == 0
-          ? 'Your routes\' maps were already on this phone.'
-          : 'Saved $fetched map tiles.'
-                '${capped ? ' That\'s the most at once; run it again later for the rest.' : ''}';
+          ? currentL10n.yourRoutesMapsWereAlready
+          : currentL10n.savedMapTiles(fetched) +
+              (capped ? currentL10n.mapTilesCapped : '');
     } catch (e) {
       _message = ztErrorMessage(e);
     }
@@ -97,24 +98,21 @@ class _OfflineMapsPageState extends State<OfflineMapsPage> {
     final usage = _usage;
     final busy = _progress != null;
     return Scaffold(
-      appBar: AppBar(title: const Text('Offline maps')),
+      appBar: AppBar(title: Text(context.l10n.offlineMaps)),
       body: ListView(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
-              'Route maps come from OpenStreetMap. Each map tile is kept on '
-              'this phone the first time it is shown, so the map server is '
-              'asked once at most, not every time you open a workout.',
+              context.l10n.routeMapsComeFromOpenstreetmap,
               style: TextStyle(color: theme.hintColor),
             ),
           ),
           SwitchListTile(
             secondary: const Icon(Icons.cloud_off_outlined),
-            title: const Text('Offline maps only'),
-            subtitle: const Text(
-              'Never contact the map server. Areas you haven\'t saved '
-              'show the route on a blank background.',
+            title: Text(context.l10n.offlineMapsOnly),
+            subtitle: Text(
+              context.l10n.neverContactTheMapServer,
             ),
             value: _offlineOnly,
             onChanged: (v) async {
@@ -126,12 +124,11 @@ class _OfflineMapsPageState extends State<OfflineMapsPage> {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.download_for_offline_outlined),
-            title: const Text('Save maps of my routes'),
+            title: Text(context.l10n.saveMapsOfMyRoutes),
             subtitle: Text(
               _routes == 0
-                  ? 'No GPS routes yet'
-                  : 'The areas around your $_routes '
-                        '${_routes == 1 ? 'route' : 'routes'}, ready offline',
+                  ? context.l10n.noGpsRoutesYet
+                  : context.l10n.areasAroundRoutes(_routes),
             ),
             enabled: !busy && !_offlineOnly && _routes > 0,
             onTap: _saveRoutes,
@@ -148,11 +145,11 @@ class _OfflineMapsPageState extends State<OfflineMapsPage> {
             ),
           ListTile(
             leading: const Icon(Icons.delete_sweep_outlined),
-            title: const Text('Delete saved maps'),
+            title: Text(context.l10n.deleteSavedMaps),
             subtitle: Text(
               usage == null
                   ? '…'
-                  : '${usage.tiles} tiles, ${_size(usage.bytes)}',
+                  : context.l10n.tilesAndSize(usage.tiles, ltr(_size(usage.bytes))),
             ),
             enabled: !busy && (usage?.tiles ?? 0) > 0,
             onTap: _clear,

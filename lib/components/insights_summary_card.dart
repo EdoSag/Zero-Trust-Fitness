@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zerotrust_fitness/core/services/insights_service.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class InsightsSummaryCard extends StatelessWidget {
   const InsightsSummaryCard({
@@ -16,10 +17,10 @@ class InsightsSummaryCard extends StatelessWidget {
     final theme = Theme.of(context);
     final pct = weeklySteps.percentChange;
     final pctText = pct == null
-        ? 'No prior week data'
+        ? context.l10n.noPriorWeekData
         : pct >= 0
-            ? '+${pct.toStringAsFixed(0)}% vs last week'
-            : '${pct.toStringAsFixed(0)}% vs last week';
+            ? currentL10n.vsLastWeek(ltr('+${pct.toStringAsFixed(0)}%'))
+            : currentL10n.vsLastWeek(ltr('${pct.toStringAsFixed(0)}%'));
     final pctColor = pct == null
         ? theme.hintColor
         : pct >= 0
@@ -41,11 +42,11 @@ class InsightsSummaryCard extends StatelessWidget {
               icon: Icons.local_fire_department,
               iconColor: const Color(0xFFF97316),
               value: '${streaks.current}',
-              label: 'day streak',
+              label: context.l10n.dayStreak,
               sub: streaks.longest > streaks.current
-                  ? 'Best: ${streaks.longest}'
+                  ? currentL10n.bestStreak(streaks.longest)
                   : streaks.current > 0
-                      ? 'Personal best!'
+                      ? context.l10n.personalBest
                       : null,
             ),
           ),
@@ -60,7 +61,7 @@ class InsightsSummaryCard extends StatelessWidget {
               icon: Icons.directions_walk,
               iconColor: const Color(0xFF3B82F6),
               value: _compact(weeklySteps.thisWeekTotal),
-              label: 'steps this week',
+              label: context.l10n.stepsThisWeek,
               sub: pctText,
               subColor: pctColor,
             ),

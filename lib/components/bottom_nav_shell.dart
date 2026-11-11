@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,6 +35,7 @@ import 'package:zerotrust_fitness/pages/today_page.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/pages/trends_page.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class BottomNavShell extends ConsumerStatefulWidget {
   const BottomNavShell({
@@ -743,10 +745,8 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     });
     final hours = byHour.keys.toList()..sort();
     return hours.map((hour) {
-      final suffix = hour >= 12 ? 'pm' : 'am';
-      final normalized = hour % 12 == 0 ? 12 : hour % 12;
       return DualMetricPoint(
-        label: '$normalized:00 $suffix',
+        label: DateFormat.j().format(DateTime(2000, 1, 1, hour)),
         steps: byHour[hour]?['steps'] ?? 0,
         heartPoints: byHour[hour]?['heart'] ?? 0,
       );
@@ -762,13 +762,12 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       final key = row['date_key']?.toString();
       if (key != null) byDate[key] = row;
     }
-    const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return List.generate(7, (index) {
       final date = weekStart.add(Duration(days: index));
       final key = _dateKey(date);
       final row = byDate[key];
       return DualMetricPoint(
-        label: labels[index],
+        label: DateFormat.E().format(date),
         steps: _metricFromRow(row, 'steps').toDouble(),
         heartPoints: _metricFromRow(row, 'heart_points').toDouble(),
       );
@@ -784,13 +783,12 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       final key = row['date_key']?.toString();
       if (key != null) byDate[key] = row;
     }
-    const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return List.generate(7, (index) {
       final date = weekStart.add(Duration(days: index));
       final key = _dateKey(date);
       final row = byDate[key];
       return SingleMetricPoint(
-        label: labels[index],
+        label: DateFormat.E().format(date),
         value: _metricFromRow(row, _selectedTrendMetricKey).toDouble(),
       );
     }, growable: false);
@@ -952,7 +950,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Medal unlocked: ${def.name}!',
+                  context.l10n.medalUnlocked(def.title),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -997,20 +995,18 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       context: context,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.health_and_safety_outlined),
-        title: const Text('Connect your health data?'),
-        content: const Text(
-          'Fitness can read steps, workouts, heart rate, sleep and more from '
-          'Health Connect. It stays encrypted on your phone and in your '
-          'vault. You can change this any time in Settings.',
+        title: Text(context.l10n.connectYourHealthData),
+        content: Text(
+          context.l10n.fitnessCanReadStepsWorkouts,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Not now'),
+            child: Text(context.l10n.notNow),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Choose permissions'),
+            child: Text(context.l10n.choosePermissions),
           ),
         ],
       ),
@@ -1121,7 +1117,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
                       _recentActivities = [];
                       _manualEntries = [];
                       _dailyMetrics = [];
-                      _todayMetrics = const <String, num>{};
+                      _todayMetrics = <String, num>{};
                     });
                     _onVaultChanged();
                   },
@@ -1134,26 +1130,26 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
-        destinations: const [
+        destinations: [
           NavigationDestination(
             icon: Icon(Icons.today_outlined),
             selectedIcon: Icon(Icons.today),
-            label: 'Today',
+            label: context.l10n.today,
           ),
           NavigationDestination(
             icon: Icon(Icons.show_chart_outlined),
             selectedIcon: Icon(Icons.show_chart),
-            label: 'Trends',
+            label: context.l10n.trends,
           ),
           NavigationDestination(
             icon: Icon(Icons.history_outlined),
             selectedIcon: Icon(Icons.history),
-            label: 'Journal',
+            label: context.l10n.journal,
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
+            label: context.l10n.settings,
           ),
         ],
       ),

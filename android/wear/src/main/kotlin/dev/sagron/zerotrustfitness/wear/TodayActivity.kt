@@ -74,10 +74,10 @@ class TodayActivity : Activity() {
         val t = TodayStore.read(this)
         heartPoints.text = "${t.heartPoints} Heart Pts"
         heartBar.progress = (t.fraction(t.heartPoints, t.heartPointsGoal) * 100).toInt()
-        steps.text = "%,d steps".format(t.steps)
+        steps.text = getString(R.string.steps_count, t.steps)
         water.text = "${t.water(t.waterMl)} of ${t.water(t.waterGoalMl)}"
         waterBar.progress = (t.fraction(t.waterMl, t.waterGoalMl) * 100).toInt()
-        addWater.text = t.glassLabel() + " water"
+        addWater.text = getString(R.string.add_water_amount, t.glassLabel())
         addWater.isEnabled = t.connected
         status.text = when {
             !t.connected -> getString(R.string.not_connected)

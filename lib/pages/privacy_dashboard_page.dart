@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class PrivacyDashboardPage extends StatefulWidget {
   const PrivacyDashboardPage({super.key, required this.vault});
@@ -15,13 +16,13 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
   Map<String, int> _counts = {};
   bool _loading = true;
 
-  static const _tableLabels = {
-    'workout': 'Workouts',
-    'day': 'Metric days',
-    'achievement': 'Medals',
-    'goal': 'Goals',
-    'template': 'Templates',
-    'meal': 'Meals',
+  Map<String, String> get _tableLabels => {
+    'workout': context.l10n.workouts,
+    'day': context.l10n.metricDays,
+    'achievement': context.l10n.medals,
+    'goal': context.l10n.goals,
+    'template': context.l10n.templates,
+    'meal': context.l10n.meals,
   };
 
   @override
@@ -49,7 +50,7 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Privacy Dashboard')),
+      appBar: AppBar(title: Text(context.l10n.privacyDashboard)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -71,9 +72,7 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Everything is encrypted on this phone with a key '
-                          'only your password or recovery key can open. The '
-                          'server, and the developer, see only ciphertext.',
+                          context.l10n.everythingIsEncryptedOnThis,
                           style: theme.textTheme.bodySmall
                               ?.copyWith(color: Colors.green[700]),
                         ),
@@ -84,7 +83,7 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
                 const SizedBox(height: 20),
 
                 // Local storage summary
-                Text('Stored in your vault',
+                Text(context.l10n.storedInYourVault,
                     style: theme.textTheme.titleSmall
                         ?.copyWith(color: theme.hintColor)),
                 const SizedBox(height: 8),
@@ -111,8 +110,8 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
                 Card(
                   child: ListTile(
                     leading: const Icon(Icons.shield_outlined),
-                    title: const Text('How your data is protected'),
-                    subtitle: const Text('Encryption, sync and what the server sees'),
+                    title: Text(context.l10n.howYourDataIsProtected),
+                    subtitle: Text(context.l10n.encryptionSyncAndWhatThe),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -133,13 +132,13 @@ class _PrivacyDashboardPageState extends State<PrivacyDashboardPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Your Data Rights',
+                      Text(context.l10n.yourDataRights,
                           style: theme.textTheme.labelLarge),
                       const SizedBox(height: 8),
-                      _bullet('You own all your data. Only your devices can read it.'),
-                      _bullet('Export a full backup at any time from Export & Restore.'),
-                      _bullet('Delete activity data from Settings → Delete activity data.'),
-                      _bullet('Deleting your account removes everything from the server.'),
+                      _bullet(context.l10n.youOwnAllYourData),
+                      _bullet(context.l10n.exportAFullBackupAt),
+                      _bullet(context.l10n.deleteActivityDataFromSettings),
+                      _bullet(context.l10n.deletingYourAccountRemovesEverything),
                     ],
                   ),
                 ),

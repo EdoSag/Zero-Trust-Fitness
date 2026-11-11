@@ -1,4 +1,6 @@
+import 'package:flutter/widgets.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 /// Feeds the Android home screen widget (FitnessWidgetProvider).
 class WidgetService {
   static Future<void> updateWidgetData({
@@ -36,4 +38,55 @@ class WidgetService {
   static Future<void> redactWidget() async {
     await updateWidgetData(steps: 0, heartPoints: 0, isLocked: true);
   }
+
+  /// The widget's fixed texts in the app's language (read by WidgetText.kt).
+  /// %1$s etc. are filled in by the widget.
+  static Future<void> saveTexts(AppL10n l) async {
+    final texts = {
+      'heart_points': l.widgetHeartPts,
+      'locked': l.widgetLocked,
+      'locked_short': l.widgetLockedShort,
+      'today': l.today,
+      'hp_goal': l.widgetHpGoal,
+      'steps_goal': l.widgetStepsGoal,
+      'momentum': l.widgetMomentum,
+      'summary': l.widgetSummary,
+    };
+    for (final e in texts.entries) {
+      await HomeWidget.saveWidgetData<String>(
+          'fitness_widget_text_${e.key}', e.value);
+    }
+    await HomeWidget.updateWidget(
+      name: 'FitnessWidgetProvider',
+      iOSName: 'FitnessWidget',
+    );
+  }
+}
+
+/// Hands the home screen widget the app's language: whenever the language
+/// in Settings changes (and once at start), its fixed texts are saved again.
+class WidgetTextSync extends StatefulWidget {
+  const WidgetTextSync({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<WidgetTextSync> createState() => _WidgetTextSyncState();
+}
+
+class _WidgetTextSyncState extends State<WidgetTextSync> {
+  String? _synced;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final l10n = context.l10n;
+    if (l10n.localeName == _synced) return;
+    _synced = l10n.localeName;
+    // Best effort: the widget keeps its last texts if this fails.
+    WidgetService.saveTexts(l10n).catchError((Object _) {});
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
@@ -9,6 +10,7 @@ import 'package:zerotrust_fitness/components/inline_button_style.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// Daily water goal when the person hasn't set one (litres).
 const double defaultWaterGoalLiters = 2.0;
@@ -16,10 +18,10 @@ const double defaultWaterGoalLiters = 2.0;
 const mealTypes = <String>['breakfast', 'lunch', 'dinner', 'snack'];
 
 String mealTypeLabel(String type) => switch (type) {
-  'breakfast' => 'Breakfast',
-  'lunch' => 'Lunch',
-  'dinner' => 'Dinner',
-  _ => 'Snacks',
+  'breakfast' => currentL10n.breakfast,
+  'lunch' => currentL10n.lunch,
+  'dinner' => currentL10n.dinner,
+  _ => currentL10n.snacks,
 };
 
 IconData mealTypeIcon(String type) => switch (type) {
@@ -135,7 +137,7 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
     final amount = await showDialog<double>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add water'),
+        title: Text(context.l10n.addWater),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -145,7 +147,7 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
@@ -156,7 +158,7 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
                 imperial ? v * UnitsFormatter.litersPerFlOz : v / 1000,
               );
             },
-            child: const Text('Add'),
+            child: Text(context.l10n.add),
           ),
         ],
       ),
@@ -214,7 +216,7 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
         fatG: template.fatG,
       ),
     );
-    _snack('Logged ${template.name}');
+    _snack(context.l10n.loggedName(template.name));
     await _load();
   }
 
@@ -234,16 +236,16 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
       initialIndex: widget.initialTab,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Water & food'),
-          bottom: const TabBar(
+          title: Text(context.l10n.waterFood),
+          bottom: TabBar(
             tabs: [
-              Tab(icon: Icon(Icons.water_drop_outlined), text: 'Water'),
-              Tab(icon: Icon(Icons.restaurant_menu_outlined), text: 'Food'),
+              Tab(icon: Icon(Icons.water_drop_outlined), text: context.l10n.water),
+              Tab(icon: Icon(Icons.restaurant_menu_outlined), text: context.l10n.food),
             ],
           ),
         ),
         body: vault == null
-            ? const Center(child: Text('Unlock to log water and food.'))
+            ? Center(child: Text(context.l10n.unlockToLogWaterAnd))
             : Column(
                 children: [
                   _dayBar(context),
@@ -262,19 +264,19 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
 
   Widget _dayBar(BuildContext context) {
     final label = _isToday
-        ? 'Today'
+        ? context.l10n.today
         : _dateKey ==
               FitnessVault.dateKeyOf(
                 DateTime.now().subtract(const Duration(days: 1)),
               )
-        ? 'Yesterday'
+        ? context.l10n.yesterday
         : UnitsFormatter().formatDate(_day);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
         children: [
           IconButton(
-            tooltip: 'Previous day',
+            tooltip: context.l10n.previousDay,
             icon: const Icon(Icons.chevron_left),
             onPressed: () => _shiftDay(-1),
           ),
@@ -286,7 +288,7 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
             ),
           ),
           IconButton(
-            tooltip: 'Next day',
+            tooltip: context.l10n.nextDay,
             icon: const Icon(Icons.chevron_right),
             onPressed: _isToday ? null : () => _shiftDay(1),
           ),
@@ -343,7 +345,7 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
                       ),
                     ),
                     Text(
-                      'of ${units.formatWater(goal)}',
+                      context.l10n.ofGoalAmount(ltr(units.formatWater(goal))),
                       style: TextStyle(color: theme.hintColor),
                     ),
                   ],
@@ -355,8 +357,7 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
         const SizedBox(height: 12),
         if (_water.health > 0)
           Text(
-            '${units.formatWater(_water.logged)} logged here · '
-            '${units.formatWater(_water.health)} from your health app',
+            context.l10n.waterLoggedHereAndHealth(ltr(units.formatWater(_water.logged)), ltr(units.formatWater(_water.health))),
             textAlign: TextAlign.center,
             style: TextStyle(color: theme.hintColor),
           ),
@@ -375,7 +376,7 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
             OutlinedButton.icon(
               onPressed: _customWater,
               icon: const Icon(Icons.edit_outlined),
-              label: const Text('Other'),
+              label: Text(context.l10n.actOther),
             ),
           ],
         ),
@@ -386,11 +387,11 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
                 ? null
                 : () => _addWater(-presets.first.liters),
             icon: const Icon(Icons.undo),
-            label: Text('Take off ${presets.first.label.substring(1)}'),
+            label: Text(context.l10n.takeOffAmount(presets.first.label.substring(1))),
           ),
         ),
         const SizedBox(height: 24),
-        Text('Last 7 days', style: theme.textTheme.titleMedium),
+        Text(context.l10n.last7DaysX, style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         for (final d in _waterWeek)
           Padding(
@@ -436,8 +437,7 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
   static String _weekday(String dateKey) {
     final d = DateTime.tryParse(dateKey);
     if (d == null) return '';
-    return const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday -
-        1];
+    return DateFormat.E().format(d);
   }
 
   // ---------------------------------------------------------------------------
@@ -458,10 +458,10 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _total(context, '${totals.kcal.round()}', 'kcal'),
-                    _total(context, '${totals.proteinG.round()} g', 'protein'),
-                    _total(context, '${totals.carbsG.round()} g', 'carbs'),
-                    _total(context, '${totals.fatG.round()} g', 'fat'),
+                    _total(context, '${totals.kcal.round()}', context.l10n.kcalUnit),
+                    _total(context, ltr('${totals.proteinG.round()} g'), context.l10n.proteinShort),
+                    _total(context, ltr('${totals.carbsG.round()} g'), context.l10n.carbsShort),
+                    _total(context, ltr('${totals.fatG.round()} g'), context.l10n.fatShort),
                   ],
                 ),
               ),
@@ -470,15 +470,13 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
                 child: Text(
-                  'Plus ${_healthFoodEntries.toInt()} '
-                  '${_healthFoodEntries == 1 ? 'entry' : 'entries'} '
-                  'from your health app.',
+                  context.l10n.plusHealthEntries(_healthFoodEntries.toInt()),
                   style: TextStyle(color: theme.hintColor),
                 ),
               ),
             if (_recent.isNotEmpty) ...[
               const SizedBox(height: 16),
-              Text('Log again', style: theme.textTheme.titleSmall),
+              Text(context.l10n.logAgain, style: theme.textTheme.titleSmall),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 8,
@@ -496,14 +494,14 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
             for (final type in mealTypes) ..._mealSection(context, type),
           ],
         ),
-        Positioned(
-          right: 16,
+        PositionedDirectional(
+          end: 16,
           bottom: 16,
           child: FloatingActionButton.extended(
             heroTag: 'fab-food',
             onPressed: () => _editMeal(),
             icon: const Icon(Icons.add),
-            label: const Text('Log food'),
+            label: Text(context.l10n.logFood),
           ),
         ),
       ],
@@ -547,15 +545,15 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
       ),
       if (items.isEmpty)
         Padding(
-          padding: const EdgeInsets.only(left: 28, top: 4),
+          padding: const EdgeInsetsDirectional.only(start: 28, top: 4),
           child: Text(
-            'Nothing logged',
+            context.l10n.nothingLogged,
             style: TextStyle(color: Theme.of(context).hintColor),
           ),
         ),
       for (final m in items)
         ListTile(
-          contentPadding: const EdgeInsets.only(left: 28),
+          contentPadding: const EdgeInsetsDirectional.only(start: 28),
           title: Text(m.name.isEmpty ? mealTypeLabel(type) : m.name),
           subtitle: Text(
             [
@@ -724,7 +722,7 @@ class _MealSheetState extends State<MealSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              editing ? 'Edit food' : 'Log food',
+              editing ? context.l10n.editFood : context.l10n.logFood,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
@@ -732,7 +730,7 @@ class _MealSheetState extends State<MealSheet> {
               textEditingController: _name,
               focusNode: _nameFocus,
               optionsViewBuilder: (context, onSelected, options) => Align(
-                alignment: Alignment.topLeft,
+                alignment: AlignmentDirectional.topStart,
                 child: Material(
                   elevation: 4,
                   child: ConstrainedBox(
@@ -761,8 +759,8 @@ class _MealSheetState extends State<MealSheet> {
                   focusNode: focus,
                   autofocus: !editing,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(
-                    labelText: 'What did you eat?',
+                  decoration: InputDecoration(
+                    labelText: context.l10n.whatDidYouEat,
                     border: OutlineInputBorder(),
                   ),
                 );
@@ -787,22 +785,22 @@ class _MealSheetState extends State<MealSheet> {
             ),
             Row(
               children: [
-                _numField(_kcal, 'Calories', 'kcal'),
+                _numField(_kcal, context.l10n.calories, 'kcal'),
                 const SizedBox(width: 8),
-                _numField(_protein, 'Protein', 'g'),
+                _numField(_protein, context.l10n.protein, 'g'),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                _numField(_carbs, 'Carbs', 'g'),
+                _numField(_carbs, context.l10n.carbs, 'g'),
                 const SizedBox(width: 8),
-                _numField(_fat, 'Fat', 'g'),
+                _numField(_fat, context.l10n.fat, 'g'),
               ],
             ),
             const SizedBox(height: 4),
             Text(
-              'Calories and macros are optional.',
+              context.l10n.caloriesAndMacrosAreOptional,
               style: TextStyle(color: Theme.of(context).hintColor),
             ),
             const SizedBox(height: 16),
@@ -818,13 +816,13 @@ class _MealSheetState extends State<MealSheet> {
                       foregroundColor: Theme.of(context).colorScheme.error,
                     ),
                     icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete'),
+                    label: Text(context.l10n.delete),
                   ),
                 const Spacer(),
                 FilledButton(
                   onPressed: _save,
                   style: inlineButtonStyle,
-                  child: const Text('Save'),
+                  child: Text(context.l10n.save),
                 ),
               ],
             ),

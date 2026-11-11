@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:zerotrust_fitness/core/utils/error_messages.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class ErrorStateWidget extends StatelessWidget {
   const ErrorStateWidget({
@@ -36,14 +37,14 @@ class ErrorStateWidget extends StatelessWidget {
               const SizedBox(width: 8),
               TextButton(
                 onPressed: onRetry,
-                child: const Text('Retry'),
+                child: Text(context.l10n.retry),
               ),
             ],
             if (onOpenSettings != null) ...[
               const SizedBox(width: 4),
               TextButton(
                 onPressed: onOpenSettings,
-                child: const Text('Settings'),
+                child: Text(context.l10n.settings),
               ),
             ],
           ],
@@ -66,7 +67,7 @@ void showActionableErrorSnackBar(
       persist: false,
       action: onRetry == null
           ? null
-          : SnackBarAction(label: 'Retry', onPressed: onRetry),
+          : SnackBarAction(label: context.l10n.retry, onPressed: onRetry),
     ),
   );
 }

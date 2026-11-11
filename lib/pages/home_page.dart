@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/components/privacy_info_dialog.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// The welcome page, shown once on a new install before sign-in.
 class HomePage extends StatelessWidget {
@@ -28,8 +29,7 @@ class HomePage extends StatelessWidget {
               ),
               const SizedBox(height: ZtSpacing.md),
               Text(
-                'Your data, your keys, your privacy. Track activity, workouts '
-                'and health, encrypted on your phone before anything is synced.',
+                context.l10n.yourDataYourKeysYour,
                 style: theme.textTheme.bodyLarge
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 textAlign: TextAlign.center,
@@ -37,12 +37,12 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 64),
               FilledButton(
                 onPressed: onGetStarted,
-                child: const Text('Get started'),
+                child: Text(context.l10n.getStarted),
               ),
               const SizedBox(height: ZtSpacing.md),
               TextButton(
                 onPressed: () => showPrivacyInfoDialog(context),
-                child: const Text('Learn more about Zero-Trust'),
+                child: Text(context.l10n.learnMoreAboutZeroTrust),
               ),
             ],
           ),

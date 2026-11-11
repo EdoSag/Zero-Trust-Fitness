@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class EmptyStateWidget extends StatelessWidget {
   const EmptyStateWidget({
@@ -17,8 +18,8 @@ class EmptyStateWidget extends StatelessWidget {
   factory EmptyStateWidget.noData(String metricName, {Widget? action}) {
     return EmptyStateWidget(
       icon: Icons.bar_chart_outlined,
-      title: 'No $metricName data',
-      subtitle: 'Sync from Health Connect or log an entry manually.',
+      title: currentL10n.noMetricData(metricName),
+      subtitle: currentL10n.syncFromHealthConnectOr,
       action: action,
     );
   }
@@ -29,15 +30,15 @@ class EmptyStateWidget extends StatelessWidget {
   }) {
     return EmptyStateWidget(
       icon: Icons.lock_outline,
-      title: 'Permission required',
+      title: currentL10n.permissionRequired,
       subtitle:
-          '$metricName access is not granted. Enable it in Permissions.',
+          currentL10n.metricAccessNotGranted(metricName),
       action: onGrant == null
           ? null
           : TextButton.icon(
               onPressed: onGrant,
               icon: const Icon(Icons.settings_outlined, size: 16),
-              label: const Text('Grant permission'),
+              label: Text(currentL10n.grantPermission),
             ),
     );
   }
@@ -45,22 +46,22 @@ class EmptyStateWidget extends StatelessWidget {
   factory EmptyStateWidget.notTracked(String metricName) {
     return EmptyStateWidget(
       icon: Icons.device_unknown_outlined,
-      title: 'Not tracked',
-      subtitle: '$metricName is not supported on this device.',
+      title: currentL10n.notTracked,
+      subtitle: currentL10n.metricNotSupported(metricName),
     );
   }
 
   factory EmptyStateWidget.vaultLocked({VoidCallback? onUnlock}) {
     return EmptyStateWidget(
       icon: Icons.lock_outline,
-      title: 'Vault locked',
-      subtitle: 'Unlock your vault to see health data.',
+      title: currentL10n.vaultLocked,
+      subtitle: currentL10n.unlockYourVaultToSee,
       action: onUnlock == null
           ? null
           : FilledButton.icon(
               onPressed: onUnlock,
               icon: const Icon(Icons.fingerprint),
-              label: const Text('Unlock'),
+              label: Text(currentL10n.unlock),
             ),
     );
   }

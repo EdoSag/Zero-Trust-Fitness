@@ -7,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 // -----------------------------------------------------------------------------
 // Voice cues
@@ -16,28 +17,29 @@ import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart
 /// tested.
 class VoiceCues {
   static String split(SplitReached e) {
-    final unit = e.unitMeters == 1000 ? 'kilometre' : 'mile';
     final n = e.split.index;
-    return '$n ${n == 1 ? unit : '${unit}s'}. '
-        'Time ${_spoken(e.totalElapsed)}. '
-        'Split ${_spoken(e.split.duration)} per $unit.';
+    final total = _spoken(e.totalElapsed);
+    final split = _spoken(e.split.duration);
+    return e.unitMeters == 1000
+        ? currentL10n.cueSplitKm(n, total, split)
+        : currentL10n.cueSplitMile(n, total, split);
   }
 
   static String lap(LapMarked e) =>
-      'Lap ${e.lap.index}. ${_spoken(e.lap.duration)}.';
+      currentL10n.cueLap(e.lap.index, _spoken(e.lap.duration));
 
-  static const paused = 'Workout paused.';
-  static const resumed = 'Workout resumed.';
+  static String get paused => currentL10n.workoutPaused;
+  static String get resumed => currentL10n.workoutResumed;
 
   static String _spoken(Duration d) {
     final h = d.inHours;
     final m = d.inMinutes.remainder(60);
     final s = d.inSeconds.remainder(60);
-    String part(int v, String unit) => '$v ${v == 1 ? unit : '${unit}s'}';
+    final l = currentL10n;
     return [
-      if (h > 0) part(h, 'hour'),
-      if (m > 0 || h > 0) part(m, 'minute'),
-      part(s, 'second'),
+      if (h > 0) l.spokenHours(h),
+      if (m > 0 || h > 0) l.spokenMinutes(m),
+      l.spokenSeconds(s),
     ].join(' ');
   }
 }
@@ -232,9 +234,10 @@ class WorkoutNotification {
   }
 
   String _title(GpsTrackingSnapshot s) {
-    final activity = _service?.activityType ?? 'Workout';
-    if (s.isAutoPaused) return '$activity · auto-paused';
-    if (s.isPaused) return '$activity · paused';
+    final type = _service?.activityType;
+    final activity = type == null ? currentL10n.workout : activityLabel(type);
+    if (s.isAutoPaused) return currentL10n.activityAutoPaused(activity);
+    if (s.isPaused) return currentL10n.activityPaused(activity);
     return activity;
   }
 
@@ -252,8 +255,8 @@ class WorkoutNotification {
   AndroidNotificationDetails _details(GpsTrackingSnapshot s) =>
       AndroidNotificationDetails(
         _channelId,
-        'GPS workout',
-        channelDescription: 'Time, distance and controls while recording',
+        currentL10n.gpsWorkout,
+        channelDescription: currentL10n.timeDistanceAndControlsWhile,
         importance: Importance.low,
         priority: Priority.low,
         ongoing: true,
@@ -266,11 +269,11 @@ class WorkoutNotification {
         visibility: NotificationVisibility.public,
         actions: [
           s.isPaused
-              ? const AndroidNotificationAction(_resumeAction, 'Resume',
+              ? AndroidNotificationAction(_resumeAction, currentL10n.resume,
                   cancelNotification: false)
-              : const AndroidNotificationAction(_pauseAction, 'Pause',
+              : AndroidNotificationAction(_pauseAction, currentL10n.pause,
                   cancelNotification: false),
-          const AndroidNotificationAction(_lapAction, 'Lap',
+          AndroidNotificationAction(_lapAction, currentL10n.lap,
               cancelNotification: false),
         ],
       );
