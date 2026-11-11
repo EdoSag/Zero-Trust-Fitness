@@ -77,7 +77,7 @@ abstract class TodayTileService : TileService() {
             .setEdgeContent(ring(0f, GREY))
             .setPrimaryLabelTextContent(text(context, "ZT Fitness", Typography.TYPOGRAPHY_CAPTION1, GREY))
             .setContent(
-                text(context, "Turn on in the phone app", Typography.TYPOGRAPHY_BODY2, 0xFFFFFFFF.toInt()),
+                text(context, context.getString(R.string.tile_turn_on), Typography.TYPOGRAPHY_BODY2, 0xFFFFFFFF.toInt()),
             )
             .build()
 }
@@ -98,12 +98,12 @@ class HeartPointsTileService : TodayTileService() {
             .build()
         return EdgeContentLayout.Builder(device)
             .setEdgeContent(ring(today.fraction(today.heartPoints, today.heartPointsGoal), TodayActivity.HEART))
-            .setPrimaryLabelTextContent(text(context, "Heart Pts", Typography.TYPOGRAPHY_CAPTION1, GREY))
+            .setPrimaryLabelTextContent(text(context, context.getString(R.string.tile_heart_pts), Typography.TYPOGRAPHY_CAPTION1, GREY))
             .setContent(content)
             .setSecondaryLabelTextContent(
                 text(
                     context,
-                    if (today.isCurrent) "%,d steps".format(today.steps) else "Not updated today",
+                    if (today.isCurrent) context.getString(R.string.steps_count, today.steps) else context.getString(R.string.tile_not_updated),
                     Typography.TYPOGRAPHY_CAPTION1,
                     0xFFFFFFFF.toInt(),
                 ),
@@ -125,12 +125,12 @@ class WaterTileService : TodayTileService() {
         val content = LayoutElementBuilders.Column.Builder()
             .addContent(text(context, today.water(today.waterMl), Typography.TYPOGRAPHY_TITLE1, TodayActivity.WATER))
             .addContent(
-                text(context, "of " + today.water(today.waterGoalMl), Typography.TYPOGRAPHY_CAPTION1, GREY),
+                text(context, context.getString(R.string.of_amount, today.water(today.waterGoalMl)), Typography.TYPOGRAPHY_CAPTION1, GREY),
             )
             .build()
         return EdgeContentLayout.Builder(device)
             .setEdgeContent(ring(today.fraction(today.waterMl, today.waterGoalMl), TodayActivity.WATER))
-            .setPrimaryLabelTextContent(text(context, "Water", Typography.TYPOGRAPHY_CAPTION1, GREY))
+            .setPrimaryLabelTextContent(text(context, context.getString(R.string.tile_water), Typography.TYPOGRAPHY_CAPTION1, GREY))
             .setContent(content)
             .setSecondaryLabelTextContent(add)
             .build()

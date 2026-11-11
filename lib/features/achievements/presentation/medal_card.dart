@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_definition.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 String formatMedalDate(DateTime dt) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-  ];
-  return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  return DateFormat.yMMMd().format(dt);
 }
 
 class MedalCard extends StatelessWidget {
@@ -86,9 +84,9 @@ class MedalCard extends StatelessWidget {
                   ),
                 ),
                 if (!isEarned)
-                  Positioned(
+                  PositionedDirectional(
                     bottom: 0,
-                    right: 0,
+                    end: 0,
                     child: Container(
                       width: 20,
                       height: 20,
@@ -111,7 +109,7 @@ class MedalCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              definition.name,
+              definition.title,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: isEarned ? Colors.white : Colors.grey[500],
                 fontWeight: FontWeight.w600,
@@ -134,7 +132,7 @@ class MedalCard extends StatelessWidget {
               const SizedBox(height: 6),
               Semantics(
                 label:
-                    '${(progress * 100).round()}% toward ${definition.name}',
+                    context.l10n.percentToward((progress * 100).round(), definition.title),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(

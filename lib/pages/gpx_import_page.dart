@@ -8,6 +8,7 @@ import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 import 'package:zerotrust_fitness/features/gpx/gpx.dart';
 import 'package:zerotrust_fitness/features/gpx/gpx_workouts.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 const _gpxActivities = ['Running', 'Cycling', 'Hiking', 'Walking', 'Other'];
 
@@ -82,10 +83,10 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
       _drafts = drafts;
       if (drafts.isEmpty) {
         _error = failed.isNotEmpty
-            ? 'Couldn\'t read ${failed.join(', ')} as GPX.'
-            : 'No tracks with at least two points in that file.';
+            ? context.l10n.couldntReadAsGpx(failed.join(', '))
+            : context.l10n.noTracksWithAtLeast;
       } else if (failed.isNotEmpty) {
-        _error = 'Skipped ${failed.join(', ')}: not GPX.';
+        _error = context.l10n.skippedNotGpx(failed.join(', '));
       }
     });
   }
@@ -93,7 +94,7 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
   Future<void> _import() async {
     final chosen = _drafts.where((d) => d.selected).toList();
     if (chosen.any((d) => d.minutes <= 0)) {
-      setState(() => _error = 'Enter how long each workout took.');
+      setState(() => _error = context.l10n.enterHowLongEachWorkout);
       return;
     }
     setState(() {
@@ -115,8 +116,7 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
       if (!mounted) return;
       setState(() {
         _done =
-            'Imported $count ${count == 1 ? 'workout' : 'workouts'}. '
-            'You\'ll find ${count == 1 ? 'it' : 'them'} in your Journal.';
+            context.l10n.importedWorkouts(count);
         _drafts = const [];
       });
     } catch (e) {
@@ -156,21 +156,19 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
     final units = UnitsFormatter();
     final selected = _drafts.where((d) => d.selected).length;
     return Scaffold(
-      appBar: AppBar(title: const Text('Import GPX routes')),
+      appBar: AppBar(title: Text(context.l10n.importGpxRoutes)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Bring in workouts from Strava, Komoot, Garmin or any app that '
-            'exports .gpx files. The file is read on this phone and saved '
-            'encrypted, like everything else.',
+            context.l10n.bringInWorkoutsFromStrava,
             style: TextStyle(color: theme.hintColor),
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: _busy ? null : _pick,
             icon: const Icon(Icons.file_open_outlined),
-            label: const Text('Choose GPX files'),
+            label: Text(context.l10n.chooseGpxFiles),
           ),
           if (_busy) ...[
             const SizedBox(height: 16),
@@ -193,12 +191,12 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
                       contentPadding: const EdgeInsets.only(left: 4),
                       value: d.selected,
                       onChanged: (v) => setState(() => d.selected = v ?? false),
-                      title: Text(d.track.name ?? 'Track'),
+                      title: Text(d.track.name ?? context.l10n.track),
                       subtitle: Text(
                         [
                           units.formatDistance(d.track.distanceMeters / 1000),
-                          '${d.track.points.length} points',
-                          if (d.alreadyImported) 'already imported',
+                          context.l10n.nPoints(d.track.points.length),
+                          if (d.alreadyImported) context.l10n.alreadyImported,
                         ].join(' · '),
                       ),
                     ),
@@ -212,7 +210,7 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
                               value: d.activity,
                               items: [
                                 for (final a in {..._gpxActivities, d.activity})
-                                  DropdownMenuItem(value: a, child: Text(a)),
+                                  DropdownMenuItem(value: a, child: Text(activityLabel(a))),
                               ],
                               onChanged: (v) =>
                                   setState(() => d.activity = v ?? d.activity),
@@ -221,13 +219,12 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
                               Text(
                                 '${units.formatDate(d.start)} '
                                 '${units.formatTime(d.start)} · '
-                                '${d.minutes} min',
+                                '${context.l10n.nMin(d.minutes)}',
                                 style: TextStyle(color: theme.hintColor),
                               )
                             else ...[
                               Text(
-                                'This file has no times. When was it, and '
-                                'how long did it take?',
+                                context.l10n.thisFileHasNoTimes,
                                 style: TextStyle(color: theme.hintColor),
                               ),
                               Row(
@@ -270,10 +267,9 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
             const SizedBox(height: 8),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Count Heart Points'),
-              subtitle: const Text(
-                'Turn off if these workouts are already in your health app, '
-                'so they don\'t count twice',
+              title: Text(context.l10n.countHeartPoints),
+              subtitle: Text(
+                context.l10n.turnOffIfTheseWorkouts,
               ),
               value: _countHeartPoints,
               onChanged: (v) => setState(() => _countHeartPoints = v),
@@ -282,7 +278,7 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
             FilledButton(
               onPressed: _busy || selected == 0 ? null : _import,
               child: Text(
-                'Import $selected ${selected == 1 ? 'workout' : 'workouts'}',
+                context.l10n.importNWorkouts(selected),
               ),
             ),
           ],

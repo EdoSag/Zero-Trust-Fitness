@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_definition.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/medal_card.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 void showAchievementDetail(
   BuildContext context,
@@ -34,11 +35,11 @@ class _AchievementDetailSheet extends StatelessWidget {
 
   String _categoryLabel(AchievementCategory category) {
     return switch (category) {
-      AchievementCategory.fitness => 'Fitness',
-      AchievementCategory.momentum => 'Momentum',
-      AchievementCategory.sleep => 'Sleep',
-      AchievementCategory.health => 'Health',
-      AchievementCategory.milestones => 'Milestones',
+      AchievementCategory.fitness => currentL10n.fitness,
+      AchievementCategory.momentum => currentL10n.momentum,
+      AchievementCategory.sleep => currentL10n.sleep,
+      AchievementCategory.health => currentL10n.health,
+      AchievementCategory.milestones => currentL10n.milestones,
     };
   }
 
@@ -104,7 +105,7 @@ class _AchievementDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              definition.name,
+              definition.title,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
@@ -133,7 +134,7 @@ class _AchievementDetailSheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              definition.description,
+              definition.blurb,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.hintColor,
                 height: 1.5,
@@ -169,10 +170,10 @@ class _AchievementDetailSheet extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     isEarned && unlockedAt != null
-                        ? 'Unlocked on ${formatMedalDate(unlockedAt!.toLocal())}'
+                        ? context.l10n.unlockedOn(formatMedalDate(unlockedAt!.toLocal()))
                         : isEarned
-                            ? 'Unlocked'
-                            : 'Keep going!',
+                            ? context.l10n.unlocked
+                            : context.l10n.keepGoing,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: isEarned
                           ? const Color(0xFF22C55E)

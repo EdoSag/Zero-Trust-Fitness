@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 void showPrivacyInfoDialog(BuildContext context) {
   showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Row(
+      title: Row(
         children: [
           Icon(Icons.shield_outlined),
           SizedBox(width: 8),
-          Text('How Zero-Trust Works'),
+          Text(context.l10n.howZeroTrustWorks),
         ],
       ),
       content: SingleChildScrollView(
@@ -18,37 +19,37 @@ void showPrivacyInfoDialog(BuildContext context) {
           children: [
             _PrivacyPoint(
               icon: Icons.storage_outlined,
-              title: 'Local-first storage',
+              title: context.l10n.localFirstStorage,
               body:
-                  'All your health data is encrypted with SQLCipher and stored only on your device. Nothing is uploaded unless you explicitly sync.',
+                  context.l10n.allYourHealthDataIs,
             ),
             const SizedBox(height: 12),
             _PrivacyPoint(
               icon: Icons.key_outlined,
-              title: 'Your password, your data',
+              title: context.l10n.yourPasswordYourData,
               body:
-                  'Your master password derives the encryption key on-device using key stretching (PBKDF2). The password and key never leave your device.',
+                  context.l10n.yourMasterPasswordDerivesThe,
             ),
             const SizedBox(height: 12),
             _PrivacyPoint(
               icon: Icons.cloud_outlined,
-              title: 'End-to-end encrypted backups',
+              title: context.l10n.endToEndEncryptedBackups,
               body:
-                  'If you choose to sync, data is encrypted client-side before uploading. The server stores only an encrypted blob it cannot read.',
+                  context.l10n.ifYouChooseToSync,
             ),
             const SizedBox(height: 12),
             _PrivacyPoint(
               icon: Icons.fingerprint,
-              title: 'Biometric unlock',
+              title: context.l10n.biometricUnlock,
               body:
-                  'Biometric unlock stores only a reference to your passphrase in the OS secure enclave. Your actual health data is never accessible to the biometrics system.',
+                  context.l10n.biometricUnlockStoresOnlyA,
             ),
             const SizedBox(height: 12),
             _PrivacyPoint(
               icon: Icons.toggle_on_outlined,
-              title: 'Opt-in permissions',
+              title: context.l10n.optInPermissions,
               body:
-                  'Health Connect and location permissions are always opt-in and revocable. You control exactly which metrics are read.',
+                  context.l10n.healthConnectAndLocationPermissions,
             ),
           ],
         ),
@@ -56,7 +57,7 @@ void showPrivacyInfoDialog(BuildContext context) {
       actions: [
         FilledButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Got it'),
+          child: Text(context.l10n.gotIt),
         ),
       ],
     ),

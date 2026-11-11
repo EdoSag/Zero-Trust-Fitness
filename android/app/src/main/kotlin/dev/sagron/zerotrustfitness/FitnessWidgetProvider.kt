@@ -88,6 +88,8 @@ class FitnessWidgetProvider : HomeWidgetProvider() {
         views.setImageViewBitmap(R.id.widget_ring, ring)
 
         val fmt = NumberFormat.getIntegerInstance()
+        // Texts in the language picked in the app (see WidgetText).
+        fun t(key: String, res: Int) = WidgetText.get(context, data, key, res)
         val shown = if (locked) View.GONE else View.VISIBLE
         val hidden = if (locked) View.VISIBLE else View.GONE
 
@@ -99,6 +101,14 @@ class FitnessWidgetProvider : HomeWidgetProvider() {
         }
         if (size == WidgetSize.MEDIUM) {
             views.setViewVisibility(R.id.widget_ring_caption, shown)
+            views.setTextViewText(R.id.widget_ring_caption, t("heart_points", R.string.widget_heart_points))
+            views.setTextViewText(R.id.widget_locked_msg, t("locked_short", R.string.widget_locked_short))
+        }
+        if (size == WidgetSize.ROW || size == WidgetSize.LARGE) {
+            views.setTextViewText(R.id.widget_locked_msg, t("locked", R.string.widget_locked))
+        }
+        if (size == WidgetSize.LARGE) {
+            views.setTextViewText(R.id.widget_today, t("today", R.string.widget_today))
         }
         if (size != WidgetSize.SMALL) {
             views.setViewVisibility(R.id.widget_stats, shown)
@@ -107,8 +117,8 @@ class FitnessWidgetProvider : HomeWidgetProvider() {
         }
         if (size == WidgetSize.ROW || size == WidgetSize.LARGE) {
             views.setTextViewText(R.id.widget_hp_value, fmt.format(points))
-            views.setTextViewText(R.id.widget_hp_goal, "of ${fmt.format(pointsGoal)} Heart Pts")
-            views.setTextViewText(R.id.widget_steps_goal, "of ${fmt.format(stepsGoal)} steps")
+            views.setTextViewText(R.id.widget_hp_goal, t("hp_goal", R.string.widget_hp_goal).format(fmt.format(pointsGoal)))
+            views.setTextViewText(R.id.widget_steps_goal, t("steps_goal", R.string.widget_steps_goal).format(fmt.format(stepsGoal)))
         }
         if (size == WidgetSize.ROW) {
             // 2x1 has room for one number: Heart Points, which the rings lead with.
@@ -123,21 +133,22 @@ class FitnessWidgetProvider : HomeWidgetProvider() {
                 R.id.widget_momentum_row,
                 if (showMomentum) View.VISIBLE else View.GONE,
             )
-            val text = if (momentumLabel.isBlank()) {
-                "Momentum $momentum"
-            } else {
-                "Momentum $momentum · $momentumLabel"
-            }
+            val base = t("momentum", R.string.widget_momentum).format(fmt.format(momentum))
+            val text = if (momentumLabel.isBlank()) base else "$base · $momentumLabel"
             views.setTextViewText(R.id.widget_momentum, text)
         }
 
         views.setContentDescription(
             android.R.id.background,
             if (locked) {
-                context.getString(R.string.widget_locked)
+                t("locked", R.string.widget_locked)
             } else {
-                "${fmt.format(points)} of ${fmt.format(pointsGoal)} Heart Points, " +
-                    "${fmt.format(steps)} of ${fmt.format(stepsGoal)} steps"
+                t("summary", R.string.widget_summary).format(
+                    fmt.format(points),
+                    fmt.format(pointsGoal),
+                    fmt.format(steps),
+                    fmt.format(stepsGoal),
+                )
             },
         )
         views.setOnClickPendingIntent(android.R.id.background, openApp(context))

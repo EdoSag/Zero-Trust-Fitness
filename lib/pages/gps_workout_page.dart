@@ -14,6 +14,7 @@ import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart
 import 'package:zerotrust_fitness/features/health/data/workout_feedback.dart';
 import 'package:zerotrust_fitness/pages/journal_page.dart'
     show activityIcon, formatClock;
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// Records a GPS workout: choose the activity, start, and the screen shows
 /// time, distance, pace and splits. Leaving the screen (or the vault
@@ -126,9 +127,8 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _errorMessage = e is StateError
-            ? 'Fitness needs location access to record a GPS workout. '
-                'You can allow it in your phone\'s settings.'
-            : 'Couldn\'t start: $e');
+            ? context.l10n.fitnessNeedsLocationAccessTo
+            : currentL10n.couldntStart('$e'));
       }
     } finally {
       if (mounted) setState(() => _starting = false);
@@ -139,14 +139,14 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(save ? 'Finish workout?' : 'Discard workout?'),
+        title: Text(save ? context.l10n.finishWorkout : context.l10n.discardWorkout),
         content: Text(save
-            ? 'It\'s saved to your journal.'
-            : 'This workout won\'t be saved.'),
+            ? context.l10n.itsSavedToYourJournal
+            : context.l10n.thisWorkoutWontBeSaved),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep going'),
+            child: Text(context.l10n.keepGoingX),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -154,7 +154,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
                 ? null
                 : FilledButton.styleFrom(
                     backgroundColor: Theme.of(ctx).colorScheme.error),
-            child: Text(save ? 'Finish' : 'Discard'),
+            child: Text(save ? context.l10n.finish : context.l10n.discard),
           ),
         ],
       ),
@@ -173,7 +173,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
     final vault = ref.read(openFitnessVaultProvider);
     if (vault == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vault locked, workout not saved.')),
+        SnackBar(content: Text(context.l10n.vaultLockedWorkoutNotSaved)),
       );
       Navigator.of(context).pop();
       return;
@@ -199,8 +199,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Workout saved: ${(result.distanceMeters / _unitMeters).toStringAsFixed(2)} '
-              '$_unitLabel in ${formatClock(result.elapsed)}',
+              context.l10n.workoutSavedDistance(ltr('${(result.distanceMeters / _unitMeters).toStringAsFixed(2)} $_unitLabel'), ltr(formatClock(result.elapsed))),
             ),
           ),
         );
@@ -208,7 +207,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
+          SnackBar(content: Text(context.l10n.failedToSave('$e'))),
         );
       }
     } finally {
@@ -238,10 +237,10 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0F172A),
         foregroundColor: Colors.white,
-        title: Text(tracking ? _activityType : 'GPS workout'),
+        title: Text(tracking ? activityLabel(_activityType) : context.l10n.gpsWorkout),
         actions: [
           IconButton(
-            tooltip: _voice ? 'Voice cues on' : 'Voice cues off',
+            tooltip: _voice ? context.l10n.voiceCuesOn : context.l10n.voiceCuesOff,
             icon: Icon(_voice ? Icons.volume_up : Icons.volume_off),
             onPressed: () async {
               setState(() => _voice = !_voice);
@@ -250,7 +249,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
           ),
           if (tracking)
             PopupMenuButton<String>(
-              tooltip: 'More',
+              tooltip: context.l10n.more,
               onSelected: (v) {
                 if (v == 'autopause') {
                   setState(() => _autoPause = !_autoPause);
@@ -263,11 +262,11 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
                 CheckedPopupMenuItem(
                   value: 'autopause',
                   checked: _autoPause,
-                  child: const Text('Auto-pause'),
+                  child: Text(context.l10n.autoPause),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'discard',
-                  child: Text('Discard workout'),
+                  child: Text(context.l10n.discardWorkoutX),
                 ),
               ],
             ),
@@ -283,7 +282,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
       child: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          const Text('Activity',
+          Text(context.l10n.activity,
               style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
           Wrap(
@@ -292,7 +291,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
             children: [
               for (final t in _activityTypes)
                 ChoiceChip(
-                  label: Text(t),
+                  label: Text(activityLabel(t)),
                   avatar: Icon(activityIcon(t), size: 18),
                   selected: _activityType == t,
                   onSelected: (_) => setState(() => _activityType = t),
@@ -304,8 +303,8 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
             contentPadding: EdgeInsets.zero,
             value: _autoPause,
             onChanged: (v) => setState(() => _autoPause = v),
-            title: const Text('Auto-pause', style: TextStyle(color: Colors.white)),
-            subtitle: const Text('Stops the clock when you stop moving', style: white70),
+            title: Text(context.l10n.autoPause, style: TextStyle(color: Colors.white)),
+            subtitle: Text(context.l10n.stopsTheClockWhenYou, style: white70),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -314,16 +313,14 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
               setState(() => _voice = v);
               await VoiceCoach.instance.setEnabled(v);
             },
-            title: const Text('Voice cues', style: TextStyle(color: Colors.white)),
+            title: Text(context.l10n.voiceCues, style: TextStyle(color: Colors.white)),
             subtitle: Text(
-                'Time and pace every ${_imperial ? 'mile' : 'kilometre'}',
+                _imperial ? context.l10n.cuesEveryMile : context.l10n.cuesEveryKm,
                 style: white70),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Your route stays encrypted in your vault. While you record, a '
-            'notification shows time and distance, with Pause and Lap '
-            'buttons on the lock screen.',
+          Text(
+            context.l10n.yourRouteStaysEncryptedIn,
             style: TextStyle(color: Colors.white54, fontSize: 12),
           ),
           if (_errorMessage != null) ...[
@@ -343,7 +340,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.play_arrow),
-            label: Text(_starting ? 'Finding GPS…' : 'Start'),
+            label: Text(_starting ? context.l10n.findingGps : context.l10n.start),
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF22C55E),
               foregroundColor: Colors.white,
@@ -379,7 +376,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
                 ),
                 if (s.isPaused)
                   Text(
-                    s.isAutoPaused ? 'AUTO-PAUSED' : 'PAUSED',
+                    s.isAutoPaused ? context.l10n.autoPaused : context.l10n.paused,
                     style: const TextStyle(
                       color: Colors.amber,
                       fontWeight: FontWeight.w800,
@@ -394,17 +391,17 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
                     _stat(_unitLabel,
                         (s.distanceMeters / _unitMeters).toStringAsFixed(2)),
                     _divider(),
-                    _stat('avg pace',
+                    _stat(context.l10n.avgPace,
                         pace > 0 ? _pace(pace) : '--'),
                     _divider(),
-                    _stat(s.laps.isEmpty ? 'splits' : 'laps',
+                    _stat(s.laps.isEmpty ? context.l10n.splits : context.l10n.laps,
                         '${s.laps.isEmpty ? s.splits.length : s.laps.length}'),
                   ],
                 ),
                 if (s.splits.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Text(
-                    'Last $_unitLabel: ${formatClock(s.splits.last.duration)}',
+                    context.l10n.lastSplit(_unitLabel, ltr(formatClock(s.splits.last.duration))),
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ],
@@ -418,7 +415,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
                         child: OutlinedButton.icon(
                           onPressed: _service.togglePause,
                           icon: Icon(s.isPaused ? Icons.play_arrow : Icons.pause),
-                          label: Text(s.isPaused ? 'Resume' : 'Pause'),
+                          label: Text(s.isPaused ? context.l10n.resume : context.l10n.pause),
                           style: _outlined,
                         ),
                       ),
@@ -432,7 +429,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
                                   _service.lap();
                                 },
                           icon: const Icon(Icons.flag_outlined),
-                          label: const Text('Lap'),
+                          label: Text(context.l10n.lap),
                           style: _outlined,
                         ),
                       ),
@@ -441,7 +438,7 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
                         child: FilledButton.icon(
                           onPressed: _stop,
                           icon: const Icon(Icons.stop),
-                          label: const Text('Finish'),
+                          label: Text(context.l10n.finish),
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFFF43F5E),
                             foregroundColor: Colors.white,
@@ -502,8 +499,8 @@ class _GpsWorkoutPageState extends ConsumerState<GpsWorkoutPage> {
       for (final p in snapshot.routePoints) LatLng(p.latitude, p.longitude),
     ];
     if (points.isEmpty) {
-      return const Center(
-        child: Text('Waiting for GPS…', style: TextStyle(color: Colors.white70)),
+      return Center(
+        child: Text(context.l10n.waitingForGps, style: TextStyle(color: Colors.white70)),
       );
     }
     return FlutterMap(

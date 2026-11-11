@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zerotrust_fitness/features/challenges/challenges_pages.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
@@ -19,6 +20,7 @@ import 'package:zerotrust_fitness/pages/privacy_dashboard_page.dart';
 import 'package:zerotrust_fitness/pages/reminders_page.dart';
 import 'package:zerotrust_fitness/pages/share_report_page.dart';
 import 'package:zerotrust_fitness/pages/templates_page.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// The shared Zero-Trust settings (account, security, auto-lock, appearance,
 /// sync, other apps), plus Fitness' own rows.
@@ -76,7 +78,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
       setState(() => _writeback = granted);
       if (!granted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('$healthName didn\'t allow Fitness to save workouts.')));
+            content: Text(context.l10n.healthDidntAllow(healthName))));
         return;
       }
       final vault = ref.read(openFitnessVaultProvider);
@@ -84,16 +86,15 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
       final copyPast = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Copy past workouts too?'),
-          content: Text('New workouts are saved to $healthName from now on. '
-              'Fitness can also copy the workouts already in your journal.'),
+          title: Text(context.l10n.copyPastWorkoutsToo),
+          content: Text(context.l10n.newWorkoutsSavedTo(healthName)),
           actions: [
             TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Only new ones')),
+                child: Text(context.l10n.onlyNewOnes)),
             FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Copy them')),
+                child: Text(context.l10n.copyThem)),
           ],
         ),
       );
@@ -101,7 +102,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
       final count = await HealthWriteback.instance.backfill(vault);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Copied $count workouts to $healthName.')));
+            content: Text(context.l10n.copiedWorkoutsTo(count, healthName))));
       }
     } finally {
       if (mounted) setState(() => _writebackBusy = false);
@@ -132,16 +133,16 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Units & Format',
+                Text(context.l10n.unitsFormat,
                     style: Theme.of(ctx).textTheme.titleMedium),
                 const SizedBox(height: 12),
-                Text('Distance',
+                Text(context.l10n.distance,
                     style: Theme.of(ctx)
                         .textTheme
                         .labelLarge
                         ?.copyWith(color: Theme.of(ctx).hintColor)),
                 RadioListTile<DistanceUnit>(
-                  title: const Text('Metric (km, kg)'),
+                  title: Text(context.l10n.metricKmKg),
                   value: DistanceUnit.metric,
                   groupValue: _distanceUnit,
                   onChanged: (v) async {
@@ -151,7 +152,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
                   },
                 ),
                 RadioListTile<DistanceUnit>(
-                  title: const Text('Imperial (mi, lbs)'),
+                  title: Text(context.l10n.imperialMiLbs),
                   value: DistanceUnit.imperial,
                   groupValue: _distanceUnit,
                   onChanged: (v) async {
@@ -161,7 +162,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
                   },
                 ),
                 const SizedBox(height: 8),
-                Text('Time format',
+                Text(context.l10n.timeFormat,
                     style: Theme.of(ctx)
                         .textTheme
                         .labelLarge
@@ -177,7 +178,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
                   },
                 ),
                 RadioListTile<TimeFormat>(
-                  title: const Text('12-hour (AM/PM)'),
+                  title: Text(context.l10n.s12HourAmPm),
                   value: TimeFormat.h12,
                   groupValue: _timeFormat,
                   onChanged: (v) async {
@@ -213,7 +214,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
               const Icon(Icons.emoji_events_outlined, size: 18),
               const SizedBox(width: 8),
               Text(
-                'Medals',
+                context.l10n.medals,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -228,7 +229,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  'View All (${_medals.length})',
+                  context.l10n.viewAllCount(_medals.length),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w600,
@@ -242,7 +243,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'No medals yet — keep moving!',
+                context.l10n.noMedalsYetKeepMoving,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.hintColor,
                 ),
@@ -272,22 +273,20 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete activity data?'),
-        content: const Text(
-          'Deletes your workouts, daily metrics and medals on every device '
-          'signed in to this account. Goals and templates stay. Health '
-          'Connect data on the phone is not touched. This can\'t be undone.',
+        title: Text(context.l10n.deleteActivityData),
+        content: Text(
+          context.l10n.deletesYourWorkoutsDailyMetrics,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
                 backgroundColor: Theme.of(ctx).colorScheme.error),
-            child: const Text('Delete'),
+            child: Text(context.l10n.delete),
           ),
         ],
       ),
@@ -299,7 +298,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
       widget.onDataDeleted();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Activity data deleted.')),
+          SnackBar(content: Text(context.l10n.activityDataDeleted)),
         );
       }
     } catch (e) {
@@ -326,32 +325,41 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
           child: _buildMedalsCard(context),
         ),
         ListTile(
+          leading: const Icon(Icons.emoji_events_outlined),
+          title: Text(context.l10n.challenges),
+          subtitle: Text(context.l10n.challengesSubtitle),
+          enabled: unlocked,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const ChallengesPage()),
+          ),
+        ),
+        ListTile(
           leading: const Icon(Icons.flag_outlined),
-          title: const Text('Goals'),
-          subtitle: const Text('Set daily and weekly targets'),
+          title: Text(context.l10n.goals),
+          subtitle: Text(context.l10n.setDailyAndWeeklyTargets),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const GoalsPage()),
           ),
         ),
         ListTile(
           leading: const Icon(Icons.notifications_outlined),
-          title: const Text('Reminders'),
-          subtitle: const Text('Weekly summary, movement, water, workouts & sleep'),
+          title: Text(context.l10n.reminders),
+          subtitle: Text(context.l10n.weeklySummaryMovementWaterWorkouts),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const RemindersPage()),
           ),
         ),
         ListTile(
           leading: const Icon(Icons.library_books_outlined),
-          title: const Text('Workout templates'),
-          subtitle: const Text('Create and reuse workout routines'),
+          title: Text(context.l10n.workoutTemplates),
+          subtitle: Text(context.l10n.createAndReuseWorkoutRoutines),
           enabled: unlocked,
           onTap: () => _push((v) => TemplatesPage(vault: v)),
         ),
         ListTile(
           leading: const Icon(Icons.health_and_safety_outlined),
-          title: const Text('Health permissions'),
-          subtitle: const Text('Choose what Fitness may read'),
+          title: Text(context.l10n.healthPermissions),
+          subtitle: Text(context.l10n.chooseWhatFitnessMayRead),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const PermissionsPage()),
           ),
@@ -359,20 +367,19 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
         SwitchListTile(
           secondary: const Icon(Icons.sync_alt),
           title: Text(Theme.of(context).platform == TargetPlatform.iOS
-              ? 'Save workouts to Apple Health'
-              : 'Save workouts to Health Connect'),
-          subtitle: const Text(
-              'Workouts you log or record here show up in your other apps'),
+              ? context.l10n.saveWorkoutsToAppleHealth
+              : context.l10n.saveWorkoutsToHealthConnect),
+          subtitle: Text(
+              context.l10n.workoutsYouLogOrRecord),
           value: _writeback,
           onChanged: _writebackBusy || !unlocked ? null : _setWriteback,
         ),
         if (Theme.of(context).platform == TargetPlatform.android)
           SwitchListTile(
             secondary: const Icon(Icons.watch_outlined),
-            title: const Text('Show on Wear OS watch'),
-            subtitle: const Text(
-                'Today\'s Heart Points, steps and water on your paired watch, '
-                'and add water from it. Sent only to the watch.'),
+            title: Text(context.l10n.showOnWearOsWatch),
+            subtitle: Text(
+                context.l10n.todaysHeartPointsStepsAnd),
             value: _watch,
             onChanged: (on) async {
               await WearCompanion.instance.setEnabled(on);
@@ -381,23 +388,23 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
           ),
         ListTile(
           leading: const Icon(Icons.straighten_outlined),
-          title: const Text('Units & format'),
+          title: Text(context.l10n.unitsFormatX),
           subtitle: Text(
-              '${_distanceUnit == DistanceUnit.metric ? 'Metric' : 'Imperial'} · '
+              '${_distanceUnit == DistanceUnit.metric ? context.l10n.unitMetric : context.l10n.unitImperial} · '
               '${_timeFormat == TimeFormat.h24 ? '24h' : '12h'}'),
           onTap: () => _showUnitsPicker(context),
         ),
         ListTile(
           leading: const Icon(Icons.map_outlined),
-          title: const Text('Offline maps'),
-          subtitle: const Text('Keep route maps on this phone'),
+          title: Text(context.l10n.offlineMaps),
+          subtitle: Text(context.l10n.keepRouteMapsOnThis),
           enabled: unlocked,
           onTap: () => _push((v) => OfflineMapsPage(vault: v)),
         ),
         ListTile(
           leading: const Icon(Icons.privacy_tip_outlined),
-          title: const Text('Privacy dashboard'),
-          subtitle: const Text('What your vault holds and how it is protected'),
+          title: Text(context.l10n.privacyDashboardX),
+          subtitle: Text(context.l10n.whatYourVaultHoldsAnd),
           enabled: unlocked,
           onTap: () => _push((v) => PrivacyDashboardPage(vault: v)),
         ),
@@ -405,37 +412,37 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
       backupSection: [
         ListTile(
           leading: const Icon(Icons.import_export_outlined),
-          title: const Text('Export & restore'),
-          subtitle: const Text('Back up to a file or bring a backup back in'),
+          title: Text(context.l10n.exportRestoreX),
+          subtitle: Text(context.l10n.backUpToAFile),
           enabled: unlocked,
           onTap: () => _push((v) => ExportRestorePage(vault: v)),
         ),
         ListTile(
           leading: const Icon(Icons.move_to_inbox_outlined),
-          title: const Text('Import from Google Fit'),
-          subtitle: const Text('Your history from a Google Takeout export'),
+          title: Text(context.l10n.importFromGoogleFit),
+          subtitle: Text(context.l10n.yourHistoryFromAGoogle),
           enabled: unlocked,
           onTap: () => _push((v) => GoogleFitImportPage(vault: v)),
         ),
         ListTile(
           leading: const Icon(Icons.route_outlined),
-          title: const Text('Import GPX routes'),
-          subtitle: const Text('From Strava, Komoot, Garmin and others'),
+          title: Text(context.l10n.importGpxRoutes),
+          subtitle: Text(context.l10n.fromStravaKomootGarminAnd),
           enabled: unlocked,
           onTap: () => _push((v) => GpxImportPage(vault: v)),
         ),
         ListTile(
           leading: const Icon(Icons.share_outlined),
-          title: const Text('Share report'),
-          subtitle: const Text('A scoped health report to share'),
+          title: Text(context.l10n.shareReport),
+          subtitle: Text(context.l10n.aScopedHealthReportTo),
           enabled: unlocked,
           onTap: () => _push((v) => ShareReportPage(vault: v)),
         ),
         ListTile(
           leading: Icon(Icons.delete_outline,
               color: Theme.of(context).colorScheme.error),
-          title: const Text('Delete activity data'),
-          subtitle: const Text('Workouts, metrics and medals, on every device'),
+          title: Text(context.l10n.deleteActivityDataX),
+          subtitle: Text(context.l10n.workoutsMetricsAndMedalsOn),
           enabled: unlocked && !_deleting,
           onTap: _deleteActivityData,
         ),

@@ -5,6 +5,7 @@ import 'package:zerotrust_fitness/features/achievements/domain/achievement_servi
 import 'package:zerotrust_fitness/features/achievements/presentation/achievement_detail_bottom_sheet.dart';
 import 'package:zerotrust_fitness/features/achievements/presentation/medal_card.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 enum _AchievementFilter { all, unlocked, locked }
 
@@ -59,11 +60,11 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
   }
 
   String _categoryLabel(AchievementCategory cat) => switch (cat) {
-        AchievementCategory.fitness => 'Fitness',
-        AchievementCategory.momentum => 'Momentum',
-        AchievementCategory.sleep => 'Sleep',
-        AchievementCategory.health => 'Health',
-        AchievementCategory.milestones => 'Milestones',
+        AchievementCategory.fitness => context.l10n.fitness,
+        AchievementCategory.momentum => context.l10n.momentum,
+        AchievementCategory.sleep => context.l10n.sleep,
+        AchievementCategory.health => context.l10n.health,
+        AchievementCategory.milestones => context.l10n.milestones,
       };
 
   @override
@@ -73,10 +74,10 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Achievements'),
+        title: Text(context.l10n.achievements),
         actions: [
           Container(
-            margin: const EdgeInsets.only(right: 16),
+            margin: const EdgeInsetsDirectional.only(end: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: theme.colorScheme.primary.withValues(alpha: 0.15),
@@ -108,12 +109,12 @@ class _AchievementsPageState extends ConsumerState<AchievementsPage> {
                     child: Row(
                       children: _AchievementFilter.values.map((f) {
                         final label = switch (f) {
-                          _AchievementFilter.all => 'All',
-                          _AchievementFilter.unlocked => 'Unlocked',
-                          _AchievementFilter.locked => 'Locked',
+                          _AchievementFilter.all => context.l10n.all,
+                          _AchievementFilter.unlocked => context.l10n.unlocked,
+                          _AchievementFilter.locked => context.l10n.locked,
                         };
                         return Padding(
-                          padding: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsetsDirectional.only(end: 8),
                           child: FilterChip(
                             label: Text(label),
                             selected: _filter == f,

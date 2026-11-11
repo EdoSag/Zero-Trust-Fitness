@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tile_heart_points">נקודות לב</string>
+    <string name="tile_water">מים</string>
+    <string name="not_connected">יש להפעיל את \"הצגה בשעון Wear OS\" ב-ZT Fitness בטלפון.</string>
+    <string name="stale">יש לפתוח את ZT Fitness בטלפון כדי לעדכן.</string>
+    <string name="tile_heart_pts">נק׳ לב</string>
+    <string name="tile_turn_on">יש להפעיל באפליקציה בטלפון</string>
+    <string name="tile_not_updated">לא עודכן היום</string>
+    <string name="steps_count">%1$,d צעדים</string>
+    <string name="of_amount">מתוך %1$s</string>
+    <string name="add_water_amount">%1$s מים</string>
+</resources>

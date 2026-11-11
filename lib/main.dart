@@ -7,6 +7,9 @@ import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/app/app_gate.dart';
 import 'package:zerotrust_fitness/core/services/reminder_service.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
+import 'package:zerotrust_fitness/features/challenges/challenges_data.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
+import 'package:zerotrust_fitness/widget_service.dart';
 
 /// Store name "Zero-Trust Fitness"; on the phone it is "ZT Fitness".
 const fitnessAppConfig =
@@ -26,10 +29,17 @@ Future<void> main() async {
   await HomeWidget.setAppGroupId('group.zerotrustfitness');
   await ReminderService().initialize();
   await UnitsFormatter().load();
+  // English or Hebrew, as picked in Settings, from the first frame.
+  await ZtLanguageController.preload();
 
   runApp(
     ProviderScope(
-      overrides: [ztAppConfigProvider.overrideWithValue(fitnessAppConfig)],
+      overrides: [
+        ztAppConfigProvider.overrideWithValue(fitnessAppConfig),
+        // Challenges (F11): only organisers change a challenge, and only
+        // you can post your own progress.
+        ztSpacePolicyProvider.overrideWithValue(fitnessSpacePolicy),
+      ],
       child: const ZeroTrustFitnessApp(),
     ),
   );
@@ -42,16 +52,23 @@ class ZeroTrustFitnessApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ZtThemeBuilder(
+    return Consumer(
+      builder: (context, ref, _) => ZtThemeBuilder(
       builder: (context, theme, darkTheme, mode) => MaterialApp(
         title: 'ZT Fitness', // task switcher label; store name stays Zero-Trust Fitness
         debugShowCheckedModeBanner: false,
         theme: theme,
         darkTheme: darkTheme,
         themeMode: mode,
+        // English (default) or Hebrew, from Settings → Appearance → Language.
+        locale: ref.watch(ztLanguageProvider),
+        supportedLocales: ZtLanguages.supported,
+        localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
         home: home,
         builder: (context, child) =>
-            AutoLockActivity(child: child ?? const SizedBox.shrink()),
+            AutoLockActivity(
+                child: WidgetTextSync(child: child ?? const SizedBox.shrink())),
+      ),
       ),
     );
   }

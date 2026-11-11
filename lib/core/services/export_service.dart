@@ -5,6 +5,7 @@ import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart' show ShareParams, SharePlus, XFile;
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class ExportPreview {
   const ExportPreview({
@@ -226,9 +227,8 @@ class ExportService {
     }
 
     final preview = parsePreview(jsonContent);
-    return 'Restored ${preview?.workoutCount ?? 0} workouts, '
-        '${preview?.metricDayCount ?? 0} days of metrics, '
-        '${preview?.goalCount ?? 0} goals.';
+    return currentL10n.restoredSummary(preview?.workoutCount ?? 0,
+        preview?.metricDayCount ?? 0, preview?.goalCount ?? 0);
   }
 
   // ---------------------------------------------------------------------------

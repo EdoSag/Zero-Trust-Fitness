@@ -5,8 +5,10 @@ import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/app/auth_providers.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
 import 'package:zerotrust_fitness/components/bottom_nav_shell.dart';
+import 'package:zerotrust_fitness/features/challenges/challenge_links.dart';
 import 'package:zerotrust_fitness/pages/home_page.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// Whether the welcome page was shown on this install.
 final welcomeSeenProvider =
@@ -209,11 +211,11 @@ class _FitnessHome extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Couldn\'t open your fitness data on this device.'),
+                Text(context.l10n.couldntOpenYourFitnessData),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: () => ref.invalidate(fitnessVaultProvider),
-                  child: const Text('Try again'),
+                  child: Text(context.l10n.tryAgain),
                 ),
               ],
             ),
@@ -225,7 +227,9 @@ class _FitnessHome extends ConsumerWidget {
     // Data from earlier versions comes over in the background; the
     // dashboard shows what's there now and refreshes as it arrives.
     final importDone = ref.watch(legacyImportProvider.select((s) => s.done));
-    return BottomNavShell(legacyImportPending: !importDone);
+    return ChallengeLinks(
+      child: BottomNavShell(legacyImportPending: !importDone),
+    );
   }
 }
 
@@ -244,7 +248,7 @@ class _Opening extends StatelessWidget {
             const CircularProgressIndicator(),
             const SizedBox(height: ZtSpacing.md),
             Text(
-              'Opening your fitness data…',
+              context.l10n.openingYourFitnessData,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],

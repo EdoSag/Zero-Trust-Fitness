@@ -31,6 +31,7 @@
         <TextView
             style="@style/ZtWidget.Caption"
             android:layout_width="wrap_content"
+            android:id="@+id/widget_today"
             android:layout_height="wrap_content"
             android:text="@string/widget_today" />
     </LinearLayout>

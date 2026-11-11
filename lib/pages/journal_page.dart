@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:zerotrust_fitness/components/empty_state_widget.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
@@ -6,6 +7,7 @@ import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/maps/route_map.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 enum JournalFilter { all, workouts, measurements }
 
@@ -47,7 +49,7 @@ class WorkoutItem extends JournalItem {
       };
 
   String get title {
-    final raw = (data['type'] ?? 'Activity').toString();
+    final raw = (data['type'] ?? currentL10n.activity).toString();
     if (!raw.startsWith('HealthDataType.')) return raw;
     return raw
         .replaceFirst('HealthDataType.', '')
@@ -147,7 +149,8 @@ class _JournalPageState extends State<JournalPage> {
         ? items
         : items.where((i) {
             final title = switch (i) {
-              WorkoutItem w => w.title,
+              // The stored name and the one shown in the app's language.
+              WorkoutItem w => '${w.title} ${activityLabel(w.title)}',
               MeasurementItem m => m.title,
             };
             return title.toLowerCase().contains(_query);
@@ -167,20 +170,15 @@ class _JournalPageState extends State<JournalPage> {
 
   String _dayLabel(String dayKey) {
     final d = DateTime.tryParse(dayKey);
-    if (d == null) return 'Unknown date';
+    if (d == null) return context.l10n.unknownDate;
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final day = DateTime(d.year, d.month, d.day);
-    if (day == today) return 'Today';
-    if (day == today.subtract(const Duration(days: 1))) return 'Yesterday';
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final label =
-        '${weekdays[day.weekday - 1]}, ${months[day.month - 1]} ${day.day}';
-    return day.year == today.year ? label : '$label, ${day.year}';
+    if (day == today) return context.l10n.today;
+    if (day == today.subtract(const Duration(days: 1))) return context.l10n.yesterday;
+    return day.year == today.year
+        ? DateFormat.MMMEd().format(day)
+        : DateFormat.yMMMEd().format(day);
   }
 
   @override
@@ -190,11 +188,11 @@ class _JournalPageState extends State<JournalPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Journal'),
+        title: Text(context.l10n.journal),
         actions: [
           if (widget.onImportGpx != null && widget.canEdit)
             IconButton(
-              tooltip: 'Import GPX routes',
+              tooltip: context.l10n.importGpxRoutes,
               icon: const Icon(Icons.route_outlined),
               onPressed: widget.onImportGpx,
             ),
@@ -215,14 +213,13 @@ class _JournalPageState extends State<JournalPage> {
                       child: EmptyStateWidget(
                         icon: Icons.history,
                         title: _query.isEmpty
-                            ? 'Nothing logged yet'
-                            : 'Nothing matches "$_query"',
-                        subtitle: 'Workouts and measurements you log, '
-                            'record or import show up here.',
+                            ? context.l10n.nothingLoggedYet
+                            : context.l10n.nothingMatches(_query),
+                        subtitle: context.l10n.workoutsAndMeasurementsYouLog,
                         action: TextButton.icon(
                           onPressed: widget.onLog,
                           icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Log a workout or measurement'),
+                          label: Text(context.l10n.logAWorkoutOrMeasurement),
                         ),
                       ),
                     )
@@ -241,7 +238,7 @@ class _JournalPageState extends State<JournalPage> {
                               if (header)
                                 Padding(
                                   padding:
-                                      const EdgeInsets.fromLTRB(4, 16, 0, 6),
+                                      const EdgeInsetsDirectional.fromSTEB(4, 16, 0, 6),
                                   child: Text(
                                     _dayLabel(item.dayKey),
                                     style: theme.textTheme.labelMedium
@@ -269,7 +266,7 @@ class _JournalPageState extends State<JournalPage> {
         // Today and Journal are both kept alive in the tab stack.
         heroTag: 'fab-journal',
         onPressed: widget.onLog,
-        tooltip: 'Log a workout or measurement',
+        tooltip: context.l10n.logAWorkoutOrMeasurement,
         child: const Icon(Icons.add),
       ),
     );
@@ -280,11 +277,11 @@ class _JournalPageState extends State<JournalPage> {
         child: TextField(
           controller: _searchController,
           decoration: InputDecoration(
-            hintText: 'Search the journal…',
+            hintText: context.l10n.searchTheJournal,
             prefixIcon: const Icon(Icons.search, size: 20),
             suffixIcon: _query.isNotEmpty
                 ? IconButton(
-                    tooltip: 'Clear',
+                    tooltip: context.l10n.clear,
                     icon: const Icon(Icons.clear, size: 18),
                     onPressed: _searchController.clear,
                   )
@@ -303,12 +300,12 @@ class _JournalPageState extends State<JournalPage> {
           children: [
             for (final f in JournalFilter.values)
               Padding(
-                padding: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsetsDirectional.only(end: 8),
                 child: FilterChip(
                   label: Text(switch (f) {
-                    JournalFilter.all => 'All',
-                    JournalFilter.workouts => 'Workouts',
-                    JournalFilter.measurements => 'Measurements',
+                    JournalFilter.all => context.l10n.all,
+                    JournalFilter.workouts => context.l10n.workouts,
+                    JournalFilter.measurements => context.l10n.measurements,
                   }),
                   selected: _filter == f,
                   onSelected: (_) => setState(() => _filter = f),
@@ -326,13 +323,13 @@ class _JournalPageState extends State<JournalPage> {
     final units = UnitsFormatter();
     final parts = <String>[];
     final duration = w.data['duration'];
-    if (duration is num) parts.add('${duration.toInt()} min');
+    if (duration is num) parts.add(context.l10n.nMin(duration.toInt()));
     final distance = w.data['distance_m'];
     if (distance is num && distance > 0) {
       parts.add(units.formatDistance(distance / 1000));
     }
     final points = FitnessVault.workoutHeartPoints(w.data);
-    if (points > 0) parts.add('$points pts');
+    if (points > 0) parts.add(context.l10n.nPts(points));
     final value = w.data['value'];
     if (duration == null && value != null) parts.add('$value');
     if (w.at.year > 1970) parts.add(units.formatTime(w.at));
@@ -347,7 +344,12 @@ class _JournalPageState extends State<JournalPage> {
           border: Border.all(color: color.withValues(alpha: 0.5)),
         ),
         child: Text(
-          label,
+          switch (label) {
+            'MANUAL' => context.l10n.srcManual,
+            'HEALTH' => context.l10n.srcHealth,
+            'GOOGLE FIT' => context.l10n.srcGoogleFit,
+            _ => label,
+          },
           style: TextStyle(
               color: color, fontSize: 10, fontWeight: FontWeight.bold),
         ),
@@ -370,7 +372,7 @@ class _JournalPageState extends State<JournalPage> {
           backgroundColor: theme.colorScheme.secondary.withValues(alpha: 0.1),
           child: Icon(activityIcon(w.title), color: theme.colorScheme.secondary),
         ),
-        title: Text(w.title),
+        title: Text(activityLabel(w.title)),
         subtitle: Text(_workoutSubtitle(w)),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -378,7 +380,7 @@ class _JournalPageState extends State<JournalPage> {
             _sourceBadge(label, _badgeColor(label)),
             if (widget.canEdit)
               PopupMenuButton<_Action>(
-                tooltip: 'More',
+                tooltip: context.l10n.more,
                 icon: const Icon(Icons.more_vert, size: 18),
                 onSelected: (a) => switch (a) {
                   _Action.edit => widget.onEditWorkout(w.id, w.data),
@@ -405,7 +407,7 @@ class _JournalPageState extends State<JournalPage> {
           ),
           const SizedBox(width: 8),
           Text(
-            a == _Action.edit ? 'Edit' : 'Delete',
+            a == _Action.edit ? context.l10n.edit : context.l10n.delete,
             style: a == _Action.delete
                 ? const TextStyle(color: Colors.redAccent)
                 : null,
@@ -422,13 +424,13 @@ class _JournalPageState extends State<JournalPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(ctx).colorScheme.error),
-              child: const Text('Delete'),
+              child: Text(context.l10n.delete),
             ),
           ],
         ),
@@ -438,11 +440,10 @@ class _JournalPageState extends State<JournalPage> {
   Future<void> _confirmDeleteWorkout(WorkoutItem w) async {
     final points = FitnessVault.workoutHeartPoints(w.data);
     final ok = await _confirm(
-      'Delete this ${w.title.toLowerCase()}?',
+      context.l10n.deleteThisItem(activityLabel(w.title).toLowerCase()),
       points > 0
-          ? 'Its $points Heart Points come off that day too. '
-              'This deletes it on all your devices.'
-          : 'This deletes it on all your devices.',
+          ? context.l10n.itsPointsComeOff(points)
+          : context.l10n.thisDeletesItOnAll,
     );
     if (ok) await widget.onDeleteWorkout(w.id);
   }
@@ -485,25 +486,25 @@ class _JournalPageState extends State<JournalPage> {
               runSpacing: 12,
               children: [
                 if (w.data['duration'] case final num d)
-                  _stat(ctx, 'Duration', '${d.toInt()} min'),
+                  _stat(ctx, context.l10n.duration, context.l10n.nMin(d.toInt())),
                 if (distance != null && distance > 0)
-                  _stat(ctx, 'Distance', units.formatDistance(distance / 1000)),
+                  _stat(ctx, context.l10n.distance, units.formatDistance(distance / 1000)),
                 if (pace != null && pace > 0 && pace.isFinite)
-                  _stat(ctx, 'Avg pace', units.formatPace(pace)),
+                  _stat(ctx, context.l10n.avgPaceX, units.formatPace(pace)),
                 if (w.data['intensity'] case final num i)
-                  _stat(ctx, 'Intensity', '${i.toInt()}/10'),
-                _stat(ctx, 'Heart Points',
+                  _stat(ctx, context.l10n.intensity, '${i.toInt()}/10'),
+                _stat(ctx, context.l10n.heartPoints,
                     '${FitnessVault.workoutHeartPoints(w.data)}'),
               ],
             ),
             if (splits.isNotEmpty) ...[
               const SizedBox(height: 20),
-              Text('Splits', style: Theme.of(ctx).textTheme.titleMedium),
+              Text(context.l10n.splits, style: Theme.of(ctx).textTheme.titleMedium),
               _lapTable(ctx, splits, auto: true),
             ],
             if (laps.isNotEmpty) ...[
               const SizedBox(height: 20),
-              Text('Laps', style: Theme.of(ctx).textTheme.titleMedium),
+              Text(context.l10n.laps, style: Theme.of(ctx).textTheme.titleMedium),
               _lapTable(ctx, laps, auto: false),
             ],
             if (hasRoute && widget.onExportGpx != null) ...[
@@ -511,7 +512,7 @@ class _JournalPageState extends State<JournalPage> {
               OutlinedButton.icon(
                 onPressed: () => widget.onExportGpx!(w.data),
                 icon: const Icon(Icons.ios_share),
-                label: const Text('Export route (GPX)'),
+                label: Text(context.l10n.exportRouteGpx),
               ),
             ],
             if (widget.canEdit) ...[
@@ -523,7 +524,7 @@ class _JournalPageState extends State<JournalPage> {
                       child: OutlinedButton.icon(
                         onPressed: () => Navigator.pop(ctx, _Action.edit),
                         icon: const Icon(Icons.edit_outlined),
-                        label: const Text('Edit'),
+                        label: Text(context.l10n.edit),
                       ),
                     ),
                   if (w.isEditable) const SizedBox(width: 12),
@@ -533,7 +534,7 @@ class _JournalPageState extends State<JournalPage> {
                       style: OutlinedButton.styleFrom(
                           foregroundColor: Theme.of(ctx).colorScheme.error),
                       icon: const Icon(Icons.delete_outline),
-                      label: const Text('Delete'),
+                      label: Text(context.l10n.delete),
                     ),
                   ),
                 ],
@@ -582,7 +583,7 @@ class _JournalPageState extends State<JournalPage> {
           ListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
-            leading: Text(auto ? '${lap['index'] ?? i + 1}' : 'Lap ${i + 1}',
+            leading: Text(auto ? '${lap['index'] ?? i + 1}' : context.l10n.lapN(i + 1),
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             title: Text(formatClock(
                 Duration(seconds: (lap['seconds'] as num?)?.toInt() ?? 0))),
@@ -623,15 +624,15 @@ class _JournalPageState extends State<JournalPage> {
             _sourceBadge('MANUAL', Colors.blue),
             if (widget.canEdit)
               PopupMenuButton<_Action>(
-                tooltip: 'More',
+                tooltip: context.l10n.more,
                 icon: const Icon(Icons.more_vert, size: 18),
                 onSelected: (a) async {
                   switch (a) {
                     case _Action.edit:
                       await _editMeasurement(m);
                     case _Action.delete:
-                      if (await _confirm('Delete this ${m.title.toLowerCase()} entry?',
-                          'Values from Health Connect for that day stay.')) {
+                      if (await _confirm(context.l10n.deleteThisEntry(m.title.toLowerCase()),
+                          context.l10n.valuesFromHealthConnectFor)) {
                         await widget.onDeleteMeasurement(m.entry);
                       }
                   }
@@ -651,7 +652,7 @@ class _JournalPageState extends State<JournalPage> {
     final value = await showDialog<num>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Edit ${m.title.toLowerCase()}'),
+        title: Text(context.l10n.editItem(m.title.toLowerCase())),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -667,14 +668,14 @@ class _JournalPageState extends State<JournalPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               final v = num.tryParse(controller.text.trim());
               if (v != null && v >= 0) Navigator.pop(ctx, v);
             },
-            child: const Text('Save'),
+            child: Text(context.l10n.save),
           ),
         ],
       ),

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">נקודות הלב והצעדים של היום. אפשר לשנות את הגודל מטבעת קטנה ועד סיכום מלא.</string>
+    <string name="widget_heart_points">נק׳ לב</string>
+    <string name="widget_steps">צעדים</string>
+    <string name="widget_locked">יש לפתוח את ZT Fitness כדי לראות את היום</string>
+    <string name="widget_locked_short">נעול</string>
+    <string name="widget_today">היום</string>
+    <string name="widget_app_name">ZT Fitness</string>
+    <string name="widget_hp_goal">מתוך %1$s נק׳ לב</string>
+    <string name="widget_steps_goal">מתוך %1$s צעדים</string>
+    <string name="widget_momentum">מומנטום %1$s</string>
+    <string name="widget_summary">%1$s מתוך %2$s נקודות לב, %3$s מתוך %4$s צעדים</string>
+</resources>

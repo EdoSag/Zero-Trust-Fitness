@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum DistanceUnit { metric, imperial }
@@ -119,7 +120,7 @@ class UnitsFormatter {
         : local.hour;
     final m = local.minute.toString().padLeft(2, '0');
     final suffix = _timeFormat == TimeFormat.h12
-        ? (local.hour < 12 ? ' AM' : ' PM')
+        ? ' ${DateFormat('a').format(local)}'
         : '';
     return '$h:$m$suffix';
   }

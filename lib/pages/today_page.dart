@@ -12,11 +12,13 @@ import 'package:zerotrust_fitness/components/momentum_card.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
 import 'package:zerotrust_fitness/core/services/insights_service.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
+import 'package:zerotrust_fitness/features/challenges/challenges_pages.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/pages/all_metrics_page.dart';
 import 'package:zerotrust_fitness/pages/metric_detail_page.dart';
 import 'package:zerotrust_fitness/pages/water_food_page.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
+import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 class TodayPage extends StatelessWidget {
   const TodayPage({
@@ -71,12 +73,12 @@ class TodayPage extends StatelessWidget {
     final syncing = syncStatus.isSyncing;
     final failed = syncStatus.error != null;
     final syncLabel = syncing
-        ? 'Syncing…'
+        ? context.l10n.syncing
         : failed
-            ? 'Not synced'
+            ? context.l10n.notSynced
             : syncStatus.lastSyncedAt != null
-                ? 'Synced'
-                : 'Sync pending';
+                ? context.l10n.synced
+                : context.l10n.syncPending;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -89,11 +91,11 @@ class TodayPage extends StatelessWidget {
         children: [
           StatusIndicator(
             icon: isUnlocked ? Icons.lock_open_outlined : Icons.lock_outline,
-            label: isUnlocked ? 'Vault unlocked' : 'Vault locked',
+            label: isUnlocked ? context.l10n.vaultUnlocked : context.l10n.vaultLocked,
             color: isUnlocked ? Colors.green : theme.colorScheme.error,
             semanticsLabel: isUnlocked
-                ? 'Vault is unlocked and data is accessible'
-                : 'Vault is locked — tap Unlock to access data',
+                ? context.l10n.vaultIsUnlockedAndData
+                : context.l10n.vaultIsLockedTapUnlock,
           ),
           const SizedBox(width: 16),
           StatusIndicator(
@@ -113,9 +115,9 @@ class TodayPage extends StatelessWidget {
             const SizedBox(width: 16),
             StatusIndicator(
               icon: Icons.gps_fixed,
-              label: 'GPS active',
+              label: context.l10n.gpsActive,
               color: Colors.green,
-              semanticsLabel: 'GPS tracking is active',
+              semanticsLabel: context.l10n.gpsTrackingIsActive,
             ),
           ],
         ],
@@ -131,7 +133,7 @@ class TodayPage extends StatelessWidget {
       children: [
         Expanded(
           child: StatCard(
-            title: 'Steps Today',
+            title: currentL10n.stepsToday,
             value: steps,
             icon: Icons.directions_walk,
             gradientColors: const [Color(0xFF3B82F6), Color(0xFF6366F1)],
@@ -140,7 +142,7 @@ class TodayPage extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: StatCard(
-            title: 'Heart Today',
+            title: currentL10n.heartToday,
             value: points,
             icon: Icons.favorite,
             gradientColors: const [Color(0xFFF43F5E), Color(0xFFFB7185)],
@@ -162,7 +164,7 @@ class TodayPage extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Key Metrics', style: theme.textTheme.titleMedium),
+            Text(context.l10n.keyMetrics, style: theme.textTheme.titleMedium),
             TextButton(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
@@ -173,7 +175,7 @@ class TodayPage extends StatelessWidget {
                   ),
                 ),
               ),
-              child: const Text('More metrics'),
+              child: Text(context.l10n.moreMetrics),
             ),
           ],
         ),
@@ -246,7 +248,7 @@ class TodayPage extends StatelessWidget {
             child: InkWell(
               onTap: sk == null ? null : () => open(0),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 4, 14),
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 4, 14),
                 child: Row(
                   children: [
                     SizedBox(
@@ -270,13 +272,13 @@ class TodayPage extends StatelessWidget {
                           Text(units.formatWater(water),
                               style: theme.textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.w700)),
-                          Text('Water',
+                          Text(context.l10n.water,
                               style: TextStyle(color: theme.hintColor)),
                         ],
                       ),
                     ),
                     IconButton.filledTonal(
-                      tooltip: 'Add ${glass.label.substring(1)} of water',
+                      tooltip: context.l10n.addWaterAmount(glass.label.substring(1)),
                       icon: const Icon(Icons.add),
                       onPressed: sk == null
                           ? null
@@ -310,7 +312,7 @@ class TodayPage extends StatelessWidget {
                           Text('$entries',
                               style: theme.textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.w700)),
-                          Text(entries == 1 ? 'Food entry' : 'Food entries',
+                          Text(entries == 1 ? context.l10n.foodEntry : context.l10n.foodEntries,
                               style: TextStyle(color: theme.hintColor)),
                         ],
                       ),
@@ -360,7 +362,7 @@ class TodayPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isActive ? 'GPS Workout Active' : 'Start GPS Workout',
+                    isActive ? currentL10n.gpsWorkoutActive : currentL10n.startGpsWorkout,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -371,7 +373,7 @@ class TodayPage extends StatelessWidget {
                   Text(
                     isActive
                         ? '${(gpsSnapshot.distanceMeters / 1000).toStringAsFixed(2)} km · ${_formatElapsed(gpsSnapshot.elapsed)}'
-                        : 'Track route, pace & distance',
+                        : currentL10n.trackRoutePaceDistance,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 12,
@@ -400,12 +402,12 @@ class TodayPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Permissions Center',
+            tooltip: context.l10n.permissionsCenter,
             onPressed: onOpenPermissions,
           ),
           IconButton(
             icon: const Icon(Icons.lock_outline_rounded),
-            tooltip: 'Lock vault',
+            tooltip: context.l10n.lockVault,
             onPressed: () async {
               HapticFeedback.heavyImpact();
               onLock();
@@ -443,6 +445,8 @@ class TodayPage extends StatelessWidget {
                       MomentumCard(momentum: momentum!),
                       const SizedBox(height: 16),
                     ],
+                    // Running challenges with friends; nothing when none.
+                    if (vault != null) const TodayChallengesCard(),
                     _buildPriorityMetrics(context),
                     const SizedBox(height: 16),
                     _buildWaterFood(context),
@@ -456,7 +460,7 @@ class TodayPage extends StatelessWidget {
         // Today and Activities are both kept alive in the tab stack.
         heroTag: 'fab-today',
         onPressed: onManualEntry,
-        tooltip: 'Log a workout or health metric',
+        tooltip: context.l10n.logAWorkoutOrHealth,
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),

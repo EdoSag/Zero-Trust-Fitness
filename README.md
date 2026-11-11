@@ -57,6 +57,9 @@ All sensitive records (Workouts, Vitals, GPS) follow this flow:
 - [x] Multi-device sync using the user's private key.
 - [x] Self-hosting guide for Docker/Nextcloud ([docs/self-hosting.md](docs/self-hosting.md)).
 
+### Phase 4: Together
+- [x] **Challenges with friends** (Settings → Challenges, and on Today while one runs): race on steps or Heart Points, by highest total or by days that hit a daily target, for 3 to 92 days. Invite by link or QR code and confirm with a matching code. Each challenge is a Zero-Trust shared space: friends see only your total for the challenge's measure and days, encrypted for the members; the server can't read it, and nobody can post numbers in your name.
+
 ---
 
 ## 🤝 Contributing
@@ -75,7 +78,7 @@ We are actively looking for contributors! Whether you are a security researcher,
 
 ## License
 
-Copyright (C) 2026 EdoSag (https://zerotrust.bz)
+Copyright (C) 2026 Edo Sagron (https://zerotrust.bz)
 
 Zero-Trust is open source under the [GNU Affero General Public License v3.0](LICENSE)
 (AGPL-3.0-only), the same licence Signal uses.

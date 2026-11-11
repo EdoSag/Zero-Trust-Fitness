@@ -1,7 +1,7 @@
 name: zerotrust_fitness
 description: Zero-Trust Fitness, end-to-end encrypted activity and health tracking.
 publish_to: none
-version: 0.7.2+15
+version: 0.8.0+16
 environment:
   sdk: ^3.8.0
 
@@ -16,13 +16,19 @@ hooks:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   # Shared account, keys, vault lock, sync, settings and look for every
   # Zero-Trust app.
   zero_trust_core:
     git:
       url: https://github.com/EdoSag/Zero-Trust-Core.git
       path: packages/zero_trust_core
-      ref: a6f8e52391fd8be806f7b38abb97a0f17d6035de # v0.8.1 (Core PR #15; switch to the tag once it is pushed)
+      # Core Dev with the shared spaces trust chain fix (Core PR #35) and
+      # invite links per app (Core PR #37). Every app that shares must be on
+      # this commit or later: older ones cannot read the new member records.
+      # Switch to the release tag once one is pushed.
+      ref: cb397d13efd868e34a34d465251a7f705b49f9e1
   flutter_riverpod: ^3.5.0
   supabase_flutter: ^2.10.0
   sqlite3: ^3.7.0
@@ -49,11 +55,16 @@ dependencies:
   # offline map tile cache (F8).
   xml: ^7.1.0
   http: ^1.2.0
+  # Challenge invites (F11): show a QR code, and scan one with the camera.
+  # The same packages as ZT Meds.
+  qr_flutter: ^4.1.0
+  qr_code_scanner_plus: ">=2.1.2 <2.2.0"
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: 5.0.0
 flutter:
+  generate: true
   uses-material-design: true
   assets:
     - assets/
