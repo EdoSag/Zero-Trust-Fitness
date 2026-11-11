@@ -2202,4 +2202,342 @@ class AppL10nEn extends AppL10n {
   @override
   String get widgetSummary =>
       '%1\$s of %2\$s Heart Points, %3\$s of %4\$s steps';
+
+  @override
+  String get challenges => 'Challenges';
+
+  @override
+  String get challengesSubtitle => 'Compete with friends, end-to-end encrypted';
+
+  @override
+  String get challengeSyncNow => 'Sync now';
+
+  @override
+  String get challengeNeedsInternet =>
+      'Couldn\'t reach the server. Check your connection and try again.';
+
+  @override
+  String challengeJoinRequest(String name, String title) {
+    return '$name wants to join $title';
+  }
+
+  @override
+  String get challengeJoinRequestHint => 'Tap to compare codes and let them in';
+
+  @override
+  String get challengeActive => 'Running now';
+
+  @override
+  String get challengeUpcoming => 'Starting soon';
+
+  @override
+  String get challengeFinished => 'Finished';
+
+  @override
+  String get challengeCreate => 'Start a challenge';
+
+  @override
+  String get challengeJoin => 'Join with an invite';
+
+  @override
+  String get challengeEmptyTitle => 'Challenge your friends';
+
+  @override
+  String get challengeEmptyBody =>
+      'Race friends on steps or Heart Points for a few days or a month, and see who\'s ahead.';
+
+  @override
+  String get challengePrivacy =>
+      'Friends see only one number per challenge: your total. It\'s encrypted for the people in the challenge, and the server can\'t read it.';
+
+  @override
+  String get challengeWaitingTitle => 'Waiting for the organiser';
+
+  @override
+  String get challengeWaitingBody =>
+      'You\'ll see the challenge once they confirm your code.';
+
+  @override
+  String get challengeYourCode => 'Your code:';
+
+  @override
+  String challengeGoalMostSummary(String metric) {
+    return 'Most $metric';
+  }
+
+  @override
+  String challengeGoalDaysSummary(String target, String metric) {
+    return 'Days with $target $metric';
+  }
+
+  @override
+  String challengeStarts(String date) {
+    return 'Starts $date';
+  }
+
+  @override
+  String challengeDaysLeft(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days left',
+      one: 'Last day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String challengeEnded(String date) {
+    return 'Ended $date';
+  }
+
+  @override
+  String challengeYourRank(int rank, int count) {
+    return '#$rank of $count';
+  }
+
+  @override
+  String get challengeGone => 'You\'re no longer in this challenge.';
+
+  @override
+  String get challengeInvite => 'Invite a friend';
+
+  @override
+  String get challengeEdit => 'Edit challenge';
+
+  @override
+  String get challengeLeave => 'Leave';
+
+  @override
+  String get challengeDelete => 'Delete';
+
+  @override
+  String challengeDates(String start, String end) {
+    return '$start – $end';
+  }
+
+  @override
+  String get challengeLeaderboard => 'Leaderboard';
+
+  @override
+  String challengeDaysUnit(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String challengeTotalDetail(String total, String metric) {
+    return '$total $metric in total';
+  }
+
+  @override
+  String get challengeInviteHint => 'Invite friends to see them here.';
+
+  @override
+  String challengeWhatIsShared(String metric) {
+    return 'Shared with this challenge: only your $metric total for its days (and how many days met the target). Your other data, workouts and locations stay private.';
+  }
+
+  @override
+  String get challengeDeleteTitle => 'Delete this challenge?';
+
+  @override
+  String get challengeDeleteBody =>
+      'It\'s removed for everyone in it, with all its results.';
+
+  @override
+  String get challengeLeaveTitle => 'Leave this challenge?';
+
+  @override
+  String get challengeLeaveBody =>
+      'Your total is removed from the board and this phone stops sharing with it. You can rejoin with a new invite.';
+
+  @override
+  String challengeRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get challengeRemoveBody =>
+      'They leave the challenge and can\'t read anything shared from now on.';
+
+  @override
+  String get challengeRemove => 'Remove';
+
+  @override
+  String challengeYou(String name) {
+    return '$name (you)';
+  }
+
+  @override
+  String get challengeNoDataYet => 'No data yet';
+
+  @override
+  String get challengeTitle => 'Name';
+
+  @override
+  String get challengeTitleHint => 'e.g. November step-off';
+
+  @override
+  String get challengeRequired => 'Required';
+
+  @override
+  String get challengeMeasure => 'What counts';
+
+  @override
+  String get challengeWinBy => 'How to win';
+
+  @override
+  String get challengeGoalMost => 'Highest total';
+
+  @override
+  String get challengeGoalDays => 'Daily target';
+
+  @override
+  String get challengeGoalMostHint =>
+      'Whoever has the most by the last day wins.';
+
+  @override
+  String get challengeGoalDaysHint =>
+      'Whoever reaches the daily target on the most days wins. Ties go to the higher total.';
+
+  @override
+  String challengeDailyTarget(String metric) {
+    return 'Daily target ($metric)';
+  }
+
+  @override
+  String get challengeStartDate => 'Starts';
+
+  @override
+  String get challengeLength => 'Length';
+
+  @override
+  String challengeLengthDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get challengeYourName => 'Your name in challenges';
+
+  @override
+  String get challengeYourNameHint => 'What friends in the challenge see';
+
+  @override
+  String get challengeCreateAndInvite => 'Create and invite friends';
+
+  @override
+  String challengeInviteTo(String title) {
+    return 'Invite to $title';
+  }
+
+  @override
+  String get challengeInviteIntro =>
+      'Make a one-time invite: send the link, or let a friend scan the QR code. Each invite works for one person, for 7 days.';
+
+  @override
+  String get challengeCreateInvite => 'Create invite';
+
+  @override
+  String get challengeInviteReady =>
+      'Send this link, or let your friend scan the code with ZT Fitness.';
+
+  @override
+  String get challengeInviteQr => 'Invite QR code';
+
+  @override
+  String get challengeLinkCopied => 'Link copied';
+
+  @override
+  String get challengeCopyLink => 'Copy link';
+
+  @override
+  String get challengeShareLink => 'Share';
+
+  @override
+  String challengeInviteMessage(String title, String link) {
+    return 'Join my fitness challenge \"$title\" in ZT Fitness: $link';
+  }
+
+  @override
+  String get challengeInviteNextSteps =>
+      'When your friend opens it, they\'ll see a code. Check it matches the code on your phone before letting them in: that\'s what keeps a stranger with the link out.';
+
+  @override
+  String get challengeCheckAnswers => 'Check for answers';
+
+  @override
+  String get challengeAnotherInvite => 'Invite someone else';
+
+  @override
+  String challengeConfirmTitle(String name) {
+    return 'Let $name in?';
+  }
+
+  @override
+  String get challengeConfirmBody =>
+      'Check this code matches the one on their phone.';
+
+  @override
+  String get challengeCodesDiffer => 'Codes differ';
+
+  @override
+  String get challengeLater => 'Later';
+
+  @override
+  String get challengeCodesMatch => 'Codes match';
+
+  @override
+  String challengeJoined(String name) {
+    return '$name joined';
+  }
+
+  @override
+  String get challengeInviteOtherApp =>
+      'This invite is for another Zero-Trust app.';
+
+  @override
+  String get challengeInviteInvalid => 'That isn\'t a challenge invite link.';
+
+  @override
+  String get challengeInviteUsed =>
+      'This invite was already used or has expired. Ask for a new one.';
+
+  @override
+  String get challengeJoinCodeTitle => 'Show this code to the organiser';
+
+  @override
+  String get challengeJoinCodeBody =>
+      'They\'ll see the same code on their phone. Once they confirm, the challenge appears here.';
+
+  @override
+  String get challengeDone => 'Done';
+
+  @override
+  String get challengeJoinIntro =>
+      'Paste the invite link a friend sent you, or scan their QR code.';
+
+  @override
+  String get challengeInviteLink => 'Invite link';
+
+  @override
+  String get challengeScanQr => 'Scan QR code';
+
+  @override
+  String get challengeJoinPrivacy =>
+      'Joining shares only your total for the challenge\'s measure and days. You can leave at any time.';
+
+  @override
+  String get challengeJoinButton => 'Join';
 }

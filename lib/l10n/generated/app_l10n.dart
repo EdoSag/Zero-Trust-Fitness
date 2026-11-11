@@ -3822,6 +3822,534 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'%1\$s of %2\$s Heart Points, %3\$s of %4\$s steps'**
   String get widgetSummary;
+
+  /// No description provided for @challenges.
+  ///
+  /// In en, this message translates to:
+  /// **'Challenges'**
+  String get challenges;
+
+  /// No description provided for @challengesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Compete with friends, end-to-end encrypted'**
+  String get challengesSubtitle;
+
+  /// No description provided for @challengeSyncNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get challengeSyncNow;
+
+  /// No description provided for @challengeNeedsInternet.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the server. Check your connection and try again.'**
+  String get challengeNeedsInternet;
+
+  /// No description provided for @challengeJoinRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} wants to join {title}'**
+  String challengeJoinRequest(String name, String title);
+
+  /// No description provided for @challengeJoinRequestHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to compare codes and let them in'**
+  String get challengeJoinRequestHint;
+
+  /// No description provided for @challengeActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Running now'**
+  String get challengeActive;
+
+  /// No description provided for @challengeUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting soon'**
+  String get challengeUpcoming;
+
+  /// No description provided for @challengeFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished'**
+  String get challengeFinished;
+
+  /// No description provided for @challengeCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a challenge'**
+  String get challengeCreate;
+
+  /// No description provided for @challengeJoin.
+  ///
+  /// In en, this message translates to:
+  /// **'Join with an invite'**
+  String get challengeJoin;
+
+  /// No description provided for @challengeEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Challenge your friends'**
+  String get challengeEmptyTitle;
+
+  /// No description provided for @challengeEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Race friends on steps or Heart Points for a few days or a month, and see who\'s ahead.'**
+  String get challengeEmptyBody;
+
+  /// No description provided for @challengePrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Friends see only one number per challenge: your total. It\'s encrypted for the people in the challenge, and the server can\'t read it.'**
+  String get challengePrivacy;
+
+  /// No description provided for @challengeWaitingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the organiser'**
+  String get challengeWaitingTitle;
+
+  /// No description provided for @challengeWaitingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll see the challenge once they confirm your code.'**
+  String get challengeWaitingBody;
+
+  /// No description provided for @challengeYourCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Your code:'**
+  String get challengeYourCode;
+
+  /// No description provided for @challengeGoalMostSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Most {metric}'**
+  String challengeGoalMostSummary(String metric);
+
+  /// No description provided for @challengeGoalDaysSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Days with {target} {metric}'**
+  String challengeGoalDaysSummary(String target, String metric);
+
+  /// No description provided for @challengeStarts.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts {date}'**
+  String challengeStarts(String date);
+
+  /// No description provided for @challengeDaysLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Last day} other{{count} days left}}'**
+  String challengeDaysLeft(int count);
+
+  /// No description provided for @challengeEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended {date}'**
+  String challengeEnded(String date);
+
+  /// No description provided for @challengeYourRank.
+  ///
+  /// In en, this message translates to:
+  /// **'#{rank} of {count}'**
+  String challengeYourRank(int rank, int count);
+
+  /// No description provided for @challengeGone.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re no longer in this challenge.'**
+  String get challengeGone;
+
+  /// No description provided for @challengeInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite a friend'**
+  String get challengeInvite;
+
+  /// No description provided for @challengeEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit challenge'**
+  String get challengeEdit;
+
+  /// No description provided for @challengeLeave.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get challengeLeave;
+
+  /// No description provided for @challengeDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get challengeDelete;
+
+  /// No description provided for @challengeDates.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} – {end}'**
+  String challengeDates(String start, String end);
+
+  /// No description provided for @challengeLeaderboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard'**
+  String get challengeLeaderboard;
+
+  /// No description provided for @challengeDaysUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String challengeDaysUnit(int count);
+
+  /// No description provided for @challengeTotalDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} {metric} in total'**
+  String challengeTotalDetail(String total, String metric);
+
+  /// No description provided for @challengeInviteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite friends to see them here.'**
+  String get challengeInviteHint;
+
+  /// No description provided for @challengeWhatIsShared.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with this challenge: only your {metric} total for its days (and how many days met the target). Your other data, workouts and locations stay private.'**
+  String challengeWhatIsShared(String metric);
+
+  /// No description provided for @challengeDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this challenge?'**
+  String get challengeDeleteTitle;
+
+  /// No description provided for @challengeDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s removed for everyone in it, with all its results.'**
+  String get challengeDeleteBody;
+
+  /// No description provided for @challengeLeaveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave this challenge?'**
+  String get challengeLeaveTitle;
+
+  /// No description provided for @challengeLeaveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your total is removed from the board and this phone stops sharing with it. You can rejoin with a new invite.'**
+  String get challengeLeaveBody;
+
+  /// No description provided for @challengeRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String challengeRemoveTitle(String name);
+
+  /// No description provided for @challengeRemoveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They leave the challenge and can\'t read anything shared from now on.'**
+  String get challengeRemoveBody;
+
+  /// No description provided for @challengeRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get challengeRemove;
+
+  /// No description provided for @challengeYou.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (you)'**
+  String challengeYou(String name);
+
+  /// No description provided for @challengeNoDataYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No data yet'**
+  String get challengeNoDataYet;
+
+  /// No description provided for @challengeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get challengeTitle;
+
+  /// No description provided for @challengeTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. November step-off'**
+  String get challengeTitleHint;
+
+  /// No description provided for @challengeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get challengeRequired;
+
+  /// No description provided for @challengeMeasure.
+  ///
+  /// In en, this message translates to:
+  /// **'What counts'**
+  String get challengeMeasure;
+
+  /// No description provided for @challengeWinBy.
+  ///
+  /// In en, this message translates to:
+  /// **'How to win'**
+  String get challengeWinBy;
+
+  /// No description provided for @challengeGoalMost.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest total'**
+  String get challengeGoalMost;
+
+  /// No description provided for @challengeGoalDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily target'**
+  String get challengeGoalDays;
+
+  /// No description provided for @challengeGoalMostHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Whoever has the most by the last day wins.'**
+  String get challengeGoalMostHint;
+
+  /// No description provided for @challengeGoalDaysHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Whoever reaches the daily target on the most days wins. Ties go to the higher total.'**
+  String get challengeGoalDaysHint;
+
+  /// No description provided for @challengeDailyTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily target ({metric})'**
+  String challengeDailyTarget(String metric);
+
+  /// No description provided for @challengeStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts'**
+  String get challengeStartDate;
+
+  /// No description provided for @challengeLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Length'**
+  String get challengeLength;
+
+  /// No description provided for @challengeLengthDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String challengeLengthDays(int count);
+
+  /// No description provided for @challengeYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name in challenges'**
+  String get challengeYourName;
+
+  /// No description provided for @challengeYourNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What friends in the challenge see'**
+  String get challengeYourNameHint;
+
+  /// No description provided for @challengeCreateAndInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Create and invite friends'**
+  String get challengeCreateAndInvite;
+
+  /// No description provided for @challengeInviteTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite to {title}'**
+  String challengeInviteTo(String title);
+
+  /// No description provided for @challengeInviteIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Make a one-time invite: send the link, or let a friend scan the QR code. Each invite works for one person, for 7 days.'**
+  String get challengeInviteIntro;
+
+  /// No description provided for @challengeCreateInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Create invite'**
+  String get challengeCreateInvite;
+
+  /// No description provided for @challengeInviteReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Send this link, or let your friend scan the code with ZT Fitness.'**
+  String get challengeInviteReady;
+
+  /// No description provided for @challengeInviteQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite QR code'**
+  String get challengeInviteQr;
+
+  /// No description provided for @challengeLinkCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get challengeLinkCopied;
+
+  /// No description provided for @challengeCopyLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get challengeCopyLink;
+
+  /// No description provided for @challengeShareLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get challengeShareLink;
+
+  /// No description provided for @challengeInviteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Join my fitness challenge \"{title}\" in ZT Fitness: {link}'**
+  String challengeInviteMessage(String title, String link);
+
+  /// No description provided for @challengeInviteNextSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'When your friend opens it, they\'ll see a code. Check it matches the code on your phone before letting them in: that\'s what keeps a stranger with the link out.'**
+  String get challengeInviteNextSteps;
+
+  /// No description provided for @challengeCheckAnswers.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for answers'**
+  String get challengeCheckAnswers;
+
+  /// No description provided for @challengeAnotherInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite someone else'**
+  String get challengeAnotherInvite;
+
+  /// No description provided for @challengeConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let {name} in?'**
+  String challengeConfirmTitle(String name);
+
+  /// No description provided for @challengeConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Check this code matches the one on their phone.'**
+  String get challengeConfirmBody;
+
+  /// No description provided for @challengeCodesDiffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Codes differ'**
+  String get challengeCodesDiffer;
+
+  /// No description provided for @challengeLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get challengeLater;
+
+  /// No description provided for @challengeCodesMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Codes match'**
+  String get challengeCodesMatch;
+
+  /// No description provided for @challengeJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} joined'**
+  String challengeJoined(String name);
+
+  /// No description provided for @challengeInviteOtherApp.
+  ///
+  /// In en, this message translates to:
+  /// **'This invite is for another Zero-Trust app.'**
+  String get challengeInviteOtherApp;
+
+  /// No description provided for @challengeInviteInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That isn\'t a challenge invite link.'**
+  String get challengeInviteInvalid;
+
+  /// No description provided for @challengeInviteUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'This invite was already used or has expired. Ask for a new one.'**
+  String get challengeInviteUsed;
+
+  /// No description provided for @challengeJoinCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show this code to the organiser'**
+  String get challengeJoinCodeTitle;
+
+  /// No description provided for @challengeJoinCodeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They\'ll see the same code on their phone. Once they confirm, the challenge appears here.'**
+  String get challengeJoinCodeBody;
+
+  /// No description provided for @challengeDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get challengeDone;
+
+  /// No description provided for @challengeJoinIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the invite link a friend sent you, or scan their QR code.'**
+  String get challengeJoinIntro;
+
+  /// No description provided for @challengeInviteLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite link'**
+  String get challengeInviteLink;
+
+  /// No description provided for @challengeScanQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get challengeScanQr;
+
+  /// No description provided for @challengeJoinPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Joining shares only your total for the challenge\'s measure and days. You can leave at any time.'**
+  String get challengeJoinPrivacy;
+
+  /// No description provided for @challengeJoinButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Join'**
+  String get challengeJoinButton;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

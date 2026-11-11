@@ -1233,5 +1233,244 @@
   "widgetHpGoal": "of %1$s Heart Pts",
   "widgetStepsGoal": "of %1$s steps",
   "widgetMomentum": "Momentum %1$s",
-  "widgetSummary": "%1$s of %2$s Heart Points, %3$s of %4$s steps"
+  "widgetSummary": "%1$s of %2$s Heart Points, %3$s of %4$s steps",
+  "challenges": "Challenges",
+  "challengesSubtitle": "Compete with friends, end-to-end encrypted",
+  "challengeSyncNow": "Sync now",
+  "challengeNeedsInternet": "Couldn't reach the server. Check your connection and try again.",
+  "challengeJoinRequest": "{name} wants to join {title}",
+  "@challengeJoinRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeJoinRequestHint": "Tap to compare codes and let them in",
+  "challengeActive": "Running now",
+  "challengeUpcoming": "Starting soon",
+  "challengeFinished": "Finished",
+  "challengeCreate": "Start a challenge",
+  "challengeJoin": "Join with an invite",
+  "challengeEmptyTitle": "Challenge your friends",
+  "challengeEmptyBody": "Race friends on steps or Heart Points for a few days or a month, and see who's ahead.",
+  "challengePrivacy": "Friends see only one number per challenge: your total. It's encrypted for the people in the challenge, and the server can't read it.",
+  "challengeWaitingTitle": "Waiting for the organiser",
+  "challengeWaitingBody": "You'll see the challenge once they confirm your code.",
+  "challengeYourCode": "Your code:",
+  "challengeGoalMostSummary": "Most {metric}",
+  "@challengeGoalMostSummary": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeGoalDaysSummary": "Days with {target} {metric}",
+  "@challengeGoalDaysSummary": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      },
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeStarts": "Starts {date}",
+  "@challengeStarts": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeDaysLeft": "{count, plural, =1{Last day} other{{count} days left}}",
+  "@challengeDaysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "challengeEnded": "Ended {date}",
+  "@challengeEnded": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeYourRank": "#{rank} of {count}",
+  "@challengeYourRank": {
+    "placeholders": {
+      "rank": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "challengeGone": "You're no longer in this challenge.",
+  "challengeInvite": "Invite a friend",
+  "challengeEdit": "Edit challenge",
+  "challengeLeave": "Leave",
+  "challengeDelete": "Delete",
+  "challengeDates": "{start} – {end}",
+  "@challengeDates": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeLeaderboard": "Leaderboard",
+  "challengeDaysUnit": "{count, plural, =1{1 day} other{{count} days}}",
+  "@challengeDaysUnit": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "challengeTotalDetail": "{total} {metric} in total",
+  "@challengeTotalDetail": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeInviteHint": "Invite friends to see them here.",
+  "challengeWhatIsShared": "Shared with this challenge: only your {metric} total for its days (and how many days met the target). Your other data, workouts and locations stay private.",
+  "@challengeWhatIsShared": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeDeleteTitle": "Delete this challenge?",
+  "challengeDeleteBody": "It's removed for everyone in it, with all its results.",
+  "challengeLeaveTitle": "Leave this challenge?",
+  "challengeLeaveBody": "Your total is removed from the board and this phone stops sharing with it. You can rejoin with a new invite.",
+  "challengeRemoveTitle": "Remove {name}?",
+  "@challengeRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeRemoveBody": "They leave the challenge and can't read anything shared from now on.",
+  "challengeRemove": "Remove",
+  "challengeYou": "{name} (you)",
+  "@challengeYou": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeNoDataYet": "No data yet",
+  "challengeTitle": "Name",
+  "challengeTitleHint": "e.g. November step-off",
+  "challengeRequired": "Required",
+  "challengeMeasure": "What counts",
+  "challengeWinBy": "How to win",
+  "challengeGoalMost": "Highest total",
+  "challengeGoalDays": "Daily target",
+  "challengeGoalMostHint": "Whoever has the most by the last day wins.",
+  "challengeGoalDaysHint": "Whoever reaches the daily target on the most days wins. Ties go to the higher total.",
+  "challengeDailyTarget": "Daily target ({metric})",
+  "@challengeDailyTarget": {
+    "placeholders": {
+      "metric": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeStartDate": "Starts",
+  "challengeLength": "Length",
+  "challengeLengthDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@challengeLengthDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "challengeYourName": "Your name in challenges",
+  "challengeYourNameHint": "What friends in the challenge see",
+  "challengeCreateAndInvite": "Create and invite friends",
+  "challengeInviteTo": "Invite to {title}",
+  "@challengeInviteTo": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeInviteIntro": "Make a one-time invite: send the link, or let a friend scan the QR code. Each invite works for one person, for 7 days.",
+  "challengeCreateInvite": "Create invite",
+  "challengeInviteReady": "Send this link, or let your friend scan the code with ZT Fitness.",
+  "challengeInviteQr": "Invite QR code",
+  "challengeLinkCopied": "Link copied",
+  "challengeCopyLink": "Copy link",
+  "challengeShareLink": "Share",
+  "challengeInviteMessage": "Join my fitness challenge \"{title}\" in ZT Fitness: {link}",
+  "@challengeInviteMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeInviteNextSteps": "When your friend opens it, they'll see a code. Check it matches the code on your phone before letting them in: that's what keeps a stranger with the link out.",
+  "challengeCheckAnswers": "Check for answers",
+  "challengeAnotherInvite": "Invite someone else",
+  "challengeConfirmTitle": "Let {name} in?",
+  "@challengeConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeConfirmBody": "Check this code matches the one on their phone.",
+  "challengeCodesDiffer": "Codes differ",
+  "challengeLater": "Later",
+  "challengeCodesMatch": "Codes match",
+  "challengeJoined": "{name} joined",
+  "@challengeJoined": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeInviteOtherApp": "This invite is for another Zero-Trust app.",
+  "challengeInviteInvalid": "That isn't a challenge invite link.",
+  "challengeInviteUsed": "This invite was already used or has expired. Ask for a new one.",
+  "challengeJoinCodeTitle": "Show this code to the organiser",
+  "challengeJoinCodeBody": "They'll see the same code on their phone. Once they confirm, the challenge appears here.",
+  "challengeDone": "Done",
+  "challengeJoinIntro": "Paste the invite link a friend sent you, or scan their QR code.",
+  "challengeInviteLink": "Invite link",
+  "challengeScanQr": "Scan QR code",
+  "challengeJoinPrivacy": "Joining shares only your total for the challenge's measure and days. You can leave at any time.",
+  "challengeJoinButton": "Join"
 }

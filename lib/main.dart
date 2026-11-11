@@ -7,6 +7,7 @@ import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/app/app_gate.dart';
 import 'package:zerotrust_fitness/core/services/reminder_service.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
+import 'package:zerotrust_fitness/features/challenges/challenges_data.dart';
 import 'package:zerotrust_fitness/l10n/l10n.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 
@@ -33,7 +34,12 @@ Future<void> main() async {
 
   runApp(
     ProviderScope(
-      overrides: [ztAppConfigProvider.overrideWithValue(fitnessAppConfig)],
+      overrides: [
+        ztAppConfigProvider.overrideWithValue(fitnessAppConfig),
+        // Challenges (F11): only organisers change a challenge, and only
+        // you can post your own progress.
+        ztSpacePolicyProvider.overrideWithValue(fitnessSpacePolicy),
+      ],
       child: const ZeroTrustFitnessApp(),
     ),
   );

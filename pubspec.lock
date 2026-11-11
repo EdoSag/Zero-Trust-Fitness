@@ -917,6 +917,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.1"
+  qr:
+    dependency: transitive
+    description:
+      name: qr
+      sha256: "2c0189dca64a3ab08dda7acd7911c89af2374f08eb4eaded3e8ef4609f3b9c8b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.3"
+  qr_code_scanner_plus:
+    dependency: "direct main"
+    description:
+      name: qr_code_scanner_plus
+      sha256: "2bcf9df32aa639fba07c183b1ab9c3f03eb6b1d688ab4f4f6bc868a75afd824d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.2"
+  qr_flutter:
+    dependency: "direct main"
+    description:
+      name: qr_flutter
+      sha256: "5095f0fc6e3f71d08adef8feccc8cea4f12eec18a2e31c2e8d82cb6019f4b097"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.0"
   realtime_client:
     dependency: transitive
     description:
@@ -1326,8 +1350,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/zero_trust_core"
-      ref: "v0.10.0"
-      resolved-ref: feaa7e4140abbcb27f9c767138692616f3093468
+      ref: "40eda7e4115c0b1bf047dc1d30af4b1568086f99"
+      resolved-ref: "40eda7e4115c0b1bf047dc1d30af4b1568086f99"
       url: "https://github.com/EdoSag/Zero-Trust-Core.git"
     source: git
     version: "0.10.0"
@@ -1335,8 +1359,8 @@ packages:
     dependency: transitive
     description:
       path: "packages/zt_crypto"
-      ref: feaa7e4140abbcb27f9c767138692616f3093468
-      resolved-ref: feaa7e4140abbcb27f9c767138692616f3093468
+      ref: "40eda7e4115c0b1bf047dc1d30af4b1568086f99"
+      resolved-ref: "40eda7e4115c0b1bf047dc1d30af4b1568086f99"
       url: "https://github.com/EdoSag/Zero-Trust-Core.git"
     source: git
     version: "0.3.2"

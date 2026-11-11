@@ -12,6 +12,7 @@ import 'package:zerotrust_fitness/components/momentum_card.dart';
 import 'package:zerotrust_fitness/features/health/domain/momentum_engine.dart';
 import 'package:zerotrust_fitness/core/services/insights_service.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
+import 'package:zerotrust_fitness/features/challenges/challenges_pages.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/pages/all_metrics_page.dart';
 import 'package:zerotrust_fitness/pages/metric_detail_page.dart';
@@ -444,6 +445,8 @@ class TodayPage extends StatelessWidget {
                       MomentumCard(momentum: momentum!),
                       const SizedBox(height: 16),
                     ],
+                    // Running challenges with friends; nothing when none.
+                    if (vault != null) const TodayChallengesCard(),
                     _buildPriorityMetrics(context),
                     const SizedBox(height: 16),
                     _buildWaterFood(context),
