@@ -24,7 +24,7 @@ AppL10n get currentL10n {
 }
 
 /// Keeps [text] left-to-right inside Hebrew (numbers with units, emails).
-String ltr(String text) => text.isEmpty ? text : '⁦$text⁩';
+String ltr(String text) => text.isEmpty ? text : '\u2066$text\u2069';
 
 /// An activity type in the app's language. Workouts store the English name
 /// ('Running', 'Strength Training', ...), so only the display is translated.
