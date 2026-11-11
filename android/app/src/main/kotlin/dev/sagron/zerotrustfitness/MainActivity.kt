@@ -9,7 +9,7 @@ import io.flutter.plugin.common.MethodChannel
 
 /**
  * Channel `zt_fitness/links` holds challenge invite links
- * (https://zerotrust.bz/join#zt1.fitness.…) the app was opened with, until
+ * (https://zerotrust.bz/join/fitness#zt1.fitness.…) the app was opened with, until
  * the unlocked app takes them.
  */
 class MainActivity : FlutterFragmentActivity() {

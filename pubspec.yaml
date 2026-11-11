@@ -24,9 +24,11 @@ dependencies:
     git:
       url: https://github.com/EdoSag/Zero-Trust-Core.git
       path: packages/zero_trust_core
-      # Core Dev: 0.10.0 + Z24 shared spaces + owned items in spaces (Core
-      # PR #24, for challenge progress). Switch to the next tag once pushed.
-      ref: 40eda7e4115c0b1bf047dc1d30af4b1568086f99
+      # Core Dev with the shared spaces trust chain fix (Core PR #35) and
+      # invite links per app (Core PR #37). Every app that shares must be on
+      # this commit or later: older ones cannot read the new member records.
+      # Switch to the release tag once one is pushed.
+      ref: cb397d13efd868e34a34d465251a7f705b49f9e1
   flutter_riverpod: ^3.5.0
   supabase_flutter: ^2.10.0
   sqlite3: ^3.7.0

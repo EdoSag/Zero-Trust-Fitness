@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
-/// Challenge invite links (https://zerotrust.bz/join#zt1.fitness...) the app
+/// Challenge invite links (https://zerotrust.bz/join/fitness#zt1.fitness...) the app
 /// was opened with.
 /// Android keeps them until the unlocked app takes them, so a link opened
 /// while signed out or locked still works after unlocking.
