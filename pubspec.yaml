@@ -28,7 +28,7 @@ dependencies:
       # invite links per app (Core PR #37). Every app that shares must be on
       # this commit or later: older ones cannot read the new member records.
       # Switch to the release tag once one is pushed.
-      ref: 52f53dae085fb247ec1b8fa34b95f3231dc0421b
+      ref: 08eccf33e5989c0efceba67d351159b979ae0740
   flutter_riverpod: ^3.5.0
   supabase_flutter: ^2.10.0
   sqlite3: ^3.7.0
