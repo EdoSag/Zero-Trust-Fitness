@@ -26,7 +26,9 @@ android {
         // The same id as the phone app: Wear OS pairs them by package name.
         applicationId = "dev.sagron.zerotrustfitness"
         minSdk = 30
-        targetSdk = 34
+        // Google Play: Wear OS apps must target Android 15 (API 35) or higher
+        // since 31 August 2026.
+        targetSdk = 35
         versionCode = 1_000_000 + ztBuild
         versionName = pubspecVersion.substringBefore('+')
     }
