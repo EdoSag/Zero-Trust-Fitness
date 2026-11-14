@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
 import 'package:zerotrust_fitness/components/inline_button_style.dart';
-import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
 import 'package:zerotrust_fitness/pages/goals_page.dart';
 import 'package:zerotrust_fitness/pages/templates_page.dart';
 
