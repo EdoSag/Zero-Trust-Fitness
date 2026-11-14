@@ -1,7 +1,7 @@
 name: zerotrust_fitness
 description: Zero-Trust Fitness, end-to-end encrypted activity and health tracking.
 publish_to: none
-version: 0.8.1+17
+version: 0.8.2+18
 environment:
   sdk: ^3.8.0
 
@@ -28,7 +28,7 @@ dependencies:
       # invite links per app (Core PR #37). Every app that shares must be on
       # this commit or later: older ones cannot read the new member records.
       # Switch to the release tag once one is pushed.
-      ref: cb397d13efd868e34a34d465251a7f705b49f9e1
+      ref: 52f53dae085fb247ec1b8fa34b95f3231dc0421b
   flutter_riverpod: ^3.5.0
   supabase_flutter: ^2.10.0
   sqlite3: ^3.7.0
