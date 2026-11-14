@@ -1,0 +1,29 @@
+Zero-Trust Fitness tracks your activity with Move Minutes and Heart Points goals, GPS workouts and a full journal. Your health data is encrypted on your phone before it syncs, so it never becomes someone else's business.
+
+WHAT IT DOES
+• Daily rings for steps, Move Minutes and Heart Points, with weekly goals and trends.
+• Reads steps, heart rate, sleep, weight and more from Health Connect, and writes your workouts back.
+• GPS workouts with auto-pause, voice cues, lap splits and lock-screen controls.
+• Route maps from offline tiles, so viewing a route doesn't leak where you've been.
+• A journal of every workout and entry, with edit and delete.
+• Water and nutrition logging.
+• Weekly summary notification.
+• Challenges with friends who use Zero-Trust: steps or Heart Points, invite by link.
+• GPX import and export, and import from Google Fit (Takeout).
+• Wear OS companion and tiles.
+• Resizable home-screen widget with your rings.
+
+WHY ZERO-TRUST
+• End-to-end encrypted: everything is encrypted on your phone before it syncs. We can't read it, and neither can anyone who breaks into the server.
+• One private account for every Zero-Trust app, unlocked with your fingerprint or face.
+• Works offline and syncs across your devices when you're back online.
+• No ads, no trackers, no analytics, no data sold. Ever.
+• Open source (AGPL-3.0), so anyone can check what the app does.
+• English and Hebrew, with full right-to-left support.
+
+Zero-Trust Fitness is for general fitness and wellness. It is not a medical device and does not diagnose or treat any condition.
+
+Part of the Zero-Trust suite: Notes, Tasks, Calendar, Contacts, Phone, Fitness, Meds, Time and Browser. One account opens them all.
+
+Privacy policy: https://zerotrust.bz/privacy/
+Support: support@zerotrust.bz
