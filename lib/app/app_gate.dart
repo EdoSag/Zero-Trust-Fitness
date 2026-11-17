@@ -9,6 +9,7 @@ import 'package:zerotrust_fitness/features/challenges/challenge_links.dart';
 import 'package:zerotrust_fitness/pages/home_page.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
 import 'package:zerotrust_fitness/l10n/l10n.dart';
+import 'email_links.dart';
 
 /// Whether the welcome page was shown on this install.
 final welcomeSeenProvider =
@@ -105,7 +106,7 @@ class _AppGateState extends ConsumerState<AppGate> with WidgetsBindingObserver {
   }
 
   void _forgotPassword() => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const ZtForgotPasswordScreen()),
+        MaterialPageRoute<void>(builder: (_) => ZtForgotPasswordScreen(redirectTo: EmailLinks.passwordReset)),
       );
 
   @override
@@ -159,6 +160,7 @@ class _AppGateState extends ConsumerState<AppGate> with WidgetsBindingObserver {
         );
       }
       return ZtSignInScreen(
+        emailRedirectTo: EmailLinks.confirmed,
         onUnlocked: _onUnlocked,
         onForgotPassword: _forgotPassword,
       );
