@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 import 'package:zerotrust_fitness/features/challenges/challenges_data.dart';
 import 'package:zerotrust_fitness/l10n/l10n.dart';
 import 'package:zerotrust_fitness/widget_service.dart';
+import 'app/email_links.dart';
 
 /// Store name "Zero-Trust Fitness"; on the phone it is "ZT Fitness".
 const fitnessAppConfig =
@@ -25,6 +27,7 @@ Future<void> main() async {
     throw StateError('Set SUPABASE_URL (https) and SUPABASE_ANON_KEY in .env');
   }
   await Supabase.initialize(url: url, publishableKey: key);
+  unawaited(EmailLinks.listen());
 
   await HomeWidget.setAppGroupId('group.zerotrustfitness');
   await ReminderService().initialize();

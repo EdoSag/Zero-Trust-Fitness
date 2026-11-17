@@ -31,6 +31,8 @@ dependencies:
       ref: 08eccf33e5989c0efceba67d351159b979ae0740
   flutter_riverpod: ^3.5.0
   supabase_flutter: ^2.10.0
+  # Reset links from account emails (EmailLinks).
+  app_links: ">=6.4.0 <8.0.0"
   sqlite3: ^3.7.0
   cryptography: ^2.7.0
   flutter_secure_storage: ^11.2.0
