@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:zerotrust_fitness/features/challenges/challenges_pages.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/app/vault_providers.dart';
@@ -319,6 +320,11 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
       onSignedOut: () =>
           Navigator.of(context).popUntil((route) => route.isFirst),
       showSyncStatus: true,
+      privacyPolicyUrl: Uri.parse('https://zerotrust.bz/privacy/'),
+      termsUrl: Uri.parse('https://zerotrust.bz/terms/'),
+      supportUrl: Uri.parse('https://zerotrust.bz/support/'),
+      onOpenUrl: (Uri url) =>
+          launchUrl(url, mode: LaunchMode.externalApplication),
       appSection: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
