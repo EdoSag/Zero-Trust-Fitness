@@ -1,7 +1,7 @@
 name: zerotrust_fitness
 description: Zero-Trust Fitness, end-to-end encrypted activity and health tracking.
 publish_to: none
-version: 0.8.2+18
+version: 0.8.3+19
 environment:
   sdk: ^3.8.0
 
@@ -55,6 +55,9 @@ dependencies:
   # offline map tile cache (F8).
   xml: ^7.1.0
   http: ^1.2.0
+  # Settings links (help, privacy, terms, other apps). Already in the build
+  # through the core.
+  url_launcher: ^6.3.3
   # Challenge invites (F11): show a QR code, and scan one with the camera.
   # The same packages as ZT Meds.
   qr_flutter: ^4.1.0
