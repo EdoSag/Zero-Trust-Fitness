@@ -1,7 +1,7 @@
 name: zerotrust_fitness
 description: Zero-Trust Fitness, end-to-end encrypted activity and health tracking.
 publish_to: none
-version: 0.8.1+17
+version: 0.8.3+19
 environment:
   sdk: ^3.8.0
 
@@ -28,9 +28,11 @@ dependencies:
       # invite links per app (Core PR #37). Every app that shares must be on
       # this commit or later: older ones cannot read the new member records.
       # Switch to the release tag once one is pushed.
-      ref: cb397d13efd868e34a34d465251a7f705b49f9e1
+      ref: 08eccf33e5989c0efceba67d351159b979ae0740
   flutter_riverpod: ^3.5.0
   supabase_flutter: ^2.10.0
+  # Reset links from account emails (EmailLinks).
+  app_links: ">=6.4.0 <8.0.0"
   sqlite3: ^3.7.0
   cryptography: ^2.7.0
   flutter_secure_storage: ^11.2.0
@@ -55,6 +57,9 @@ dependencies:
   # offline map tile cache (F8).
   xml: ^7.1.0
   http: ^1.2.0
+  # Settings links (help, privacy, terms, other apps). Already in the build
+  # through the core.
+  url_launcher: ^6.3.3
   # Challenge invites (F11): show a QR code, and scan one with the camera.
   # The same packages as ZT Meds.
   qr_flutter: ^4.1.0
