@@ -1149,14 +1149,16 @@ class AppL10nEn extends AppL10n {
   String get chooseWhatFitnessMayRead => 'Choose what Fitness may read';
 
   @override
-  String get saveWorkoutsToAppleHealth => 'Save workouts to Apple Health';
+  String get saveWorkoutsToAppleHealth =>
+      'Save workouts and water to Apple Health';
 
   @override
-  String get saveWorkoutsToHealthConnect => 'Save workouts to Health Connect';
+  String get saveWorkoutsToHealthConnect =>
+      'Save workouts and water to Health Connect';
 
   @override
   String get workoutsYouLogOrRecord =>
-      'Workouts you log or record here show up in your other apps';
+      'Workouts and water you log here show up in your other apps, such as ZT Quests';
 
   @override
   String get showOnWearOsWatch => 'Show on Wear OS watch';
@@ -1887,7 +1889,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String newWorkoutsSavedTo(String health) {
-    return 'New workouts are saved to $health from now on. Fitness can also copy the workouts already in your journal.';
+    return 'New workouts and water are saved to $health from now on. Fitness can also copy the workouts already in your journal.';
   }
 
   @override
@@ -2540,4 +2542,22 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get challengeJoinButton => 'Join';
+
+  @override
+  String get countWaterInOtherApps => 'Count this water in your other apps';
+
+  @override
+  String countWaterInOtherAppsBody(String health) {
+    return 'Save the water and workouts you log here to $health, so ZT Quests and other apps can count them.';
+  }
+
+  @override
+  String waterNowSavedTo(String health) {
+    return 'Water you log is now saved to $health.';
+  }
+
+  @override
+  String healthDidntAllowWater(String health) {
+    return '$health didn\'t allow Fitness to save water.';
+  }
 }

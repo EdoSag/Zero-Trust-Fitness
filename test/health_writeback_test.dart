@@ -7,11 +7,53 @@ import 'support.dart';
 class FakeSink implements HealthWorkoutSink {
   final writes = <(String, DateTime, DateTime, double?)>[];
   final deletes = <(DateTime, DateTime)>[];
+  final waterWrites = <(double, DateTime, DateTime)>[];
+  final waterDeletes = <(DateTime, DateTime)>[];
   bool grant = true;
   bool deleteWorks = true;
+  bool workoutAccess = false;
+  bool waterAccess = false;
+  bool waterWriteWorks = true;
+
+  /// Water this app holds in "Health Connect": what other apps would read.
+  double get waterHeld => waterWrites.fold(0, (sum, w) => sum + w.$1);
 
   @override
-  Future<bool> requestWriteAccess() async => grant;
+  Future<bool> available() async => true;
+
+  @override
+  Future<bool> requestWriteAccess() async {
+    if (grant) workoutAccess = waterAccess = true;
+    return grant;
+  }
+
+  @override
+  Future<bool> hasWorkoutAccess() async => workoutAccess;
+
+  @override
+  Future<bool> hasWaterAccess() async => waterAccess;
+
+  @override
+  Future<bool> writeWater({
+    required double liters,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    if (!waterWriteWorks) return false;
+    waterWrites.add((liters, start, end));
+    return true;
+  }
+
+  @override
+  Future<bool> deleteWater({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    waterDeletes.add((start, end));
+    if (!deleteWorks) return false;
+    waterWrites.removeWhere((w) => !w.$2.isBefore(start) && !w.$3.isAfter(end));
+    return true;
+  }
 
   @override
   Future<bool> write({
@@ -103,5 +145,166 @@ void main() {
     expect(await wb.backfill(v), 1);
     expect(await wb.backfill(v), 0);
     expect(sink.writes, hasLength(1));
+  });
+
+  group('water', () {
+    final now = DateTime(2026, 11, 20, 14, 5);
+    const today = '2026-11-20';
+
+    test('does nothing until turned on', () async {
+      expect(await wb.syncWater(today, 0.25, now: now), isFalse);
+      expect(sink.waterWrites, isEmpty);
+    });
+
+    test('each glass logged today is written when it was drunk', () async {
+      await wb.enable();
+      expect(await wb.syncWater(today, 0.25, now: now), isTrue);
+      final later = now.add(const Duration(hours: 1));
+      expect(await wb.syncWater(today, 0.75, now: later), isTrue);
+      expect(sink.waterWrites, hasLength(2));
+      expect(sink.waterWrites.first.$1, 0.25);
+      expect(sink.waterWrites.first.$3, now);
+      expect(sink.waterWrites.first.$2.isBefore(now), isTrue);
+      expect(sink.waterWrites.last.$1, 0.5);
+      expect(sink.waterWrites.last.$3, later);
+      expect(sink.waterDeletes, isEmpty);
+      expect(sink.waterHeld, 0.75);
+    });
+
+    test('the same total again writes nothing', () async {
+      await wb.enable();
+      await wb.syncWater(today, 0.5, now: now);
+      await wb.syncWater(today, 0.5, now: now.add(const Duration(minutes: 5)));
+      expect(sink.waterWrites, hasLength(1));
+    });
+
+    test('taking a glass off replaces the day with the new total', () async {
+      await wb.enable();
+      await wb.syncWater(today, 0.25, now: now);
+      await wb.syncWater(today, 0.75, now: now.add(const Duration(minutes: 5)));
+      expect(
+        await wb.syncWater(today, 0.5, now: now.add(const Duration(minutes: 9))),
+        isTrue,
+      );
+      expect(sink.waterDeletes, hasLength(1));
+      expect(sink.waterHeld, 0.5);
+      expect(sink.waterWrites, hasLength(1));
+
+      await wb.syncWater(today, 0, now: now.add(const Duration(minutes: 10)));
+      expect(sink.waterHeld, 0);
+    });
+
+    test('a failed delete keeps the day tracked and writes no duplicate',
+        () async {
+      await wb.enable();
+      await wb.syncWater(today, 0.75, now: now);
+      sink.deleteWorks = false;
+      expect(await wb.syncWater(today, 0.25, now: now), isFalse);
+      expect(sink.waterHeld, 0.75);
+      sink.deleteWorks = true;
+      expect(await wb.syncWater(today, 0.25, now: now), isTrue);
+      expect(sink.waterHeld, 0.25);
+    });
+
+    test('a failed write is tried again', () async {
+      await wb.enable();
+      sink.waterWriteWorks = false;
+      expect(await wb.syncWater(today, 0.25, now: now), isFalse);
+      sink.waterWriteWorks = true;
+      expect(await wb.syncWater(today, 0.25, now: now), isTrue);
+      expect(sink.waterHeld, 0.25);
+    });
+
+    test('an older day gets one record inside that day', () async {
+      await wb.enable();
+      expect(await wb.syncWater('2026-11-18', 1.5, now: now), isTrue);
+      expect(sink.waterWrites.single.$1, 1.5);
+      expect(sink.waterWrites.single.$2.day, 18);
+      expect(sink.waterWrites.single.$3.day, 18);
+      // More on that day replaces the record instead of adding one, so two
+      // records never share the same minute.
+      await wb.syncWater('2026-11-18', 2.0, now: now);
+      expect(sink.waterWrites.single.$1, 2.0);
+    });
+
+    test('just after midnight the record stays inside the new day', () async {
+      await wb.enable();
+      final midnight = DateTime(2026, 11, 20, 0, 0, 20);
+      await wb.syncWater(today, 0.25, now: midnight);
+      final w = sink.waterWrites.single;
+      expect(w.$2, DateTime(2026, 11, 20));
+      expect(w.$3.isAfter(w.$2), isTrue);
+    });
+
+    test('write-back turned on before water was covered waits for access',
+        () async {
+      // Workouts only, as granted by an older version.
+      SharedPreferences.setMockInitialValues({HealthWriteback.enabledKey: true});
+      sink.workoutAccess = true;
+      wb = HealthWriteback(sink: sink);
+      expect(await wb.savesWater, isFalse);
+      expect(await wb.syncWater(today, 0.25, now: now), isFalse);
+      expect(sink.waterWrites, isEmpty);
+
+      await wb.enable();
+      expect(await wb.savesWater, isTrue);
+      expect(await wb.syncWater(today, 0.25, now: now), isTrue);
+    });
+
+    test('allowing workouts but not water still turns on workouts', () async {
+      sink.grant = false;
+      sink.workoutAccess = true;
+      expect(await wb.enable(), isTrue);
+      expect(await wb.isEnabled, isTrue);
+      expect(await wb.savesWater, isFalse);
+      expect(await wb.sync('a', run), isTrue);
+    });
+
+    test('allowing water but not workouts still saves water', () async {
+      sink.grant = false;
+      sink.waterAccess = true;
+      expect(await wb.enable(), isTrue);
+      expect(await wb.savesWater, isTrue);
+      expect(await wb.syncWater(today, 0.25, now: now), isTrue);
+      expect(sink.waterHeld, 0.25);
+    });
+
+    test('an older day with no note left is cleared when its water is taken '
+        'off', () async {
+      await wb.enable();
+      await wb.syncWater('2026-11-18', 1.5, now: now);
+      // The phone's note of that day is gone (dropped as too old).
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(HealthWriteback.waterKey);
+
+      expect(await wb.syncWater('2026-11-18', 0, now: now), isTrue);
+      expect(sink.waterHeld, 0, reason: 'the old record is removed');
+      final clears = sink.waterDeletes.length;
+      // Checking the empty day again doesn't clear it again.
+      await wb.syncWater('2026-11-18', 0, now: now);
+      expect(sink.waterDeletes, hasLength(clears));
+      // And water added to it later is written once.
+      await wb.syncWater('2026-11-18', 0.5, now: now);
+      expect(sink.waterHeld, 0.5);
+    });
+
+    test('today and yesterday follow the vault, Health Connect water aside',
+        () async {
+      final v = testVault();
+      await v.addWater(today, 0.5);
+      await v.addWater('2026-11-19', 1.0);
+      await v.addWater('2026-11-10', 2.0);
+      // Water another app recorded is not written back.
+      await v.syncFromHealthConnect(dateKey: today, hcMetrics: {'water_l': 0.3});
+      await wb.enable();
+      await wb.syncRecentWater(v, now: now);
+      expect(sink.waterHeld, 1.5);
+      await wb.syncRecentWater(v, now: now);
+      expect(sink.waterWrites, hasLength(2), reason: 'nothing new to write');
+
+      await v.addWater(today, 0.25);
+      await wb.syncRecentWater(v, now: now.add(const Duration(minutes: 3)));
+      expect(sink.waterHeld, 1.75);
+    });
   });
 }

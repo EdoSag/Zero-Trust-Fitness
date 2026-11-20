@@ -27,10 +27,12 @@
     <uses-permission android:name="android.permission.health.READ_BLOOD_PRESSURE"/>
     <uses-permission android:name="android.permission.health.READ_BLOOD_GLUCOSE"/>
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"/>
-    <!-- Health write-back (off until turned on in Settings): workouts logged
-         in Fitness, and their distance. -->
+    <!-- Health write-back (off until turned on in Settings or on the Water
+         page): workouts logged in Fitness and their distance, and the
+         water logged here (so ZT Quests and other apps count it). -->
     <uses-permission android:name="android.permission.health.WRITE_EXERCISE"/>
     <uses-permission android:name="android.permission.health.WRITE_DISTANCE"/>
+    <uses-permission android:name="android.permission.health.WRITE_HYDRATION"/>
     <!-- GPS workouts keep recording with the screen off, shown by an ongoing
          notification with Pause and Lap buttons. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>

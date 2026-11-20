@@ -147,6 +147,10 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     setState(() => _isLoading = true);
     try {
       await _drainWatchWater();
+      final openVault = ref.read(openFitnessVaultProvider);
+      if (openVault != null) {
+        unawaited(HealthWriteback.instance.syncRecentWater(openVault));
+      }
       final healthService = HealthService();
       final isAvailable = await healthService.isHealthConnectAvailable();
       if (!isAvailable) {
@@ -978,6 +982,9 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       if (vault != null) {
         final medals = await AchievementService().fetchUnlocked(vault);
         if (mounted) setState(() => _earnedMedals = medals);
+        // Water from the watch, another device or any screen: keep Health
+        // Connect in step, so ZT Quests and other apps count it.
+        unawaited(HealthWriteback.instance.syncRecentWater(vault));
       }
       _computeInsights();
     });
