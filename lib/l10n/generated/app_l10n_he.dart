@@ -1130,14 +1130,15 @@ class AppL10nHe extends AppL10n {
   String get chooseWhatFitnessMayRead => 'בחירה מה Fitness רשאית לקרוא';
 
   @override
-  String get saveWorkoutsToAppleHealth => 'שמירת אימונים ב-Apple Health';
+  String get saveWorkoutsToAppleHealth => 'שמירת אימונים ומים ב-Apple Health';
 
   @override
-  String get saveWorkoutsToHealthConnect => 'שמירת אימונים ב-Health Connect';
+  String get saveWorkoutsToHealthConnect =>
+      'שמירת אימונים ומים ב-Health Connect';
 
   @override
   String get workoutsYouLogOrRecord =>
-      'אימונים שנרשמים או מוקלטים כאן יופיעו באפליקציות האחרות';
+      'אימונים ומים שנרשמים כאן יופיעו באפליקציות האחרות, למשל ZT Quests';
 
   @override
   String get showOnWearOsWatch => 'הצגה בשעון Wear OS';
@@ -1867,7 +1868,7 @@ class AppL10nHe extends AppL10n {
 
   @override
   String newWorkoutsSavedTo(String health) {
-    return 'מעכשיו אימונים חדשים נשמרים ב-$health. Fitness יכולה גם להעתיק את האימונים שכבר ביומן שלך.';
+    return 'מעכשיו אימונים ומים חדשים נשמרים ב-$health. Fitness יכולה גם להעתיק את האימונים שכבר ביומן שלך.';
   }
 
   @override
@@ -2515,4 +2516,22 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get challengeJoinButton => 'הצטרפות';
+
+  @override
+  String get countWaterInOtherApps => 'לספור את המים גם באפליקציות האחרות';
+
+  @override
+  String countWaterInOtherAppsBody(String health) {
+    return 'שמירת המים והאימונים שנרשמים כאן ב-$health, כדי ש-ZT Quests ואפליקציות אחרות יוכלו לספור אותם.';
+  }
+
+  @override
+  String waterNowSavedTo(String health) {
+    return 'מעכשיו המים שנרשמים כאן נשמרים ב-$health.';
+  }
+
+  @override
+  String healthDidntAllowWater(String health) {
+    return '$health לא אישר ל-Fitness לשמור מים.';
+  }
 }

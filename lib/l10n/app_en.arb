@@ -354,9 +354,9 @@
   "createAndReuseWorkoutRoutines": "Create and reuse workout routines",
   "healthPermissions": "Health permissions",
   "chooseWhatFitnessMayRead": "Choose what Fitness may read",
-  "saveWorkoutsToAppleHealth": "Save workouts to Apple Health",
-  "saveWorkoutsToHealthConnect": "Save workouts to Health Connect",
-  "workoutsYouLogOrRecord": "Workouts you log or record here show up in your other apps",
+  "saveWorkoutsToAppleHealth": "Save workouts and water to Apple Health",
+  "saveWorkoutsToHealthConnect": "Save workouts and water to Health Connect",
+  "workoutsYouLogOrRecord": "Workouts and water you log here show up in your other apps, such as ZT Quests",
   "showOnWearOsWatch": "Show on Wear OS watch",
   "todaysHeartPointsStepsAnd": "Today's Heart Points, steps and water on your paired watch, and add water from it. Sent only to the watch.",
   "unitsFormatX": "Units & format",
@@ -1038,7 +1038,7 @@
       }
     }
   },
-  "newWorkoutsSavedTo": "New workouts are saved to {health} from now on. Fitness can also copy the workouts already in your journal.",
+  "newWorkoutsSavedTo": "New workouts and water are saved to {health} from now on. Fitness can also copy the workouts already in your journal.",
   "@newWorkoutsSavedTo": {
     "placeholders": {
       "health": {
@@ -1472,5 +1472,30 @@
   "challengeInviteLink": "Invite link",
   "challengeScanQr": "Scan QR code",
   "challengeJoinPrivacy": "Joining shares only your total for the challenge's measure and days. You can leave at any time.",
-  "challengeJoinButton": "Join"
+  "challengeJoinButton": "Join",
+  "countWaterInOtherApps": "Count this water in your other apps",
+  "countWaterInOtherAppsBody": "Save the water and workouts you log here to {health}, so ZT Quests and other apps can count them.",
+  "@countWaterInOtherAppsBody": {
+    "placeholders": {
+      "health": {
+        "type": "String"
+      }
+    }
+  },
+  "waterNowSavedTo": "Water you log is now saved to {health}.",
+  "@waterNowSavedTo": {
+    "placeholders": {
+      "health": {
+        "type": "String"
+      }
+    }
+  },
+  "healthDidntAllowWater": "{health} didn't allow Fitness to save water.",
+  "@healthDidntAllowWater": {
+    "placeholders": {
+      "health": {
+        "type": "String"
+      }
+    }
+  }
 }

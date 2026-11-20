@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -84,6 +86,8 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
       }
       final vault = ref.read(openFitnessVaultProvider);
       if (vault == null) return;
+      // Water already logged today counts in other apps right away.
+      unawaited(HealthWriteback.instance.syncRecentWater(vault));
       final copyPast = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -375,8 +379,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
           title: Text(Theme.of(context).platform == TargetPlatform.iOS
               ? context.l10n.saveWorkoutsToAppleHealth
               : context.l10n.saveWorkoutsToHealthConnect),
-          subtitle: Text(
-              context.l10n.workoutsYouLogOrRecord),
+          subtitle: Text(context.l10n.workoutsYouLogOrRecord),
           value: _writeback,
           onChanged: _writebackBusy || !unlocked ? null : _setWriteback,
         ),

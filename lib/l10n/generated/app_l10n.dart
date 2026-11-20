@@ -2224,19 +2224,19 @@ abstract class AppL10n {
   /// No description provided for @saveWorkoutsToAppleHealth.
   ///
   /// In en, this message translates to:
-  /// **'Save workouts to Apple Health'**
+  /// **'Save workouts and water to Apple Health'**
   String get saveWorkoutsToAppleHealth;
 
   /// No description provided for @saveWorkoutsToHealthConnect.
   ///
   /// In en, this message translates to:
-  /// **'Save workouts to Health Connect'**
+  /// **'Save workouts and water to Health Connect'**
   String get saveWorkoutsToHealthConnect;
 
   /// No description provided for @workoutsYouLogOrRecord.
   ///
   /// In en, this message translates to:
-  /// **'Workouts you log or record here show up in your other apps'**
+  /// **'Workouts and water you log here show up in your other apps, such as ZT Quests'**
   String get workoutsYouLogOrRecord;
 
   /// No description provided for @showOnWearOsWatch.
@@ -3292,7 +3292,7 @@ abstract class AppL10n {
   /// No description provided for @newWorkoutsSavedTo.
   ///
   /// In en, this message translates to:
-  /// **'New workouts are saved to {health} from now on. Fitness can also copy the workouts already in your journal.'**
+  /// **'New workouts and water are saved to {health} from now on. Fitness can also copy the workouts already in your journal.'**
   String newWorkoutsSavedTo(String health);
 
   /// No description provided for @copiedWorkoutsTo.
@@ -4350,6 +4350,30 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Join'**
   String get challengeJoinButton;
+
+  /// No description provided for @countWaterInOtherApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Count this water in your other apps'**
+  String get countWaterInOtherApps;
+
+  /// No description provided for @countWaterInOtherAppsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the water and workouts you log here to {health}, so ZT Quests and other apps can count them.'**
+  String countWaterInOtherAppsBody(String health);
+
+  /// No description provided for @waterNowSavedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Water you log is now saved to {health}.'**
+  String waterNowSavedTo(String health);
+
+  /// No description provided for @healthDidntAllowWater.
+  ///
+  /// In en, this message translates to:
+  /// **'{health} didn\'t allow Fitness to save water.'**
+  String healthDidntAllowWater(String health);
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {
