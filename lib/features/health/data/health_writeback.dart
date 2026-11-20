@@ -164,13 +164,14 @@ class HealthWriteback {
       (await _prefs).getBool(enabledKey) ?? false;
 
   /// Asks for write access and turns write-back on. False when access was
-  /// refused. Allowing workouts but not water still turns it on, for
-  /// workouts only.
+  /// refused. Allowing only workouts or only water still turns it on, for
+  /// that part: each write needs its own permission anyway.
   Future<bool> enable() async {
     var granted = await _sink.requestWriteAccess();
     if (!granted) {
       try {
-        granted = await _sink.hasWorkoutAccess();
+        granted =
+            await _sink.hasWorkoutAccess() || await _sink.hasWaterAccess();
       } on Object {
         granted = false;
       }
@@ -350,12 +351,18 @@ class HealthWriteback {
       final written = await _waterWritten();
       final entry = written[dateKey];
       final have = entry == null ? 0.0 : (entry[0] as num).toDouble();
-      if ((target - have).abs() < _waterTolerance) return true;
-
       final now = at ?? DateTime.now();
       final dayStart = DateTime(day.year, day.month, day.day);
       final dayEnd = DateTime(day.year, day.month, day.day + 1);
       final isToday = !now.isBefore(dayStart) && now.isBefore(dayEnd);
+      // A day with no note of what was written is only known to be in step
+      // when it is today (nothing written yet). An older one may still hold
+      // records whose note was dropped, so it is cleared below even when
+      // the new total is zero.
+      if ((target - have).abs() < _waterTolerance &&
+          (entry != null || isToday)) {
+        return true;
+      }
 
       // When the glass was drunk: just now for today, midday otherwise.
       var end = isToday ? now : dayStart.add(const Duration(hours: 12, minutes: 1));
@@ -393,6 +400,14 @@ class HealthWriteback {
         // Health reports as a failure.)
         if (!removed && entry != null) return false;
         written.remove(dateKey);
+        if (target < _waterTolerance) {
+          // Noted as empty, so the day isn't cleared again on every check.
+          written[dateKey] = [
+            0,
+            dayStart.toUtc().toIso8601String(),
+            dayEnd.toUtc().toIso8601String(),
+          ];
+        }
         await _saveWater(written);
       }
       if (target < _waterTolerance) return true;

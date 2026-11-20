@@ -260,6 +260,34 @@ void main() {
       expect(await wb.sync('a', run), isTrue);
     });
 
+    test('allowing water but not workouts still saves water', () async {
+      sink.grant = false;
+      sink.waterAccess = true;
+      expect(await wb.enable(), isTrue);
+      expect(await wb.savesWater, isTrue);
+      expect(await wb.syncWater(today, 0.25, now: now), isTrue);
+      expect(sink.waterHeld, 0.25);
+    });
+
+    test('an older day with no note left is cleared when its water is taken '
+        'off', () async {
+      await wb.enable();
+      await wb.syncWater('2026-11-18', 1.5, now: now);
+      // The phone's note of that day is gone (dropped as too old).
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(HealthWriteback.waterKey);
+
+      expect(await wb.syncWater('2026-11-18', 0, now: now), isTrue);
+      expect(sink.waterHeld, 0, reason: 'the old record is removed');
+      final clears = sink.waterDeletes.length;
+      // Checking the empty day again doesn't clear it again.
+      await wb.syncWater('2026-11-18', 0, now: now);
+      expect(sink.waterDeletes, hasLength(clears));
+      // And water added to it later is written once.
+      await wb.syncWater('2026-11-18', 0.5, now: now);
+      expect(sink.waterHeld, 0.5);
+    });
+
     test('today and yesterday follow the vault, Health Connect water aside',
         () async {
       final v = testVault();
