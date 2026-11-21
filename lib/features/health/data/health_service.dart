@@ -76,6 +76,19 @@ class HealthService {
           if (p.sourceId != ownSourceId) p,
       ];
 
+  /// When the latest water among [points] was drunk; null when they hold
+  /// none.
+  static DateTime? lastWaterAt(Iterable<HealthDataPoint> points) {
+    DateTime? last;
+    for (final p in points) {
+      if (p.type != HealthDataType.WATER) continue;
+      final value = p.value;
+      if (value is NumericHealthValue && value.numericValue <= 0) continue;
+      if (last == null || p.dateTo.isAfter(last)) last = p.dateTo;
+    }
+    return last;
+  }
+
   /// This checks if Health Connect is installed/available on Android.
   /// On iOS, it will generally return true as HealthKit is a system service.
   Future<bool> isHealthConnectAvailable() async {

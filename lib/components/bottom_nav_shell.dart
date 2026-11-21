@@ -146,6 +146,8 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
+      // Before the watch's water is added, so that counts as new.
+      await _noteLoggedWater();
       await _drainWatchWater();
       final openVault = ref.read(openFitnessVaultProvider);
       if (openVault != null) {
@@ -181,6 +183,8 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       final todayPoints = deduplicated
           .where((p) => _isSameLocalDay(p.dateFrom, DateTime.now()))
           .toList(growable: false);
+
+      _noteHealthWater(todayPoints);
 
       if (!mounted) return;
       final totalSteps = todayPoints
@@ -476,6 +480,32 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     } catch (e) {
       debugPrint('Watch water not added yet: $e');
     }
+  }
+
+  /// Lets the hydration reminder see how much water today has logged here:
+  /// more than last time (a tap on any screen, the watch, another device)
+  /// restarts its hour.
+  Future<void> _noteLoggedWater() async {
+    final vault = ref.read(openFitnessVaultProvider);
+    if (vault == null) return;
+    try {
+      final today = FitnessVault.dateKeyOf(DateTime.now());
+      await ReminderService()
+          .noteLoggedWater(today, (await vault.waterFor(today)).logged);
+    } catch (e) {
+      debugPrint('Hydration reminder not restarted: $e');
+    }
+  }
+
+  /// Water another app saved to Health Connect today restarts the hydration
+  /// reminder too, counted from when it was drunk.
+  void _noteHealthWater(List<HealthDataPoint> todayPoints) {
+    final at = HealthService.lastWaterAt(todayPoints);
+    if (at == null) return;
+    ReminderService().restartHydrationReminder(at: at).catchError((Object e) {
+      debugPrint('Hydration reminder not restarted: $e');
+      return false;
+    });
   }
 
   /// Water from the watch while the app runs, or the switch turned on.
@@ -985,6 +1015,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
         // Water from the watch, another device or any screen: keep Health
         // Connect in step, so ZT Quests and other apps count it.
         unawaited(HealthWriteback.instance.syncRecentWater(vault));
+        unawaited(_noteLoggedWater());
       }
       _computeInsights();
     });

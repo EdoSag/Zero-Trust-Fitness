@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +31,10 @@ const String kReminderSleepHour = 'reminder_sleep_hour';
 const String kReminderSleepMinute = 'reminder_sleep_minute';
 const String kReminderMeasurementEnabled = 'reminder_measurement_enabled';
 const String kWeeklySummaryEnabled = 'weekly_summary_enabled';
+
+/// When the hydration reminder counts its hours from (milliseconds since
+/// the epoch): the last water logged, or when the reminder was turned on.
+const String kReminderHydrationCountFrom = 'reminder_hydration_count_from_ms';
 
 class ReminderService {
   ReminderService._();
@@ -89,23 +94,113 @@ class ReminderService {
       _plugin.cancel(_kMovementId);
 
   // ---------------------------------------------------------------------------
-  // Hydration reminder — repeats hourly
+  // Hydration reminder — hourly, counted from the last water logged
   // ---------------------------------------------------------------------------
 
-  Future<void> scheduleHydrationReminder() async {
+  /// Schedules the hourly reminder, counted from [from]: the first one comes
+  /// an hour after it, then one every hour.
+  ///
+  /// Without [from] it keeps counting from where it was (so changing another
+  /// reminder or the language doesn't move it), or from now when it is new.
+  Future<void> scheduleHydrationReminder({DateTime? from, DateTime? now}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final at = now ?? DateTime.now();
+    var countFrom = from ?? _hydrationCountFrom(prefs, at) ?? at;
+    if (countFrom.isAfter(at)) countFrom = at;
+    await prefs.setInt(
+        kReminderHydrationCountFrom, countFrom.millisecondsSinceEpoch);
+    // Also clears a reminder that is showing.
     await _plugin.cancel(_kHydrationId);
-    await _plugin.periodicallyShow(
-      _kHydrationId,
-      currentL10n.stayHydrated,
-      currentL10n.drinkAGlassOfWater,
-      RepeatInterval.hourly,
-      _details('hydration', currentL10n.hydrationReminders),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    // On Android the plugin counts the repeats from the moment it is called,
+    // which it reads from package:clock, so that is set to [countFrom] for
+    // the call. Always a little in the past: a time that isn't would be
+    // shown at once. (iOS counts the hour from now whatever the clock says.)
+    final latest = at.subtract(const Duration(seconds: 1));
+    await withClock(
+      Clock.fixed(countFrom.isAfter(latest) ? latest : countFrom),
+      () => _plugin.periodicallyShow(
+        _kHydrationId,
+        currentL10n.stayHydrated,
+        currentL10n.drinkAGlassOfWater,
+        RepeatInterval.hourly,
+        _details('hydration', currentL10n.hydrationReminders),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      ),
     );
   }
 
-  Future<void> cancelHydrationReminder() =>
-      _plugin.cancel(_kHydrationId);
+  Future<void> cancelHydrationReminder() async {
+    await _plugin.cancel(_kHydrationId);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(kReminderHydrationCountFrom);
+  }
+
+  /// Water was logged at [at] (now when not given): the hourly reminder
+  /// counts again from then, so the next one comes an hour after the water.
+  ///
+  /// Does nothing while the reminder is off, or when [at] is no later than
+  /// what it already counts from (water it has seen before). Returns
+  /// whether the reminder was restarted.
+  Future<bool> restartHydrationReminder({DateTime? at, DateTime? now}) {
+    // One at a time: water seen in the app and in Health Connect at the
+    // same moment must not leave the earlier of the two in charge.
+    final done =
+        _hydrationQueue.then((_) => _restartHydrationReminder(at, now));
+    _hydrationQueue = done.then((_) {}, onError: (_) {});
+    return done;
+  }
+
+  Future<void> _hydrationQueue = Future.value();
+
+  Future<bool> _restartHydrationReminder(DateTime? at, DateTime? now) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!(prefs.getBool(kReminderHydrationEnabled) ?? false)) return false;
+    final current = now ?? DateTime.now();
+    var loggedAt = at ?? current;
+    if (loggedAt.isAfter(current)) loggedAt = current;
+    final countFrom = _hydrationCountFrom(prefs, current);
+    if (countFrom != null && !loggedAt.isAfter(countFrom)) return false;
+    await scheduleHydrationReminder(from: loggedAt, now: current);
+    return true;
+  }
+
+  /// Tells the reminder how much water [dateKey] (today) has logged in this
+  /// app, whenever that may have changed. More than last time means water
+  /// was just logged (a tap in the app, the watch, another device), which
+  /// restarts the reminder; water taken off doesn't.
+  ///
+  /// The first call after the app starts only notes the amount: what was
+  /// logged before can't be told from new water. Returns whether the
+  /// reminder was restarted.
+  Future<bool> noteLoggedWater(String dateKey, num liters,
+      {DateTime? now}) async {
+    // A new day starts with nothing logged.
+    final before = _waterDay == null
+        ? null
+        : (_waterDay == dateKey ? _waterLiters : 0);
+    _waterDay = dateKey;
+    _waterLiters = liters;
+    if (before == null || liters <= before + _waterTolerance) return false;
+    return restartHydrationReminder(now: now);
+  }
+
+  String? _waterDay;
+  num _waterLiters = 0;
+
+  /// Half a millilitre: smaller differences are rounding.
+  static const _waterTolerance = 0.0005;
+
+  /// Forgets the water seen so far, as after an app start.
+  @visibleForTesting
+  void forgetLoggedWater() => _waterDay = null;
+
+  /// What the reminder counts from; null when nothing is saved, or the
+  /// saved time is ahead of the clock (the phone's time was set back).
+  static DateTime? _hydrationCountFrom(SharedPreferences prefs, DateTime now) {
+    final ms = prefs.getInt(kReminderHydrationCountFrom);
+    if (ms == null || ms > now.millisecondsSinceEpoch) return null;
+    return DateTime.fromMillisecondsSinceEpoch(ms);
+  }
 
   // ---------------------------------------------------------------------------
   // Workout reminder — weekly on selected days at a specific time
@@ -235,7 +330,11 @@ class ReminderService {
 
   Future<void> cancelWeeklySummary() => _plugin.cancel(_kWeeklySummaryId);
 
-  Future<void> cancelAll() => _plugin.cancelAll();
+  Future<void> cancelAll() async {
+    await _plugin.cancelAll();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(kReminderHydrationCountFrom);
+  }
 
   // ---------------------------------------------------------------------------
   // Helpers

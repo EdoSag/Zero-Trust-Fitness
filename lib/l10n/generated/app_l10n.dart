@@ -2053,11 +2053,11 @@ abstract class AppL10n {
   /// **'Hydration reminder'**
   String get hydrationReminder;
 
-  /// No description provided for @hourlyPromptToDrinkWater.
+  /// No description provided for @anHourAfterYourLastWater.
   ///
   /// In en, this message translates to:
-  /// **'Hourly prompt to drink water'**
-  String get hourlyPromptToDrinkWater;
+  /// **'An hour after the last water you logged, then every hour'**
+  String get anHourAfterYourLastWater;
 
   /// No description provided for @workoutReminder.
   ///

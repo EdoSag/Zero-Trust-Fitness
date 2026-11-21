@@ -1060,7 +1060,8 @@ class AppL10nEn extends AppL10n {
   String get hydrationReminder => 'Hydration reminder';
 
   @override
-  String get hourlyPromptToDrinkWater => 'Hourly prompt to drink water';
+  String get anHourAfterYourLastWater =>
+      'An hour after the last water you logged, then every hour';
 
   @override
   String get workoutReminder => 'Workout reminder';
