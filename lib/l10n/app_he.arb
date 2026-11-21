@@ -326,7 +326,7 @@
   "movementNudge": "תזכורת לזוז",
   "hourlyReminderToStayActive": "תזכורת שעתית להישאר בתנועה",
   "hydrationReminder": "תזכורת שתייה",
-  "hourlyPromptToDrinkWater": "תזכורת שעתית לשתות מים",
+  "anHourAfterYourLastWater": "שעה אחרי השתייה האחרונה שנרשמה, ואז כל שעה",
   "workoutReminder": "תזכורת אימון",
   "chooseDaysAndTime": "בחירת ימים ושעה",
   "reminderTime": "שעת התזכורת",

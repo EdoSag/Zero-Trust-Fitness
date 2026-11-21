@@ -326,7 +326,7 @@
   "movementNudge": "Movement nudge",
   "hourlyReminderToStayActive": "Hourly reminder to stay active",
   "hydrationReminder": "Hydration reminder",
-  "hourlyPromptToDrinkWater": "Hourly prompt to drink water",
+  "anHourAfterYourLastWater": "An hour after the last water you logged, then every hour",
   "workoutReminder": "Workout reminder",
   "chooseDaysAndTime": "Choose days and time",
   "reminderTime": "Reminder time",
