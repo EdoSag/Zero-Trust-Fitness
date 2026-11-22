@@ -160,6 +160,10 @@ class HealthWriteback {
   static const writtenKey = 'health_writeback_written';
   static const waterKey = 'health_writeback_water';
 
+  /// When write-back was last turned on. Workouts that ended before then
+  /// are only copied when the person asks for past ones ([backfill]).
+  static const sinceKey = 'health_writeback_since';
+
   Future<bool> get isEnabled async =>
       (await _prefs).getBool(enabledKey) ?? false;
 
@@ -176,7 +180,12 @@ class HealthWriteback {
         granted = false;
       }
     }
-    if (granted) await (await _prefs).setBool(enabledKey, true);
+    if (granted) {
+      final prefs = await _prefs;
+      await prefs.setBool(enabledKey, true);
+      await prefs.setString(
+          sinceKey, DateTime.now().toUtc().toIso8601String());
+    }
     return granted;
   }
 
@@ -225,14 +234,54 @@ class HealthWriteback {
       (data['duration'] as num) > 0 &&
       DateTime.tryParse(data['timestamp']?.toString() ?? '') != null;
 
+  /// When a workout's record goes in Health Connect. The time saved with a
+  /// workout is when it started, but one logged by hand right after it
+  /// ended carries the time it was logged: a record from then on would sit
+  /// in the future, where apps reading "today so far" (ZT Quests) miss it.
+  /// Such a workout is taken to have ended when it was logged.
+  ///
+  /// GPS workouts (and GPX imports) keep their real start: they carry a
+  /// route. Their duration is rounded to the minute, so one saved right
+  /// after stopping may end up to half a minute ahead; anything within a
+  /// minute of now is left as it is for the same reason.
+  static (DateTime, DateTime) recordRange(Map<String, dynamic> data,
+      {DateTime? now}) {
+    final logged = DateTime.parse(data['timestamp'].toString());
+    final length = Duration(minutes: (data['duration'] as num).toInt());
+    final at = now ?? DateTime.now();
+    if (data['route'] is List ||
+        !logged.add(length).isAfter(at.add(const Duration(minutes: 1)))) {
+      return (logged, logged.add(length));
+    }
+    final end = logged.isAfter(at) ? at : logged;
+    return (end.subtract(length), end);
+  }
+
+  /// What a written record was made from, so a change made on another
+  /// device (or the watch) can be noticed and written again.
+  static String fingerprint(Map<String, dynamic> data) => [
+        data['type'],
+        data['duration'],
+        data['timestamp'],
+        data['distance_m'],
+      ].join('|');
+
   /// Writes (or, after an edit, rewrites) one workout. Does nothing while
   /// write-back is off. Never throws: Health Connect being unavailable must
   /// not stop a workout from saving.
-  Future<bool> sync(String id, Map<String, dynamic> data) async {
+  Future<bool> sync(String id, Map<String, dynamic> data, {DateTime? now}) {
+    final done = _workoutQueue.then((_) => _sync(id, data, now));
+    _workoutQueue = done.then((_) {}, onError: (_) {});
+    return done;
+  }
+
+  Future<void> _workoutQueue = Future.value();
+
+  Future<bool> _sync(String id, Map<String, dynamic> data, DateTime? now) async {
     try {
       if (!await isEnabled || !isWritable(data)) return false;
       final written = await _written();
-      if (written[id] case [final s, final e]) {
+      if (written[id] case [final s, final e, ...]) {
         // Writing the edit before the old record is gone would leave two;
         // keep the old range so a later try can still remove it.
         final removed = await _sink.delete(
@@ -241,8 +290,7 @@ class HealthWriteback {
         written.remove(id);
         await _save(written);
       }
-      final start = DateTime.parse(data['timestamp'].toString());
-      final end = start.add(Duration(minutes: (data['duration'] as num).toInt()));
+      final (start, end) = recordRange(data, now: now);
       final ok = await _sink.write(
         type: data['type']?.toString() ?? 'Other',
         start: start,
@@ -250,7 +298,11 @@ class HealthWriteback {
         distanceMeters: (data['distance_m'] as num?)?.toDouble(),
       );
       if (ok) {
-        written[id] = [start.toUtc().toIso8601String(), end.toUtc().toIso8601String()];
+        written[id] = [
+          start.toUtc().toIso8601String(),
+          end.toUtc().toIso8601String(),
+          fingerprint(data),
+        ];
       } else {
         written.remove(id);
       }
@@ -263,11 +315,17 @@ class HealthWriteback {
   }
 
   /// Removes a deleted workout's record, if this phone wrote one.
-  Future<void> remove(String id) async {
+  Future<void> remove(String id) {
+    final done = _workoutQueue.then((_) => _remove(id));
+    _workoutQueue = done.then((_) {}, onError: (_) {});
+    return done;
+  }
+
+  Future<void> _remove(String id) async {
     try {
       final written = await _written();
       final range = written[id];
-      if (range == null) return;
+      if (range == null || range.length < 2) return;
       final removed = await _sink.delete(
           start: DateTime.parse(range[0]), end: DateTime.parse(range[1]));
       // On failure the range is kept, so the record can still be removed.
@@ -276,6 +334,49 @@ class HealthWriteback {
       await _save(written);
     } on Object catch (e) {
       debugPrint('Health write-back delete failed: $e');
+    }
+  }
+
+  /// Brings today's and yesterday's workouts in line with the vault: the
+  /// days other apps still read (ZT Quests counts them toward its workout
+  /// and run quests). Covers workouts from the watch, from another device
+  /// and from a restored backup, changes made there, and ones deleted
+  /// there. Never throws.
+  Future<void> syncRecentWorkouts(FitnessVault vault, {DateTime? now}) async {
+    try {
+      if (!await isEnabled) return;
+      final at = now ?? DateTime.now();
+      final since = DateTime(at.year, at.month, at.day - 1);
+      bool recent(DateTime t) => !t.isBefore(since);
+      final on = DateTime.tryParse((await _prefs).getString(sinceKey) ?? '');
+      final kept = <String>{};
+      for (final w in await vault.fetchWorkouts()) {
+        kept.add(w.id);
+        if (!isWritable(w.data)) continue;
+        if (!recent(DateTime.parse(w.data['timestamp'].toString()).toLocal())) {
+          continue;
+        }
+        // "Only new ones": not a workout that was over before it was on.
+        if (on != null && recordRange(w.data, now: at).$2.isBefore(on)) {
+          continue;
+        }
+        final note = (await _written())[w.id];
+        // Old notes (no fingerprint) are taken as up to date.
+        if (note != null && (note.length < 3 || note[2] == fingerprint(w.data))) {
+          continue;
+        }
+        await sync(w.id, w.data, now: now);
+      }
+      for (final e in (await _written()).entries.toList()) {
+        if (kept.contains(e.key) || e.value.length < 2) continue;
+        final end = DateTime.tryParse(e.value[1]);
+        if (end == null || !recent(end.toLocal())) continue;
+        // Saved while this pass was writing: not deleted after all.
+        if (await vault.getWorkout(e.key) != null) continue;
+        await remove(e.key);
+      }
+    } on Object catch (e) {
+      debugPrint('Health workout write-back failed: $e');
     }
   }
 
