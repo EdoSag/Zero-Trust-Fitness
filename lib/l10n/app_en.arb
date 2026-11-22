@@ -220,11 +220,7 @@
   "paused": "PAUSED",
   "avgPace": "avg pace",
   "waitingForGps": "Waiting for GPS…",
-  "noTracksWithAtLeast": "No tracks with at least two points in that file.",
   "enterHowLongEachWorkout": "Enter how long each workout took.",
-  "importGpxRoutes": "Import GPX routes",
-  "bringInWorkoutsFromStrava": "Bring in workouts from Strava, Komoot, Garmin or any app that exports .gpx files. The file is read on this phone and saved encrypted, like everything else.",
-  "chooseGpxFiles": "Choose GPX files",
   "track": "Track",
   "alreadyImported": "already imported",
   "thisFileHasNoTimes": "This file has no times. When was it, and how long did it take?",
@@ -366,7 +362,7 @@
   "exportRestoreX": "Export & restore",
   "backUpToAFile": "Back up to a file or bring a backup back in",
   "yourHistoryFromAGoogle": "Your history from a Google Takeout export",
-  "fromStravaKomootGarminAnd": "From Strava, Komoot, Garmin and others",
+  "fromStravaKomootGarminAnd": "FIT, TCX and GPX files from Garmin, Polar, Coros, Strava and others",
   "shareReport": "Share report",
   "aScopedHealthReportTo": "A scoped health report to share",
   "deleteActivityDataX": "Delete activity data",
@@ -867,22 +863,6 @@
         "type": "String"
       },
       "time": {
-        "type": "String"
-      }
-    }
-  },
-  "couldntReadAsGpx": "Couldn't read {files} as GPX.",
-  "@couldntReadAsGpx": {
-    "placeholders": {
-      "files": {
-        "type": "String"
-      }
-    }
-  },
-  "skippedNotGpx": "Skipped {files}: not GPX.",
-  "@skippedNotGpx": {
-    "placeholders": {
-      "files": {
         "type": "String"
       }
     }
@@ -1497,5 +1477,99 @@
         "type": "String"
       }
     }
-  }
+  },
+  "importWorkoutFiles": "Import workout files",
+  "bringInWorkoutFiles": "Bring in workouts from Garmin, Polar, Coros, Wahoo, Suunto, Strava, Komoot or any app that exports .fit, .tcx or .gpx files (gzipped .gz files too). The file is read on this phone and saved encrypted, like everything else.",
+  "chooseWorkoutFiles": "Choose files",
+  "couldntReadWorkoutFiles": "Couldn't read {files}. Fitness reads .fit, .tcx and .gpx files.",
+  "@couldntReadWorkoutFiles": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "skippedUnreadableFiles": "Skipped {files}: not a .fit, .tcx or .gpx file.",
+  "@skippedUnreadableFiles": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "noWorkoutsInFile": "No workouts in that file.",
+  "noRouteInFile": "no route (indoor)",
+  "avgHeartRate": "Avg heart rate",
+  "maxHeartRate": "Max heart rate",
+  "sleepHoursMinutes": "{hours} h {minutes} min",
+  "@sleepHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "nHoursShort": "{count}h",
+  "@nHoursShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastNight": "Last night",
+  "noSleepYet": "No sleep yet",
+  "noSleepYetHint": "Sleep from your watch or sleep app shows here once it is in Health Connect. You can also add a night by hand with the + button on Today.",
+  "averageSleep": "Average sleep",
+  "averageBedtime": "Average bedtime",
+  "averageWakeUp": "Average wake-up",
+  "bedtimeConsistency": "Bedtime consistency",
+  "plusMinusMinutes": "±{minutes} min",
+  "@plusMinusMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "nightsAtGoal": "Nights with {goal} or more",
+  "@nightsAtGoal": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "nOfTotal": "{count} of {total}",
+  "@nOfTotal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "comparedWithWeekBefore": "Compared with the week before",
+  "sameAsBefore": "About the same",
+  "sleepGoalReached": "Sleep goal reached",
+  "sleepShortOfGoal": "{time} short of your goal",
+  "@sleepShortOfGoal": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepStageDeep": "Deep",
+  "sleepStageRem": "REM",
+  "sleepStageLight": "Light",
+  "sleepStageAsleep": "Asleep",
+  "sleepStageAwake": "Awake",
+  "averageStages": "Average night by stage",
+  "sleepSourcesNote": "From Health Connect and the nights you enter by hand. A night counts on the morning it ends. It is read on this phone and saved encrypted, like everything else."
 }

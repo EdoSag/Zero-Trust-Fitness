@@ -147,7 +147,18 @@ const priorityMetricKeys = <String>[
   'blood_oxygen_pct_avg',
 ];
 
+/// The sleep cards, which open the sleep page.
+bool isSleepMetric(String key) => key.startsWith('sleep_');
+
+/// "7 h 32 min", or "18 min" under an hour.
+String formatSleepMinutes(num minutes) {
+  final m = minutes.round();
+  if (m < 60) return currentL10n.nMin(m);
+  return currentL10n.sleepHoursMinutes(m ~/ 60, m % 60);
+}
+
 String formatMetricValue(String key, num value, String unit) {
+  if (isSleepMetric(key) && unit == 'min') return formatSleepMinutes(value);
   String text;
   if (key == 'nutrition_entries' || key == 'steps' || key == 'heart_points') {
     text = value.toInt().toString();

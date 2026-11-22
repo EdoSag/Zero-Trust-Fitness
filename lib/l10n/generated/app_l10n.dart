@@ -1417,35 +1417,11 @@ abstract class AppL10n {
   /// **'Waiting for GPS…'**
   String get waitingForGps;
 
-  /// No description provided for @noTracksWithAtLeast.
-  ///
-  /// In en, this message translates to:
-  /// **'No tracks with at least two points in that file.'**
-  String get noTracksWithAtLeast;
-
   /// No description provided for @enterHowLongEachWorkout.
   ///
   /// In en, this message translates to:
   /// **'Enter how long each workout took.'**
   String get enterHowLongEachWorkout;
-
-  /// No description provided for @importGpxRoutes.
-  ///
-  /// In en, this message translates to:
-  /// **'Import GPX routes'**
-  String get importGpxRoutes;
-
-  /// No description provided for @bringInWorkoutsFromStrava.
-  ///
-  /// In en, this message translates to:
-  /// **'Bring in workouts from Strava, Komoot, Garmin or any app that exports .gpx files. The file is read on this phone and saved encrypted, like everything else.'**
-  String get bringInWorkoutsFromStrava;
-
-  /// No description provided for @chooseGpxFiles.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose GPX files'**
-  String get chooseGpxFiles;
 
   /// No description provided for @track.
   ///
@@ -2296,7 +2272,7 @@ abstract class AppL10n {
   /// No description provided for @fromStravaKomootGarminAnd.
   ///
   /// In en, this message translates to:
-  /// **'From Strava, Komoot, Garmin and others'**
+  /// **'FIT, TCX and GPX files from Garmin, Polar, Coros, Strava and others'**
   String get fromStravaKomootGarminAnd;
 
   /// No description provided for @shareReport.
@@ -3162,18 +3138,6 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Last {unit}: {time}'**
   String lastSplit(String unit, String time);
-
-  /// No description provided for @couldntReadAsGpx.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t read {files} as GPX.'**
-  String couldntReadAsGpx(String files);
-
-  /// No description provided for @skippedNotGpx.
-  ///
-  /// In en, this message translates to:
-  /// **'Skipped {files}: not GPX.'**
-  String skippedNotGpx(String files);
 
   /// No description provided for @importedWorkouts.
   ///
@@ -4374,6 +4338,198 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'{health} didn\'t allow Fitness to save water.'**
   String healthDidntAllowWater(String health);
+
+  /// No description provided for @importWorkoutFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Import workout files'**
+  String get importWorkoutFiles;
+
+  /// No description provided for @bringInWorkoutFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring in workouts from Garmin, Polar, Coros, Wahoo, Suunto, Strava, Komoot or any app that exports .fit, .tcx or .gpx files (gzipped .gz files too). The file is read on this phone and saved encrypted, like everything else.'**
+  String get bringInWorkoutFiles;
+
+  /// No description provided for @chooseWorkoutFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose files'**
+  String get chooseWorkoutFiles;
+
+  /// No description provided for @couldntReadWorkoutFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read {files}. Fitness reads .fit, .tcx and .gpx files.'**
+  String couldntReadWorkoutFiles(String files);
+
+  /// No description provided for @skippedUnreadableFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped {files}: not a .fit, .tcx or .gpx file.'**
+  String skippedUnreadableFiles(String files);
+
+  /// No description provided for @noWorkoutsInFile.
+  ///
+  /// In en, this message translates to:
+  /// **'No workouts in that file.'**
+  String get noWorkoutsInFile;
+
+  /// No description provided for @noRouteInFile.
+  ///
+  /// In en, this message translates to:
+  /// **'no route (indoor)'**
+  String get noRouteInFile;
+
+  /// No description provided for @avgHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg heart rate'**
+  String get avgHeartRate;
+
+  /// No description provided for @maxHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Max heart rate'**
+  String get maxHeartRate;
+
+  /// No description provided for @sleepHoursMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String sleepHoursMinutes(int hours, int minutes);
+
+  /// No description provided for @nHoursShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}h'**
+  String nHoursShort(int count);
+
+  /// No description provided for @lastNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Last night'**
+  String get lastNight;
+
+  /// No description provided for @noSleepYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No sleep yet'**
+  String get noSleepYet;
+
+  /// No description provided for @noSleepYetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep from your watch or sleep app shows here once it is in Health Connect. You can also add a night by hand with the + button on Today.'**
+  String get noSleepYetHint;
+
+  /// No description provided for @averageSleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Average sleep'**
+  String get averageSleep;
+
+  /// No description provided for @averageBedtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Average bedtime'**
+  String get averageBedtime;
+
+  /// No description provided for @averageWakeUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Average wake-up'**
+  String get averageWakeUp;
+
+  /// No description provided for @bedtimeConsistency.
+  ///
+  /// In en, this message translates to:
+  /// **'Bedtime consistency'**
+  String get bedtimeConsistency;
+
+  /// No description provided for @plusMinusMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'±{minutes} min'**
+  String plusMinusMinutes(int minutes);
+
+  /// No description provided for @nightsAtGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Nights with {goal} or more'**
+  String nightsAtGoal(String goal);
+
+  /// No description provided for @nOfTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} of {total}'**
+  String nOfTotal(int count, int total);
+
+  /// No description provided for @comparedWithWeekBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'Compared with the week before'**
+  String get comparedWithWeekBefore;
+
+  /// No description provided for @sameAsBefore.
+  ///
+  /// In en, this message translates to:
+  /// **'About the same'**
+  String get sameAsBefore;
+
+  /// No description provided for @sleepGoalReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep goal reached'**
+  String get sleepGoalReached;
+
+  /// No description provided for @sleepShortOfGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'{time} short of your goal'**
+  String sleepShortOfGoal(String time);
+
+  /// No description provided for @sleepStageDeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Deep'**
+  String get sleepStageDeep;
+
+  /// No description provided for @sleepStageRem.
+  ///
+  /// In en, this message translates to:
+  /// **'REM'**
+  String get sleepStageRem;
+
+  /// No description provided for @sleepStageLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get sleepStageLight;
+
+  /// No description provided for @sleepStageAsleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Asleep'**
+  String get sleepStageAsleep;
+
+  /// No description provided for @sleepStageAwake.
+  ///
+  /// In en, this message translates to:
+  /// **'Awake'**
+  String get sleepStageAwake;
+
+  /// No description provided for @averageStages.
+  ///
+  /// In en, this message translates to:
+  /// **'Average night by stage'**
+  String get averageStages;
+
+  /// No description provided for @sleepSourcesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'From Health Connect and the nights you enter by hand. A night counts on the morning it ends. It is read on this phone and saved encrypted, like everything else.'**
+  String get sleepSourcesNote;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

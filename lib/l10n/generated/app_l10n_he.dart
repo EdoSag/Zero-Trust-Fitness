@@ -707,20 +707,7 @@ class AppL10nHe extends AppL10n {
   String get waitingForGps => 'ממתין ל-GPS…';
 
   @override
-  String get noTracksWithAtLeast => 'אין בקובץ מסלולים עם שתי נקודות לפחות.';
-
-  @override
   String get enterHowLongEachWorkout => 'יש להזין כמה זמן נמשך כל אימון.';
-
-  @override
-  String get importGpxRoutes => 'ייבוא מסלולי GPX';
-
-  @override
-  String get bringInWorkoutsFromStrava =>
-      'ייבוא אימונים מ-Strava,‏ Komoot,‏ Garmin או כל אפליקציה שמייצאת קובצי GPX. הקובץ נקרא בטלפון הזה ונשמר מוצפן, כמו כל השאר.';
-
-  @override
-  String get chooseGpxFiles => 'בחירת קובצי GPX';
 
   @override
   String get track => 'מסלול';
@@ -1170,7 +1157,8 @@ class AppL10nHe extends AppL10n {
   String get yourHistoryFromAGoogle => 'ההיסטוריה שלך מייצוא Google Takeout';
 
   @override
-  String get fromStravaKomootGarminAnd => 'מ-Strava,‏ Komoot,‏ Garmin ועוד';
+  String get fromStravaKomootGarminAnd =>
+      'קובצי FIT,‏ TCX ו-GPX מ-Garmin,‏ Polar,‏ Coros,‏ Strava ועוד';
 
   @override
   String get shareReport => 'שיתוף דוח';
@@ -1743,16 +1731,6 @@ class AppL10nHe extends AppL10n {
   @override
   String lastSplit(String unit, String time) {
     return '$unit אחרון: $time';
-  }
-
-  @override
-  String couldntReadAsGpx(String files) {
-    return 'לא ניתן לקרוא את $files כקובצי GPX.';
-  }
-
-  @override
-  String skippedNotGpx(String files) {
-    return 'דילגנו על $files: לא GPX.';
   }
 
   @override
@@ -2535,4 +2513,119 @@ class AppL10nHe extends AppL10n {
   String healthDidntAllowWater(String health) {
     return '$health לא אישר ל-Fitness לשמור מים.';
   }
+
+  @override
+  String get importWorkoutFiles => 'ייבוא קובצי אימון';
+
+  @override
+  String get bringInWorkoutFiles =>
+      'ייבוא אימונים מ-Garmin,‏ Polar,‏ Coros,‏ Wahoo,‏ Suunto,‏ Strava,‏ Komoot או כל אפליקציה שמייצאת קובצי ‎.fit‏, ‎.tcx‏ או ‎.gpx‏ (גם דחוסים כ-‎.gz‏). הקובץ נקרא בטלפון הזה ונשמר מוצפן, כמו כל השאר.';
+
+  @override
+  String get chooseWorkoutFiles => 'בחירת קבצים';
+
+  @override
+  String couldntReadWorkoutFiles(String files) {
+    return 'לא ניתן לקרוא את $files. האפליקציה קוראת קובצי ‎.fit‏, ‎.tcx‏ ו-‎.gpx‏.';
+  }
+
+  @override
+  String skippedUnreadableFiles(String files) {
+    return 'דילגנו על $files: לא קובץ ‎.fit‏, ‎.tcx‏ או ‎.gpx‏.';
+  }
+
+  @override
+  String get noWorkoutsInFile => 'אין אימונים בקובץ הזה.';
+
+  @override
+  String get noRouteInFile => 'בלי מסלול (בפנים)';
+
+  @override
+  String get avgHeartRate => 'דופק ממוצע';
+
+  @override
+  String get maxHeartRate => 'דופק מרבי';
+
+  @override
+  String sleepHoursMinutes(int hours, int minutes) {
+    return '$hours ש׳ $minutes דק׳';
+  }
+
+  @override
+  String nHoursShort(int count) {
+    return '$count ש׳';
+  }
+
+  @override
+  String get lastNight => 'הלילה האחרון';
+
+  @override
+  String get noSleepYet => 'עדיין אין נתוני שינה';
+
+  @override
+  String get noSleepYetHint =>
+      'שינה מהשעון או מאפליקציית השינה תופיע כאן ברגע שהיא ב-Health Connect. אפשר גם להוסיף לילה ידנית בכפתור + במסך היום.';
+
+  @override
+  String get averageSleep => 'שינה ממוצעת';
+
+  @override
+  String get averageBedtime => 'שעת שינה ממוצעת';
+
+  @override
+  String get averageWakeUp => 'שעת קימה ממוצעת';
+
+  @override
+  String get bedtimeConsistency => 'עקביות בשעת השינה';
+
+  @override
+  String plusMinusMinutes(int minutes) {
+    return '±$minutes דק׳';
+  }
+
+  @override
+  String nightsAtGoal(String goal) {
+    return 'לילות עם $goal ומעלה';
+  }
+
+  @override
+  String nOfTotal(int count, int total) {
+    return '$count מתוך $total';
+  }
+
+  @override
+  String get comparedWithWeekBefore => 'לעומת השבוע הקודם';
+
+  @override
+  String get sameAsBefore => 'בערך אותו דבר';
+
+  @override
+  String get sleepGoalReached => 'הגעת ליעד השינה';
+
+  @override
+  String sleepShortOfGoal(String time) {
+    return 'חסרות $time ליעד';
+  }
+
+  @override
+  String get sleepStageDeep => 'עמוקה';
+
+  @override
+  String get sleepStageRem => 'REM';
+
+  @override
+  String get sleepStageLight => 'קלה';
+
+  @override
+  String get sleepStageAsleep => 'שינה';
+
+  @override
+  String get sleepStageAwake => 'ערות';
+
+  @override
+  String get averageStages => 'לילה ממוצע לפי שלבים';
+
+  @override
+  String get sleepSourcesNote =>
+      'מ-Health Connect ומהלילות שהזנת ידנית. לילה נספר בבוקר שבו הוא מסתיים. הנתונים נקראים בטלפון הזה ונשמרים מוצפנים, כמו כל השאר.';
 }

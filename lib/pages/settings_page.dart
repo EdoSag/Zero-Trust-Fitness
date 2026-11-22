@@ -16,7 +16,7 @@ import 'package:zerotrust_fitness/features/wear/wear_companion.dart';
 import 'package:zerotrust_fitness/pages/export_restore_page.dart';
 import 'package:zerotrust_fitness/pages/google_fit_import_page.dart';
 import 'package:zerotrust_fitness/pages/goals_page.dart';
-import 'package:zerotrust_fitness/pages/gpx_import_page.dart';
+import 'package:zerotrust_fitness/pages/workout_files_import_page.dart';
 import 'package:zerotrust_fitness/pages/offline_maps_page.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
 import 'package:zerotrust_fitness/pages/privacy_dashboard_page.dart';
@@ -435,10 +435,10 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
         ),
         ListTile(
           leading: const Icon(Icons.route_outlined),
-          title: Text(context.l10n.importGpxRoutes),
+          title: Text(context.l10n.importWorkoutFiles),
           subtitle: Text(context.l10n.fromStravaKomootGarminAnd),
           enabled: unlocked,
-          onTap: () => _push((v) => GpxImportPage(vault: v)),
+          onTap: () => _push((v) => WorkoutFilesImportPage(vault: v)),
         ),
         ListTile(
           leading: const Icon(Icons.share_outlined),

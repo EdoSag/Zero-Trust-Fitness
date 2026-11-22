@@ -721,21 +721,7 @@ class AppL10nEn extends AppL10n {
   String get waitingForGps => 'Waiting for GPS…';
 
   @override
-  String get noTracksWithAtLeast =>
-      'No tracks with at least two points in that file.';
-
-  @override
   String get enterHowLongEachWorkout => 'Enter how long each workout took.';
-
-  @override
-  String get importGpxRoutes => 'Import GPX routes';
-
-  @override
-  String get bringInWorkoutsFromStrava =>
-      'Bring in workouts from Strava, Komoot, Garmin or any app that exports .gpx files. The file is read on this phone and saved encrypted, like everything else.';
-
-  @override
-  String get chooseGpxFiles => 'Choose GPX files';
 
   @override
   String get track => 'Track';
@@ -1193,7 +1179,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get fromStravaKomootGarminAnd =>
-      'From Strava, Komoot, Garmin and others';
+      'FIT, TCX and GPX files from Garmin, Polar, Coros, Strava and others';
 
   @override
   String get shareReport => 'Share report';
@@ -1764,16 +1750,6 @@ class AppL10nEn extends AppL10n {
   @override
   String lastSplit(String unit, String time) {
     return 'Last $unit: $time';
-  }
-
-  @override
-  String couldntReadAsGpx(String files) {
-    return 'Couldn\'t read $files as GPX.';
-  }
-
-  @override
-  String skippedNotGpx(String files) {
-    return 'Skipped $files: not GPX.';
   }
 
   @override
@@ -2561,4 +2537,119 @@ class AppL10nEn extends AppL10n {
   String healthDidntAllowWater(String health) {
     return '$health didn\'t allow Fitness to save water.';
   }
+
+  @override
+  String get importWorkoutFiles => 'Import workout files';
+
+  @override
+  String get bringInWorkoutFiles =>
+      'Bring in workouts from Garmin, Polar, Coros, Wahoo, Suunto, Strava, Komoot or any app that exports .fit, .tcx or .gpx files (gzipped .gz files too). The file is read on this phone and saved encrypted, like everything else.';
+
+  @override
+  String get chooseWorkoutFiles => 'Choose files';
+
+  @override
+  String couldntReadWorkoutFiles(String files) {
+    return 'Couldn\'t read $files. Fitness reads .fit, .tcx and .gpx files.';
+  }
+
+  @override
+  String skippedUnreadableFiles(String files) {
+    return 'Skipped $files: not a .fit, .tcx or .gpx file.';
+  }
+
+  @override
+  String get noWorkoutsInFile => 'No workouts in that file.';
+
+  @override
+  String get noRouteInFile => 'no route (indoor)';
+
+  @override
+  String get avgHeartRate => 'Avg heart rate';
+
+  @override
+  String get maxHeartRate => 'Max heart rate';
+
+  @override
+  String sleepHoursMinutes(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String nHoursShort(int count) {
+    return '${count}h';
+  }
+
+  @override
+  String get lastNight => 'Last night';
+
+  @override
+  String get noSleepYet => 'No sleep yet';
+
+  @override
+  String get noSleepYetHint =>
+      'Sleep from your watch or sleep app shows here once it is in Health Connect. You can also add a night by hand with the + button on Today.';
+
+  @override
+  String get averageSleep => 'Average sleep';
+
+  @override
+  String get averageBedtime => 'Average bedtime';
+
+  @override
+  String get averageWakeUp => 'Average wake-up';
+
+  @override
+  String get bedtimeConsistency => 'Bedtime consistency';
+
+  @override
+  String plusMinusMinutes(int minutes) {
+    return '±$minutes min';
+  }
+
+  @override
+  String nightsAtGoal(String goal) {
+    return 'Nights with $goal or more';
+  }
+
+  @override
+  String nOfTotal(int count, int total) {
+    return '$count of $total';
+  }
+
+  @override
+  String get comparedWithWeekBefore => 'Compared with the week before';
+
+  @override
+  String get sameAsBefore => 'About the same';
+
+  @override
+  String get sleepGoalReached => 'Sleep goal reached';
+
+  @override
+  String sleepShortOfGoal(String time) {
+    return '$time short of your goal';
+  }
+
+  @override
+  String get sleepStageDeep => 'Deep';
+
+  @override
+  String get sleepStageRem => 'REM';
+
+  @override
+  String get sleepStageLight => 'Light';
+
+  @override
+  String get sleepStageAsleep => 'Asleep';
+
+  @override
+  String get sleepStageAwake => 'Awake';
+
+  @override
+  String get averageStages => 'Average night by stage';
+
+  @override
+  String get sleepSourcesNote =>
+      'From Health Connect and the nights you enter by hand. A night counts on the morning it ends. It is read on this phone and saved encrypted, like everything else.';
 }

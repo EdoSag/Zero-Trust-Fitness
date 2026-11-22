@@ -3,9 +3,21 @@ import 'dart:math' as math;
 import 'package:xml/xml.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 
-/// One track (or route) read from a GPX file.
+/// One workout read from a file: a GPX track or route, or a TCX or FIT
+/// activity (which can also be indoor, with no route at all).
 class GpxTrack {
-  const GpxTrack({this.name, this.type, required this.points});
+  const GpxTrack({
+    this.name,
+    this.type,
+    required this.points,
+    this.format = 'gpx',
+    this.startTime,
+    this.recordedDuration,
+    this.recordedDistanceMeters,
+    this.avgHeartRate,
+    this.maxHeartRate,
+    this.calories,
+  });
 
   final String? name;
 
@@ -13,19 +25,41 @@ class GpxTrack {
   final String? type;
   final List<GpsRoutePoint> points;
 
-  /// Set when the points carry times.
+  /// `gpx`, `tcx` or `fit`: the kind of file it came from.
+  final String format;
+
+  /// From the file's own summary (TCX laps, FIT sessions), when it has one.
+  /// They win over what the points add up to: a watch counts moving time,
+  /// and distance from its own sensors.
+  final DateTime? startTime;
+  final Duration? recordedDuration;
+  final double? recordedDistanceMeters;
+  final int? avgHeartRate;
+  final int? maxHeartRate;
+  final int? calories;
+
+  /// Set when the file has times.
   DateTime? get start =>
-      points.map((p) => p.time).whereType<DateTime>().firstOrNull;
+      startTime ?? points.map((p) => p.time).whereType<DateTime>().firstOrNull;
   DateTime? get end =>
       points.map((p) => p.time).whereType<DateTime>().lastOrNull;
 
   Duration? get duration {
+    final recorded = recordedDuration;
+    if (recorded != null && recorded > Duration.zero) return recorded;
     final s = start, e = end;
     if (s == null || e == null || !e.isAfter(s)) return null;
     return e.difference(s);
   }
 
-  double get distanceMeters => Gpx.distanceMeters(points);
+  double get distanceMeters {
+    final recorded = recordedDistanceMeters;
+    if (recorded != null && recorded > 0) return recorded;
+    return Gpx.distanceMeters(points);
+  }
+
+  /// Whether it has a route to draw on the map.
+  bool get hasRoute => points.length >= 2;
 
   /// This app's activity name for [type] and [name]: Running, Cycling,
   /// Hiking or Walking, or null when neither says.
@@ -226,6 +260,14 @@ class Gpx {
     }
     if (t.contains('hik')) return 'Hiking';
     if (t.contains('walk')) return 'Walking';
+    if (t.contains('swim')) return 'Swimming';
+    if (t.contains('strength') || t.contains('weight')) {
+      return 'Strength Training';
+    }
+    if (t.contains('yoga') || t.contains('stretch') || t.contains('pilates')) {
+      return 'Yoga/Stretching';
+    }
+    if (t.contains('hiit')) return 'HIIT';
     return null;
   }
 }

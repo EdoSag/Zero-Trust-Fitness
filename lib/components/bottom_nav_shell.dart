@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:health/health.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:zerotrust_fitness/features/sleep/sleep_nights.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_definition.dart';
 import 'package:zerotrust_fitness/features/achievements/domain/achievement_service.dart';
@@ -26,7 +27,7 @@ import 'package:zerotrust_fitness/features/wear/wear_companion.dart';
 import 'package:zerotrust_fitness/core/services/reminder_service.dart';
 import 'package:zerotrust_fitness/components/manual_ingestion_bottom_sheet.dart';
 import 'package:zerotrust_fitness/pages/journal_page.dart';
-import 'package:zerotrust_fitness/pages/gpx_import_page.dart';
+import 'package:zerotrust_fitness/pages/workout_files_import_page.dart';
 import 'package:zerotrust_fitness/features/gpx/gpx_workouts.dart';
 import 'package:zerotrust_fitness/pages/gps_workout_page.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
@@ -197,10 +198,12 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       // records that started yesterday but overlap today are clipped in.
       final heartPoints =
           HeartPointsService.forDay(deduplicated, DateTime.now()).total;
+      final sleepByDay = SleepNights.fromHealth(deduplicated);
       final todayMetrics = _buildTodayMetricsMap(
         todayPoints,
         steps: totalSteps,
         heartPoints: heartPoints,
+        sleep: sleepByDay[_dateKey(DateTime.now())],
       );
       setState(() {
         _healthData = deduplicated;
@@ -234,7 +237,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
           hcMetrics: todayMetrics,
           manualContributions: manualOverrides
         );
-        await _backfillRecentDays(deduplicated, vault);
+        await _backfillRecentDays(deduplicated, vault, sleepByDay);
         final vaultRows = await vault.fetchDailyMetrics();
         final combinedToday = _metricsForDate(DateTime.now(), vaultRows);
         if (mounted && combinedToday.isNotEmpty) {
@@ -278,11 +281,13 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
 
   /// Health data is fetched with a short lookback, so also score those past
   /// days. Otherwise a day the app wasn't opened has no record and counts as
-  /// zero toward Momentum. Only the Health Connect share of steps and Heart
-  /// Points is raised; manual entries and other metrics are left alone.
+  /// zero toward Momentum. Only the Health Connect share of steps, Heart
+  /// Points and sleep is raised; manual entries and other metrics are left
+  /// alone.
   Future<void> _backfillRecentDays(
     List<HealthDataPoint> points,
     FitnessVault vault,
+    Map<String, SleepNight> sleepByDay,
   ) async {
     final now = DateTime.now();
     for (var back = 1; back <= HealthService.defaultLookbackDays; back++) {
@@ -298,6 +303,12 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
           'heart_points': HeartPointsService.forDay(points, day).total,
         }
       );
+      if (sleepByDay[_dateKey(day)] case final night?) {
+        await vault.raiseSleepFromHealth(
+          dateKey: _dateKey(day),
+          sleep: night.toMetrics(),
+        );
+      }
     }
   }
 
@@ -610,16 +621,13 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
     return double.tryParse(value.toString()) ?? 0.0;
   }
 
-  int _extractSleepMinutes(HealthDataPoint point) {
-    final minutes = point.dateTo.difference(point.dateFrom).inMinutes;
-    if (minutes > 0) return minutes;
-    return _extractNumericValue(point).toInt();
-  }
-
+  /// [sleep] is the night that ended today (with naps), which began
+  /// yesterday evening, so it isn't among today's [points].
   Map<String, num> _buildTodayMetricsMap(
     List<HealthDataPoint> points, {
     required int steps,
     required int heartPoints,
+    SleepNight? sleep,
   }) {
     final metrics = <String, num>{
       'steps': steps,
@@ -660,14 +668,6 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
 
     for (final point in points) {
       switch (point.type) {
-        case HealthDataType.SLEEP_ASLEEP:
-          sumMetric('sleep_asleep_min', _extractSleepMinutes(point));
-        case HealthDataType.SLEEP_LIGHT:
-          sumMetric('sleep_light_min', _extractSleepMinutes(point));
-        case HealthDataType.SLEEP_DEEP:
-          sumMetric('sleep_deep_min', _extractSleepMinutes(point));
-        case HealthDataType.SLEEP_REM:
-          sumMetric('sleep_rem_min', _extractSleepMinutes(point));
         case HealthDataType.RESTING_HEART_RATE:
           restingSamples.add(_extractNumericValue(point));
         case HealthDataType.RESPIRATORY_RATE:
@@ -703,6 +703,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
       }
     }
 
+    if (sleep != null) metrics.addAll(sleep.toMetrics());
     metrics['resting_hr_bpm_avg'] = _avg(restingSamples);
     metrics['respiratory_rate_avg'] = _avg(respiratorySamples);
     metrics['blood_oxygen_pct_avg'] = _avg(oxygenSamples);
@@ -1145,7 +1146,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
                       ? null
                       : () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                                builder: (_) => GpxImportPage(vault: vault)),
+                                builder: (_) => WorkoutFilesImportPage(vault: vault)),
                           ),
                   onExportGpx: (data) => ref
                       .read(vaultControllerProvider.notifier)
