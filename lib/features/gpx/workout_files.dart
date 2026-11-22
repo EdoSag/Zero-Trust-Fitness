@@ -37,9 +37,12 @@ class WorkoutFiles {
     }
     // Watch exports often have spaces before the XML declaration, which the
     // parser refuses.
-    if (start.contains('<TrainingCenterDatabase')) return Tcx.parse(start);
+    // The root may carry a namespace prefix (`<tcx:TrainingCenterDatabase`).
+    if (_tcxRoot.hasMatch(start)) return Tcx.parse(start);
     return Gpx.parse(start);
   }
+
+  static final _tcxRoot = RegExp(r'<(?:[\w.-]+:)?TrainingCenterDatabase\b');
 
   static bool _isGzip(Uint8List b) =>
       b.length > 2 && b[0] == 0x1f && b[1] == 0x8b;

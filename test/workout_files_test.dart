@@ -301,6 +301,20 @@ void main() {
     expect(t.points.length, greaterThanOrEqualTo(2));
   });
 
+  test('a TCX with a prefixed root is still TCX', () {
+    final t = WorkoutFiles.parse(
+      utf8.encode(
+        '<tcx:TrainingCenterDatabase xmlns:tcx="http://www.garmin.com/'
+        'xmlschemas/TrainingCenterDatabase/v2"><tcx:Activities>'
+        '<tcx:Activity Sport="Running"><tcx:Id>2026-11-10T06:00:00Z</tcx:Id>'
+        '<tcx:Lap><tcx:TotalTimeSeconds>600</tcx:TotalTimeSeconds></tcx:Lap>'
+        '</tcx:Activity></tcx:Activities></tcx:TrainingCenterDatabase>',
+      ),
+    ).single;
+    expect(t.format, 'tcx');
+    expect(t.duration, const Duration(minutes: 10));
+  });
+
   test('rejects files that are none of these', () {
     expect(
       () => WorkoutFiles.parse(utf8.encode('hello')),
