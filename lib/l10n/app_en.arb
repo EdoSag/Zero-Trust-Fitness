@@ -1500,5 +1500,76 @@
   "noWorkoutsInFile": "No workouts in that file.",
   "noRouteInFile": "no route (indoor)",
   "avgHeartRate": "Avg heart rate",
-  "maxHeartRate": "Max heart rate"
+  "maxHeartRate": "Max heart rate",
+  "sleepHoursMinutes": "{hours} h {minutes} min",
+  "@sleepHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "nHoursShort": "{count}h",
+  "@nHoursShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastNight": "Last night",
+  "noSleepYet": "No sleep yet",
+  "noSleepYetHint": "Sleep from your watch or sleep app shows here once it is in Health Connect. You can also add a night by hand with the + button on Today.",
+  "averageSleep": "Average sleep",
+  "averageBedtime": "Average bedtime",
+  "averageWakeUp": "Average wake-up",
+  "bedtimeConsistency": "Bedtime consistency",
+  "plusMinusMinutes": "±{minutes} min",
+  "@plusMinusMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "nightsAtGoal": "Nights with {goal} or more",
+  "@nightsAtGoal": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "nOfTotal": "{count} of {total}",
+  "@nOfTotal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "comparedWithWeekBefore": "Compared with the week before",
+  "sameAsBefore": "About the same",
+  "sleepGoalReached": "Sleep goal reached",
+  "sleepShortOfGoal": "{time} short of your goal",
+  "@sleepShortOfGoal": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepStageDeep": "Deep",
+  "sleepStageRem": "REM",
+  "sleepStageLight": "Light",
+  "sleepStageAsleep": "Asleep",
+  "sleepStageAwake": "Awake",
+  "averageStages": "Average night by stage",
+  "sleepSourcesNote": "From Health Connect and the nights you enter by hand. A night counts on the morning it ends. It is read on this phone and saved encrypted, like everything else."
 }

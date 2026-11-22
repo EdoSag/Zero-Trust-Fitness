@@ -16,6 +16,7 @@ import 'package:zerotrust_fitness/features/challenges/challenges_pages.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/pages/all_metrics_page.dart';
 import 'package:zerotrust_fitness/pages/metric_detail_page.dart';
+import 'package:zerotrust_fitness/pages/sleep_page.dart';
 import 'package:zerotrust_fitness/pages/water_food_page.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 import 'package:zerotrust_fitness/l10n/l10n.dart';
@@ -209,13 +210,15 @@ class TodayPage extends StatelessWidget {
                     ? null
                     : () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
-                            builder: (_) => MetricDetailPage(
-                              metricKey: spec.key,
-                              metricTitle: spec.title,
-                              unit: spec.unit,
-                              gradientColors: spec.gradientColors,
-                              vault: sk,
-                            ),
+                            builder: (_) => isSleepMetric(spec.key)
+                                ? SleepPage(vault: sk)
+                                : MetricDetailPage(
+                                    metricKey: spec.key,
+                                    metricTitle: spec.title,
+                                    unit: spec.unit,
+                                    gradientColors: spec.gradientColors,
+                                    vault: sk,
+                                  ),
                           ),
                         ),
               ),

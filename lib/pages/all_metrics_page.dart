@@ -3,6 +3,7 @@ import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/components/compact_metric_card.dart';
 import 'package:zerotrust_fitness/features/dashboard/metric_card_specs.dart';
 import 'package:zerotrust_fitness/pages/metric_detail_page.dart';
+import 'package:zerotrust_fitness/pages/sleep_page.dart';
 import 'package:zerotrust_fitness/pages/water_food_page.dart';
 import 'package:zerotrust_fitness/l10n/l10n.dart';
 
@@ -46,6 +47,8 @@ class AllMetricsPage extends StatelessWidget {
                                 ? WaterFoodPage(
                                     initialTab:
                                         spec.key == 'water_l' ? 0 : 1)
+                                : isSleepMetric(spec.key)
+                                ? SleepPage(vault: sk)
                                 : MetricDetailPage(
                               metricKey: spec.key,
                               metricTitle: spec.title,

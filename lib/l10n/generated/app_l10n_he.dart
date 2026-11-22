@@ -2545,4 +2545,87 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get maxHeartRate => 'דופק מרבי';
+
+  @override
+  String sleepHoursMinutes(int hours, int minutes) {
+    return '$hours ש׳ $minutes דק׳';
+  }
+
+  @override
+  String nHoursShort(int count) {
+    return '$count ש׳';
+  }
+
+  @override
+  String get lastNight => 'הלילה האחרון';
+
+  @override
+  String get noSleepYet => 'עדיין אין נתוני שינה';
+
+  @override
+  String get noSleepYetHint =>
+      'שינה מהשעון או מאפליקציית השינה תופיע כאן ברגע שהיא ב-Health Connect. אפשר גם להוסיף לילה ידנית בכפתור + במסך היום.';
+
+  @override
+  String get averageSleep => 'שינה ממוצעת';
+
+  @override
+  String get averageBedtime => 'שעת שינה ממוצעת';
+
+  @override
+  String get averageWakeUp => 'שעת קימה ממוצעת';
+
+  @override
+  String get bedtimeConsistency => 'עקביות בשעת השינה';
+
+  @override
+  String plusMinusMinutes(int minutes) {
+    return '±$minutes דק׳';
+  }
+
+  @override
+  String nightsAtGoal(String goal) {
+    return 'לילות עם $goal ומעלה';
+  }
+
+  @override
+  String nOfTotal(int count, int total) {
+    return '$count מתוך $total';
+  }
+
+  @override
+  String get comparedWithWeekBefore => 'לעומת השבוע הקודם';
+
+  @override
+  String get sameAsBefore => 'בערך אותו דבר';
+
+  @override
+  String get sleepGoalReached => 'הגעת ליעד השינה';
+
+  @override
+  String sleepShortOfGoal(String time) {
+    return 'חסרות $time ליעד';
+  }
+
+  @override
+  String get sleepStageDeep => 'עמוקה';
+
+  @override
+  String get sleepStageRem => 'REM';
+
+  @override
+  String get sleepStageLight => 'קלה';
+
+  @override
+  String get sleepStageAsleep => 'שינה';
+
+  @override
+  String get sleepStageAwake => 'ערות';
+
+  @override
+  String get averageStages => 'לילה ממוצע לפי שלבים';
+
+  @override
+  String get sleepSourcesNote =>
+      'מ-Health Connect ומהלילות שהזנת ידנית. לילה נספר בבוקר שבו הוא מסתיים. הנתונים נקראים בטלפון הזה ונשמרים מוצפנים, כמו כל השאר.';
 }

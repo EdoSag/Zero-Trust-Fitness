@@ -20,6 +20,11 @@ class HealthService {
     HealthDataType.SLEEP_LIGHT,
     HealthDataType.SLEEP_DEEP,
     HealthDataType.SLEEP_REM,
+    // Same Health Connect permission as the stages above (Sleep): awake
+    // time, and whole sessions from trackers that record no stages.
+    HealthDataType.SLEEP_AWAKE,
+    if (defaultTargetPlatform == TargetPlatform.android)
+      HealthDataType.SLEEP_SESSION,
     HealthDataType.RESTING_HEART_RATE,
     HealthDataType.RESPIRATORY_RATE,
     HealthDataType.BLOOD_OXYGEN,
@@ -61,6 +66,36 @@ class HealthService {
     );
     return withoutOwnRecords(points);
   }
+
+  /// Sleep for the sleep page: [days] back from today, of the sleep types
+  /// in [readable] (those Health Connect lets this app read).
+  Future<List<HealthDataPoint>> fetchSleep({
+    required List<HealthDataType> readable,
+    int days = 30,
+  }) async {
+    final sleepTypes = [
+      for (final t in readable)
+        if (sleepTypeSet.contains(t)) t,
+    ];
+    if (sleepTypes.isEmpty) return const [];
+    final now = DateTime.now();
+    final points = await _health.getHealthDataFromTypes(
+      types: sleepTypes,
+      // From the evening before the first day.
+      startTime: DateTime(now.year, now.month, now.day - days, 12),
+      endTime: now,
+    );
+    return withoutOwnRecords(points);
+  }
+
+  static const sleepTypeSet = {
+    HealthDataType.SLEEP_ASLEEP,
+    HealthDataType.SLEEP_LIGHT,
+    HealthDataType.SLEEP_DEEP,
+    HealthDataType.SLEEP_REM,
+    HealthDataType.SLEEP_AWAKE,
+    HealthDataType.SLEEP_SESSION,
+  };
 
   /// This app's package / bundle id, as Health Connect and HealthKit report
   /// the source of records it wrote.
