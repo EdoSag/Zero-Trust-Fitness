@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zerotrust_fitness/features/health/data/health_writeback.dart';
@@ -14,6 +16,9 @@ class FakeSink implements HealthWorkoutSink {
   bool workoutAccess = false;
   bool waterAccess = false;
   bool waterWriteWorks = true;
+
+  /// Runs during a workout write (something else saving meanwhile).
+  Future<void> Function()? onWrite;
 
   /// Water this app holds in "Health Connect": what other apps would read.
   double get waterHeld => waterWrites.fold(0, (sum, w) => sum + w.$1);
@@ -63,6 +68,9 @@ class FakeSink implements HealthWorkoutSink {
     double? distanceMeters,
   }) async {
     writes.add((type, start, end, distanceMeters));
+    final run = onWrite;
+    onWrite = null;
+    await run?.call();
     return true;
   }
 
@@ -331,6 +339,19 @@ void main() {
       expect(sink.writes.last.$2, DateTime(2026, 11, 20, 7));
       expect(sink.writes.last.$3, DateTime(2026, 11, 20, 7, 30));
 
+      // A GPS run saved right after stopping keeps its real start, even
+      // when its duration was rounded up past now.
+      final started = now.subtract(const Duration(minutes: 10, seconds: 31));
+      await wb.sync(
+          'gps',
+          {
+            ...workout(started, minutes: 11),
+            'distance_m': 2000.0,
+            'route': <Object>[],
+          },
+          now: now);
+      expect(sink.writes.last.$2, started);
+
       // Started 10 minutes ago and 30 long: ended when it was logged.
       await wb.sync('c', workout(now.subtract(const Duration(minutes: 10))),
           now: now);
@@ -409,6 +430,27 @@ void main() {
       await wb.sync('today', workout(at, minutes: 40), now: now);
       expect(sink.deletes.single.$1, at.toUtc());
       expect(sink.writes, hasLength(1));
+    });
+  
+    test('a workout saved while a pass is writing keeps its record',
+        () async {
+      final v = testVault();
+      await wb.enable();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(HealthWriteback.sinceKey);
+      await v.saveWorkout(workout(DateTime(2026, 11, 20, 7)), id: 'first');
+      await v.saveWorkout(workout(DateTime(2026, 11, 20, 8)), id: 'second');
+      // While "first" is written, another workout is saved and written
+      // (the shell's own write-back), after the pass listed the vault.
+      sink.onWrite = () async {
+        final late = workout(DateTime(2026, 11, 20, 9));
+        await v.saveWorkout(late, id: 'late');
+        unawaited(wb.sync('late', late, now: now));
+      };
+      await wb.syncRecentWorkouts(v, now: now);
+      await wb.sync('noop', const {}, now: now);
+      expect(sink.writes, hasLength(3));
+      expect(sink.deletes, isEmpty);
     });
   });
 }

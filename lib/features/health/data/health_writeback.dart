@@ -239,12 +239,20 @@ class HealthWriteback {
   /// ended carries the time it was logged: a record from then on would sit
   /// in the future, where apps reading "today so far" (ZT Quests) miss it.
   /// Such a workout is taken to have ended when it was logged.
+  ///
+  /// GPS workouts (and GPX imports) keep their real start: they carry a
+  /// route. Their duration is rounded to the minute, so one saved right
+  /// after stopping may end up to half a minute ahead; anything within a
+  /// minute of now is left as it is for the same reason.
   static (DateTime, DateTime) recordRange(Map<String, dynamic> data,
       {DateTime? now}) {
     final logged = DateTime.parse(data['timestamp'].toString());
     final length = Duration(minutes: (data['duration'] as num).toInt());
     final at = now ?? DateTime.now();
-    if (!logged.add(length).isAfter(at)) return (logged, logged.add(length));
+    if (data['route'] is List ||
+        !logged.add(length).isAfter(at.add(const Duration(minutes: 1)))) {
+      return (logged, logged.add(length));
+    }
     final end = logged.isAfter(at) ? at : logged;
     return (end.subtract(length), end);
   }
@@ -362,7 +370,10 @@ class HealthWriteback {
       for (final e in (await _written()).entries.toList()) {
         if (kept.contains(e.key) || e.value.length < 2) continue;
         final end = DateTime.tryParse(e.value[1]);
-        if (end != null && recent(end.toLocal())) await remove(e.key);
+        if (end == null || !recent(end.toLocal())) continue;
+        // Saved while this pass was writing: not deleted after all.
+        if (await vault.getWorkout(e.key) != null) continue;
+        await remove(e.key);
       }
     } on Object catch (e) {
       debugPrint('Health workout write-back failed: $e');
