@@ -26,7 +26,7 @@ import 'package:zerotrust_fitness/features/wear/wear_companion.dart';
 import 'package:zerotrust_fitness/core/services/reminder_service.dart';
 import 'package:zerotrust_fitness/components/manual_ingestion_bottom_sheet.dart';
 import 'package:zerotrust_fitness/pages/journal_page.dart';
-import 'package:zerotrust_fitness/pages/gpx_import_page.dart';
+import 'package:zerotrust_fitness/pages/workout_files_import_page.dart';
 import 'package:zerotrust_fitness/features/gpx/gpx_workouts.dart';
 import 'package:zerotrust_fitness/pages/gps_workout_page.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
@@ -1145,7 +1145,7 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell>
                       ? null
                       : () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
-                                builder: (_) => GpxImportPage(vault: vault)),
+                                builder: (_) => WorkoutFilesImportPage(vault: vault)),
                           ),
                   onExportGpx: (data) => ref
                       .read(vaultControllerProvider.notifier)

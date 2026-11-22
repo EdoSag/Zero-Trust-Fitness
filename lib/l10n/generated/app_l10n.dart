@@ -1417,35 +1417,11 @@ abstract class AppL10n {
   /// **'Waiting for GPS…'**
   String get waitingForGps;
 
-  /// No description provided for @noTracksWithAtLeast.
-  ///
-  /// In en, this message translates to:
-  /// **'No tracks with at least two points in that file.'**
-  String get noTracksWithAtLeast;
-
   /// No description provided for @enterHowLongEachWorkout.
   ///
   /// In en, this message translates to:
   /// **'Enter how long each workout took.'**
   String get enterHowLongEachWorkout;
-
-  /// No description provided for @importGpxRoutes.
-  ///
-  /// In en, this message translates to:
-  /// **'Import GPX routes'**
-  String get importGpxRoutes;
-
-  /// No description provided for @bringInWorkoutsFromStrava.
-  ///
-  /// In en, this message translates to:
-  /// **'Bring in workouts from Strava, Komoot, Garmin or any app that exports .gpx files. The file is read on this phone and saved encrypted, like everything else.'**
-  String get bringInWorkoutsFromStrava;
-
-  /// No description provided for @chooseGpxFiles.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose GPX files'**
-  String get chooseGpxFiles;
 
   /// No description provided for @track.
   ///
@@ -2296,7 +2272,7 @@ abstract class AppL10n {
   /// No description provided for @fromStravaKomootGarminAnd.
   ///
   /// In en, this message translates to:
-  /// **'From Strava, Komoot, Garmin and others'**
+  /// **'FIT, TCX and GPX files from Garmin, Polar, Coros, Strava and others'**
   String get fromStravaKomootGarminAnd;
 
   /// No description provided for @shareReport.
@@ -3162,18 +3138,6 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Last {unit}: {time}'**
   String lastSplit(String unit, String time);
-
-  /// No description provided for @couldntReadAsGpx.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t read {files} as GPX.'**
-  String couldntReadAsGpx(String files);
-
-  /// No description provided for @skippedNotGpx.
-  ///
-  /// In en, this message translates to:
-  /// **'Skipped {files}: not GPX.'**
-  String skippedNotGpx(String files);
 
   /// No description provided for @importedWorkouts.
   ///
@@ -4374,6 +4338,60 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'{health} didn\'t allow Fitness to save water.'**
   String healthDidntAllowWater(String health);
+
+  /// No description provided for @importWorkoutFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Import workout files'**
+  String get importWorkoutFiles;
+
+  /// No description provided for @bringInWorkoutFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring in workouts from Garmin, Polar, Coros, Wahoo, Suunto, Strava, Komoot or any app that exports .fit, .tcx or .gpx files (gzipped .gz files too). The file is read on this phone and saved encrypted, like everything else.'**
+  String get bringInWorkoutFiles;
+
+  /// No description provided for @chooseWorkoutFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose files'**
+  String get chooseWorkoutFiles;
+
+  /// No description provided for @couldntReadWorkoutFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t read {files}. Fitness reads .fit, .tcx and .gpx files.'**
+  String couldntReadWorkoutFiles(String files);
+
+  /// No description provided for @skippedUnreadableFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped {files}: not a .fit, .tcx or .gpx file.'**
+  String skippedUnreadableFiles(String files);
+
+  /// No description provided for @noWorkoutsInFile.
+  ///
+  /// In en, this message translates to:
+  /// **'No workouts in that file.'**
+  String get noWorkoutsInFile;
+
+  /// No description provided for @noRouteInFile.
+  ///
+  /// In en, this message translates to:
+  /// **'no route (indoor)'**
+  String get noRouteInFile;
+
+  /// No description provided for @avgHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg heart rate'**
+  String get avgHeartRate;
+
+  /// No description provided for @maxHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Max heart rate'**
+  String get maxHeartRate;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {
