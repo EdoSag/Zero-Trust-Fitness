@@ -266,6 +266,14 @@ class HealthWriteback {
         data['distance_m'],
       ].join('|');
 
+  /// The duration and time a [fingerprint] was made from: what decides a
+  /// record's range. Null for anything that isn't one.
+  static String? _timing(String fingerprint) {
+    final parts = fingerprint.split('|');
+    if (parts.length < 4) return null;
+    return '${parts[parts.length - 3]}|${parts[parts.length - 2]}';
+  }
+
   /// Writes (or, after an edit, rewrites) one workout. Does nothing while
   /// write-back is off. Never throws: Health Connect being unavailable must
   /// not stop a workout from saving.
@@ -281,6 +289,15 @@ class HealthWriteback {
     try {
       if (!await isEnabled || !isWritable(data)) return false;
       final written = await _written();
+      // An edit that leaves the time alone (the activity, the distance)
+      // keeps the range written before: where a hand-logged workout sits
+      // must not depend on when it happens to be synced again.
+      final keep = switch (written[id]) {
+        [final s, final e, final f, ...]
+            when _timing(f) != null && _timing(f) == _timing(fingerprint(data)) =>
+          (DateTime.parse(s).toLocal(), DateTime.parse(e).toLocal()),
+        _ => null,
+      };
       if (written[id] case [final s, final e, ...]) {
         // Writing the edit before the old record is gone would leave two;
         // keep the old range so a later try can still remove it.
@@ -290,7 +307,7 @@ class HealthWriteback {
         written.remove(id);
         await _save(written);
       }
-      final (start, end) = recordRange(data, now: now);
+      final (start, end) = keep ?? recordRange(data, now: now);
       final ok = await _sink.write(
         type: data['type']?.toString() ?? 'Other',
         start: start,
