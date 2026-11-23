@@ -67,7 +67,7 @@ class ZeroTrustFitnessApp extends StatelessWidget {
         locale: ref.watch(ztLanguageProvider),
         supportedLocales: ZtLanguages.supported,
         localizationsDelegates: const [AppL10n.delegate, ...ZtLanguages.delegates],
-        home: home,
+        home: ZtSignInHandoffScope(child: home),
         builder: (context, child) =>
             AutoLockActivity(
                 child: WidgetTextSync(child: child ?? const SizedBox.shrink())),
