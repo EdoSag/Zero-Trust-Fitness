@@ -358,6 +358,25 @@ void main() {
       expect(sink.writes.last.$3, DateTime(2026, 11, 20, 17, 50));
     });
 
+    test('an edit that leaves the time alone keeps the range written',
+        () async {
+      await wb.enable();
+      // Logged at 18:00 right after it ended: 17:30 to 18:00.
+      await wb.sync('a', workout(now), now: now);
+      // The distance is added at 19:00; the time wasn't touched.
+      await wb.sync('a', {...workout(now), 'distance_m': 5000.0},
+          now: now.add(const Duration(hours: 1)));
+      expect(sink.writes.last.$2, DateTime(2026, 11, 20, 17, 30));
+      expect(sink.writes.last.$3, now);
+      expect(sink.writes.last.$4, 5000.0);
+
+      // Changing the length moves it, as it should.
+      await wb.sync('a', {...workout(now, minutes: 45), 'distance_m': 5000.0},
+          now: now.add(const Duration(hours: 1)));
+      expect(sink.writes.last.$3.difference(sink.writes.last.$2),
+          const Duration(minutes: 45));
+    });
+
     test('watch and other-device workouts from today and yesterday are '
         'written, changed ones rewritten, deleted ones removed', () async {
       final v = testVault();
