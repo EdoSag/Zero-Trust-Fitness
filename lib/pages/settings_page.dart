@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -14,7 +16,7 @@ import 'package:zerotrust_fitness/features/wear/wear_companion.dart';
 import 'package:zerotrust_fitness/pages/export_restore_page.dart';
 import 'package:zerotrust_fitness/pages/google_fit_import_page.dart';
 import 'package:zerotrust_fitness/pages/goals_page.dart';
-import 'package:zerotrust_fitness/pages/gpx_import_page.dart';
+import 'package:zerotrust_fitness/pages/workout_files_import_page.dart';
 import 'package:zerotrust_fitness/pages/offline_maps_page.dart';
 import 'package:zerotrust_fitness/pages/permissions_page.dart';
 import 'package:zerotrust_fitness/pages/privacy_dashboard_page.dart';
@@ -84,6 +86,8 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
       }
       final vault = ref.read(openFitnessVaultProvider);
       if (vault == null) return;
+      // Water already logged today counts in other apps right away.
+      unawaited(HealthWriteback.instance.syncRecentWater(vault));
       final copyPast = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -375,8 +379,7 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
           title: Text(Theme.of(context).platform == TargetPlatform.iOS
               ? context.l10n.saveWorkoutsToAppleHealth
               : context.l10n.saveWorkoutsToHealthConnect),
-          subtitle: Text(
-              context.l10n.workoutsYouLogOrRecord),
+          subtitle: Text(context.l10n.workoutsYouLogOrRecord),
           value: _writeback,
           onChanged: _writebackBusy || !unlocked ? null : _setWriteback,
         ),
@@ -432,10 +435,10 @@ class _FitnessSettingsPageState extends ConsumerState<FitnessSettingsPage> {
         ),
         ListTile(
           leading: const Icon(Icons.route_outlined),
-          title: Text(context.l10n.importGpxRoutes),
+          title: Text(context.l10n.importWorkoutFiles),
           subtitle: Text(context.l10n.fromStravaKomootGarminAnd),
           enabled: unlocked,
-          onTap: () => _push((v) => GpxImportPage(vault: v)),
+          onTap: () => _push((v) => WorkoutFilesImportPage(vault: v)),
         ),
         ListTile(
           leading: const Icon(Icons.share_outlined),

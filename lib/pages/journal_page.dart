@@ -41,8 +41,9 @@ class WorkoutItem extends JournalItem {
 
   String get sourceLabel => switch (data['source']) {
         'google_fit' => 'GOOGLE FIT',
-        'gpx' => 'GPX',
-        _ when data['imported_from'] == 'gpx' => 'GPX',
+        'gpx' || 'tcx' || 'fit' => (data['source'] as String).toUpperCase(),
+        _ when const {'gpx', 'tcx', 'fit'}.contains(data['imported_from']) =>
+          data['imported_from'].toString().toUpperCase(),
         _ when !isEditable => 'HEALTH',
         _ when data['route'] is List => 'GPS',
         _ => 'MANUAL',
@@ -192,7 +193,7 @@ class _JournalPageState extends State<JournalPage> {
         actions: [
           if (widget.onImportGpx != null && widget.canEdit)
             IconButton(
-              tooltip: context.l10n.importGpxRoutes,
+              tooltip: context.l10n.importWorkoutFiles,
               icon: const Icon(Icons.route_outlined),
               onPressed: widget.onImportGpx,
             ),
@@ -493,6 +494,12 @@ class _JournalPageState extends State<JournalPage> {
                   _stat(ctx, context.l10n.avgPaceX, units.formatPace(pace)),
                 if (w.data['intensity'] case final num i)
                   _stat(ctx, context.l10n.intensity, '${i.toInt()}/10'),
+                if (w.data['avg_hr'] case final num hr)
+                  _stat(ctx, context.l10n.avgHeartRate, '${hr.toInt()} bpm'),
+                if (w.data['max_hr'] case final num hr)
+                  _stat(ctx, context.l10n.maxHeartRate, '${hr.toInt()} bpm'),
+                if (w.data['calories'] case final num kcal)
+                  _stat(ctx, context.l10n.calories, '${kcal.toInt()} kcal'),
                 _stat(ctx, context.l10n.heartPoints,
                     '${FitnessVault.workoutHeartPoints(w.data)}'),
               ],

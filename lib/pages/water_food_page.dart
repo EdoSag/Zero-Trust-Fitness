@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -9,7 +10,9 @@ import 'package:zerotrust_fitness/app/vault_providers.dart';
 import 'package:zerotrust_fitness/components/inline_button_style.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zerotrust_fitness/features/goals/goals_provider.dart';
+import 'package:zerotrust_fitness/features/health/data/health_writeback.dart';
 import 'package:zerotrust_fitness/l10n/l10n.dart';
 
 /// Daily water goal when the person hasn't set one (litres).
@@ -66,6 +69,14 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
   List<FitnessMeal> _recent = const [];
   num _healthFoodEntries = 0;
 
+  /// Offer to save water to Health Connect (shown until it is on or the
+  /// person says no).
+  bool _offerHealthWater = false;
+  bool _turningOnHealthWater = false;
+
+  /// Set once the person turns the offer down on this phone.
+  static const healthWaterOfferDismissedKey = 'water_health_offer_dismissed';
+
   String get _dateKey => FitnessVault.dateKeyOf(_day);
 
   bool get _isToday => _dateKey == FitnessVault.dateKeyOf(DateTime.now());
@@ -74,7 +85,54 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    _checkHealthWaterOffer();
   }
+
+  Future<void> _checkHealthWaterOffer() async {
+    final wb = HealthWriteback.instance;
+    final prefs = await SharedPreferences.getInstance();
+    final offer = !(prefs.getBool(healthWaterOfferDismissedKey) ?? false) &&
+        !await wb.savesWater &&
+        await wb.isAvailable;
+    if (mounted) setState(() => _offerHealthWater = offer);
+  }
+
+  Future<void> _dismissHealthWaterOffer() async {
+    setState(() => _offerHealthWater = false);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(healthWaterOfferDismissedKey, true);
+  }
+
+  /// Turns Health write-back on (or, when it already is, asks for the water
+  /// part) and sends over the water already logged today.
+  Future<void> _turnOnHealthWater() async {
+    final healthName = _healthName;
+    final wb = HealthWriteback.instance;
+    setState(() => _turningOnHealthWater = true);
+    try {
+      await ref
+          .read(vaultControllerProvider.notifier)
+          .whileShowingSystemUi(wb.enable);
+      final saves = await wb.savesWater;
+      if (!mounted) return;
+      if (!saves) {
+        _snack(context.l10n.healthDidntAllowWater(healthName));
+        return;
+      }
+      setState(() => _offerHealthWater = false);
+      final vault = ref.read(openFitnessVaultProvider);
+      if (vault != null) await wb.syncRecentWater(vault);
+      if (mounted) _snack(context.l10n.waterNowSavedTo(healthName));
+    } catch (e) {
+      if (mounted) _snack(ztErrorMessage(e));
+    } finally {
+      if (mounted) setState(() => _turningOnHealthWater = false);
+    }
+  }
+
+  String get _healthName => Theme.of(context).platform == TargetPlatform.iOS
+      ? 'Apple Health'
+      : 'Health Connect';
 
   Future<void> _load() async {
     final vault = ref.read(openFitnessVaultProvider);
@@ -123,7 +181,12 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
     if (vault == null) return;
     HapticFeedback.lightImpact();
     try {
-      await vault.addWater(_dateKey, liters);
+      final day = _dateKey;
+      await vault.addWater(day, liters);
+      // To Health Connect when that is on, so ZT Quests and other apps
+      // count it (any day; the shell only keeps today and yesterday).
+      unawaited(HealthWriteback.instance
+          .syncWater(day, (await vault.waterFor(day)).logged));
     } catch (e) {
       _snack(ztErrorMessage(e));
     }
@@ -301,6 +364,67 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
   // Water
   // ---------------------------------------------------------------------------
 
+  /// Water only reaches other apps (ZT Quests' water quests) through Health
+  /// Connect, and saving there is off until asked for.
+  Widget _healthWaterOffer(BuildContext context) {
+    final theme = Theme.of(context);
+    final healthName = _healthName;
+    return Card(
+      key: const Key('health-water-offer'),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 8, 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.sync_alt, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        context.l10n.countWaterInOtherApps,
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        context.l10n.countWaterInOtherAppsBody(healthName),
+                        style: TextStyle(color: theme.hintColor),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Wrap(
+                spacing: 4,
+                children: [
+                  TextButton(
+                    onPressed:
+                        _turningOnHealthWater ? null : _dismissHealthWaterOffer,
+                    child: Text(context.l10n.notNow),
+                  ),
+                  TextButton(
+                    onPressed:
+                        _turningOnHealthWater ? null : _turnOnHealthWater,
+                    child: Text(context.l10n.turnOn),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _waterTab(BuildContext context) {
     final theme = Theme.of(context);
     final units = UnitsFormatter();
@@ -390,6 +514,10 @@ class _WaterFoodPageState extends ConsumerState<WaterFoodPage> {
             label: Text(context.l10n.takeOffAmount(presets.first.label.substring(1))),
           ),
         ),
+        if (_offerHealthWater) ...[
+          const SizedBox(height: 16),
+          _healthWaterOffer(context),
+        ],
         const SizedBox(height: 24),
         Text(context.l10n.last7DaysX, style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),

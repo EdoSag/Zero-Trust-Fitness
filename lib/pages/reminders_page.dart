@@ -126,7 +126,7 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
           SwitchListTile(
             secondary: const Icon(Icons.water_drop_outlined),
             title: Text(context.l10n.hydrationReminder),
-            subtitle: Text(context.l10n.hourlyPromptToDrinkWater),
+            subtitle: Text(context.l10n.anHourAfterYourLastWater),
             value: _settings.hydrationEnabled,
             onChanged: (v) =>
                 _apply(_settings.copyWith(hydrationEnabled: v)),

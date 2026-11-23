@@ -194,6 +194,14 @@ class FitnessVault {
     'sleep_rem_min',
   };
 
+  // When the night began and ended, and time awake in it: Health Connect
+  // only, stored as they are (no hand-entered share to keep apart).
+  static const _sleepDetailKeys = <String>{
+    'sleep_awake_min',
+    'sleep_bed_at',
+    'sleep_wake_at',
+  };
+
   // ---------------------------------------------------------------------------
   // Collections
   // ---------------------------------------------------------------------------
@@ -748,11 +756,19 @@ class FitnessVault {
       merged[key] = hcValue >= manualValue ? hcValue : manualValue;
     }
 
+    for (final key in _sleepDetailKeys) {
+      if (hcMetrics[key] case final v?) merged[key] = v;
+    }
+
     // Vitals / body: HC wins if non-zero; otherwise preserve whatever is
     // already stored (previous HC reading or manual entry).
     for (final entry in hcMetrics.entries) {
       final key = entry.key;
-      if (_sumAdditiveKeys.contains(key) || _sleepKeys.contains(key)) continue;
+      if (_sumAdditiveKeys.contains(key) ||
+          _sleepKeys.contains(key) ||
+          _sleepDetailKeys.contains(key)) {
+        continue;
+      }
       if (key.endsWith('_hc') || key.endsWith('_manual')) continue;
       final hcValue = entry.value;
       merged['${key}_hc'] = hcValue;
@@ -798,6 +814,37 @@ class FitnessVault {
       changed = true;
     }
     if (!changed) return;
+    await _putDay(dateKey, merged);
+  }
+
+  /// Sleep Health Connect reports for a past night (from a later read than
+  /// the one that saved the day). Like [raiseHealthConnectTotals] it only
+  /// raises: a shorter read (data deleted, permission revoked) never lowers
+  /// a stored night, and sleep entered by hand is kept. When the night grows,
+  /// its bedtime, wake-up time and awake minutes are replaced with the new
+  /// read's.
+  Future<void> raiseSleepFromHealth({
+    required String dateKey,
+    required Map<String, num> sleep,
+  }) async {
+    final existing = await _metricsFor(dateKey);
+    final merged = Map<String, num>.from(existing);
+    var raised = false;
+    for (final key in _sleepKeys) {
+      final value = sleep[key] ?? 0;
+      final storedHc = existing['${key}_hc'] ?? 0;
+      if (value <= storedHc) continue;
+      final manual = existing['${key}_manual'] ?? 0;
+      // Rows from before the hc/manual split hold a display value only.
+      final legacy = existing.containsKey('${key}_hc') ? 0 : existing[key] ?? 0;
+      merged['${key}_hc'] = value;
+      merged[key] = [value, manual, legacy].reduce((a, b) => a > b ? a : b);
+      raised = true;
+    }
+    if (!raised) return;
+    for (final key in _sleepDetailKeys) {
+      if (sleep[key] case final v?) merged[key] = v;
+    }
     await _putDay(dateKey, merged);
   }
 

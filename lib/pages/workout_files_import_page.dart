@@ -7,26 +7,40 @@ import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_fitness/core/storage/fitness_vault.dart';
 import 'package:zerotrust_fitness/core/utils/units_formatter.dart';
 import 'package:zerotrust_fitness/features/gpx/gpx.dart';
+import 'package:zerotrust_fitness/features/gpx/workout_files.dart';
 import 'package:zerotrust_fitness/features/gpx/gpx_workouts.dart';
 import 'package:zerotrust_fitness/l10n/l10n.dart';
 
-const _gpxActivities = ['Running', 'Cycling', 'Hiking', 'Walking', 'Other'];
+const _activities = [
+  'Running',
+  'Cycling',
+  'Hiking',
+  'Walking',
+  'Swimming',
+  'Strength Training',
+  'HIIT',
+  'Yoga/Stretching',
+  'Other',
+];
 
-/// Brings routes in from GPX files (Strava, Komoot, Garmin, a bike
-/// computer...). The file is read on the phone; only the encrypted workout
-/// is synced.
-class GpxImportPage extends ConsumerStatefulWidget {
-  const GpxImportPage({super.key, required this.vault});
+/// Brings workouts in from the files watches and apps export: FIT (Garmin,
+/// Coros, Wahoo, Suunto), TCX (Garmin Connect, Polar) and GPX (Strava,
+/// Komoot, a bike computer...). The file is read on the phone; only the
+/// encrypted workout is synced.
+class WorkoutFilesImportPage extends ConsumerStatefulWidget {
+  const WorkoutFilesImportPage({super.key, required this.vault});
 
   final FitnessVault vault;
 
   @override
-  ConsumerState<GpxImportPage> createState() => _GpxImportPageState();
+  ConsumerState<WorkoutFilesImportPage> createState() =>
+      _WorkoutFilesImportPageState();
 }
 
 class _TrackDraft {
   _TrackDraft(this.track, this.alreadyImported)
-    : activity = track.activity ?? 'Running',
+    : activity =
+          track.activity ?? (track.format == 'gpx' ? 'Running' : 'Other'),
       start = track.start?.toLocal() ?? DateTime.now(),
       minutes = track.duration?.inMinutes ?? 0,
       selected = !alreadyImported;
@@ -41,7 +55,8 @@ class _TrackDraft {
   bool get hasTimes => track.duration != null;
 }
 
-class _GpxImportPageState extends ConsumerState<GpxImportPage> {
+class _WorkoutFilesImportPageState
+    extends ConsumerState<WorkoutFilesImportPage> {
   List<_TrackDraft> _drafts = const [];
   bool _countHeartPoints = true;
   bool _busy = false;
@@ -69,7 +84,7 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
     final failed = <String>[];
     for (final path in paths) {
       try {
-        final tracks = Gpx.parse(await File(path).readAsString());
+        final tracks = WorkoutFiles.parse(await File(path).readAsBytes());
         for (final t in tracks) {
           drafts.add(_TrackDraft(t, await _gpx.isImported(t)));
         }
@@ -83,10 +98,10 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
       _drafts = drafts;
       if (drafts.isEmpty) {
         _error = failed.isNotEmpty
-            ? context.l10n.couldntReadAsGpx(failed.join(', '))
-            : context.l10n.noTracksWithAtLeast;
+            ? context.l10n.couldntReadWorkoutFiles(failed.join(', '))
+            : context.l10n.noWorkoutsInFile;
       } else if (failed.isNotEmpty) {
-        _error = context.l10n.skippedNotGpx(failed.join(', '));
+        _error = context.l10n.skippedUnreadableFiles(failed.join(', '));
       }
     });
   }
@@ -115,8 +130,7 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
       }
       if (!mounted) return;
       setState(() {
-        _done =
-            context.l10n.importedWorkouts(count);
+        _done = context.l10n.importedWorkouts(count);
         _drafts = const [];
       });
     } catch (e) {
@@ -150,25 +164,34 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
     );
   }
 
+  /// TCX and FIT files have no names: the activity and day stand in.
+  String _fallbackTitle(_TrackDraft d) {
+    if (d.track.format == 'gpx') return context.l10n.track;
+    final start = d.track.start;
+    final label = activityLabel(d.activity);
+    if (start == null) return label;
+    return '$label · ${UnitsFormatter().formatDate(start.toLocal())}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final units = UnitsFormatter();
     final selected = _drafts.where((d) => d.selected).length;
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.importGpxRoutes)),
+      appBar: AppBar(title: Text(context.l10n.importWorkoutFiles)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            context.l10n.bringInWorkoutsFromStrava,
+            context.l10n.bringInWorkoutFiles,
             style: TextStyle(color: theme.hintColor),
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: _busy ? null : _pick,
             icon: const Icon(Icons.file_open_outlined),
-            label: Text(context.l10n.chooseGpxFiles),
+            label: Text(context.l10n.chooseWorkoutFiles),
           ),
           if (_busy) ...[
             const SizedBox(height: 16),
@@ -191,11 +214,16 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
                       contentPadding: const EdgeInsets.only(left: 4),
                       value: d.selected,
                       onChanged: (v) => setState(() => d.selected = v ?? false),
-                      title: Text(d.track.name ?? context.l10n.track),
+                      title: Text(d.track.name ?? _fallbackTitle(d)),
                       subtitle: Text(
                         [
-                          units.formatDistance(d.track.distanceMeters / 1000),
-                          context.l10n.nPoints(d.track.points.length),
+                          if (d.track.distanceMeters > 0)
+                            units.formatDistance(d.track.distanceMeters / 1000),
+                          if (d.track.hasRoute)
+                            context.l10n.nPoints(d.track.points.length)
+                          else
+                            context.l10n.noRouteInFile,
+                          if (d.track.avgHeartRate case final hr?) '$hr bpm',
                           if (d.alreadyImported) context.l10n.alreadyImported,
                         ].join(' · '),
                       ),
@@ -209,8 +237,11 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
                             DropdownButton<String>(
                               value: d.activity,
                               items: [
-                                for (final a in {..._gpxActivities, d.activity})
-                                  DropdownMenuItem(value: a, child: Text(activityLabel(a))),
+                                for (final a in {..._activities, d.activity})
+                                  DropdownMenuItem(
+                                    value: a,
+                                    child: Text(activityLabel(a)),
+                                  ),
                               ],
                               onChanged: (v) =>
                                   setState(() => d.activity = v ?? d.activity),
@@ -268,18 +299,14 @@ class _GpxImportPageState extends ConsumerState<GpxImportPage> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(context.l10n.countHeartPoints),
-              subtitle: Text(
-                context.l10n.turnOffIfTheseWorkouts,
-              ),
+              subtitle: Text(context.l10n.turnOffIfTheseWorkouts),
               value: _countHeartPoints,
               onChanged: (v) => setState(() => _countHeartPoints = v),
             ),
             const SizedBox(height: 8),
             FilledButton(
               onPressed: _busy || selected == 0 ? null : _import,
-              child: Text(
-                context.l10n.importNWorkouts(selected),
-              ),
+              child: Text(context.l10n.importNWorkouts(selected)),
             ),
           ],
         ],

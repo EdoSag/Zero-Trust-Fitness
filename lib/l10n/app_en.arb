@@ -220,11 +220,7 @@
   "paused": "PAUSED",
   "avgPace": "avg pace",
   "waitingForGps": "Waiting for GPS…",
-  "noTracksWithAtLeast": "No tracks with at least two points in that file.",
   "enterHowLongEachWorkout": "Enter how long each workout took.",
-  "importGpxRoutes": "Import GPX routes",
-  "bringInWorkoutsFromStrava": "Bring in workouts from Strava, Komoot, Garmin or any app that exports .gpx files. The file is read on this phone and saved encrypted, like everything else.",
-  "chooseGpxFiles": "Choose GPX files",
   "track": "Track",
   "alreadyImported": "already imported",
   "thisFileHasNoTimes": "This file has no times. When was it, and how long did it take?",
@@ -326,7 +322,7 @@
   "movementNudge": "Movement nudge",
   "hourlyReminderToStayActive": "Hourly reminder to stay active",
   "hydrationReminder": "Hydration reminder",
-  "hourlyPromptToDrinkWater": "Hourly prompt to drink water",
+  "anHourAfterYourLastWater": "An hour after the last water you logged, then every hour",
   "workoutReminder": "Workout reminder",
   "chooseDaysAndTime": "Choose days and time",
   "reminderTime": "Reminder time",
@@ -354,9 +350,9 @@
   "createAndReuseWorkoutRoutines": "Create and reuse workout routines",
   "healthPermissions": "Health permissions",
   "chooseWhatFitnessMayRead": "Choose what Fitness may read",
-  "saveWorkoutsToAppleHealth": "Save workouts to Apple Health",
-  "saveWorkoutsToHealthConnect": "Save workouts to Health Connect",
-  "workoutsYouLogOrRecord": "Workouts you log or record here show up in your other apps",
+  "saveWorkoutsToAppleHealth": "Save workouts and water to Apple Health",
+  "saveWorkoutsToHealthConnect": "Save workouts and water to Health Connect",
+  "workoutsYouLogOrRecord": "Workouts and water you log here show up in your other apps, such as ZT Quests",
   "showOnWearOsWatch": "Show on Wear OS watch",
   "todaysHeartPointsStepsAnd": "Today's Heart Points, steps and water on your paired watch, and add water from it. Sent only to the watch.",
   "unitsFormatX": "Units & format",
@@ -366,7 +362,7 @@
   "exportRestoreX": "Export & restore",
   "backUpToAFile": "Back up to a file or bring a backup back in",
   "yourHistoryFromAGoogle": "Your history from a Google Takeout export",
-  "fromStravaKomootGarminAnd": "From Strava, Komoot, Garmin and others",
+  "fromStravaKomootGarminAnd": "FIT, TCX and GPX files from Garmin, Polar, Coros, Strava and others",
   "shareReport": "Share report",
   "aScopedHealthReportTo": "A scoped health report to share",
   "deleteActivityDataX": "Delete activity data",
@@ -871,22 +867,6 @@
       }
     }
   },
-  "couldntReadAsGpx": "Couldn't read {files} as GPX.",
-  "@couldntReadAsGpx": {
-    "placeholders": {
-      "files": {
-        "type": "String"
-      }
-    }
-  },
-  "skippedNotGpx": "Skipped {files}: not GPX.",
-  "@skippedNotGpx": {
-    "placeholders": {
-      "files": {
-        "type": "String"
-      }
-    }
-  },
   "importedWorkouts": "{count, plural, =1{Imported 1 workout. You'll find it in your Journal.} other{Imported {count} workouts. You'll find them in your Journal.}}",
   "@importedWorkouts": {
     "placeholders": {
@@ -1038,7 +1018,7 @@
       }
     }
   },
-  "newWorkoutsSavedTo": "New workouts are saved to {health} from now on. Fitness can also copy the workouts already in your journal.",
+  "newWorkoutsSavedTo": "New workouts and water are saved to {health} from now on. Fitness can also copy the workouts already in your journal.",
   "@newWorkoutsSavedTo": {
     "placeholders": {
       "health": {
@@ -1472,5 +1452,124 @@
   "challengeInviteLink": "Invite link",
   "challengeScanQr": "Scan QR code",
   "challengeJoinPrivacy": "Joining shares only your total for the challenge's measure and days. You can leave at any time.",
-  "challengeJoinButton": "Join"
+  "challengeJoinButton": "Join",
+  "countWaterInOtherApps": "Count this water in your other apps",
+  "countWaterInOtherAppsBody": "Save the water and workouts you log here to {health}, so ZT Quests and other apps can count them.",
+  "@countWaterInOtherAppsBody": {
+    "placeholders": {
+      "health": {
+        "type": "String"
+      }
+    }
+  },
+  "waterNowSavedTo": "Water you log is now saved to {health}.",
+  "@waterNowSavedTo": {
+    "placeholders": {
+      "health": {
+        "type": "String"
+      }
+    }
+  },
+  "healthDidntAllowWater": "{health} didn't allow Fitness to save water.",
+  "@healthDidntAllowWater": {
+    "placeholders": {
+      "health": {
+        "type": "String"
+      }
+    }
+  },
+  "importWorkoutFiles": "Import workout files",
+  "bringInWorkoutFiles": "Bring in workouts from Garmin, Polar, Coros, Wahoo, Suunto, Strava, Komoot or any app that exports .fit, .tcx or .gpx files (gzipped .gz files too). The file is read on this phone and saved encrypted, like everything else.",
+  "chooseWorkoutFiles": "Choose files",
+  "couldntReadWorkoutFiles": "Couldn't read {files}. Fitness reads .fit, .tcx and .gpx files.",
+  "@couldntReadWorkoutFiles": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "skippedUnreadableFiles": "Skipped {files}: not a .fit, .tcx or .gpx file.",
+  "@skippedUnreadableFiles": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "noWorkoutsInFile": "No workouts in that file.",
+  "noRouteInFile": "no route (indoor)",
+  "avgHeartRate": "Avg heart rate",
+  "maxHeartRate": "Max heart rate",
+  "sleepHoursMinutes": "{hours} h {minutes} min",
+  "@sleepHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "nHoursShort": "{count}h",
+  "@nHoursShort": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastNight": "Last night",
+  "noSleepYet": "No sleep yet",
+  "noSleepYetHint": "Sleep from your watch or sleep app shows here once it is in Health Connect. You can also add a night by hand with the + button on Today.",
+  "averageSleep": "Average sleep",
+  "averageBedtime": "Average bedtime",
+  "averageWakeUp": "Average wake-up",
+  "bedtimeConsistency": "Bedtime consistency",
+  "plusMinusMinutes": "±{minutes} min",
+  "@plusMinusMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "nightsAtGoal": "Nights with {goal} or more",
+  "@nightsAtGoal": {
+    "placeholders": {
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "nOfTotal": "{count} of {total}",
+  "@nOfTotal": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "comparedWithWeekBefore": "Compared with the week before",
+  "sameAsBefore": "About the same",
+  "sleepGoalReached": "Sleep goal reached",
+  "sleepShortOfGoal": "{time} short of your goal",
+  "@sleepShortOfGoal": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sleepStageDeep": "Deep",
+  "sleepStageRem": "REM",
+  "sleepStageLight": "Light",
+  "sleepStageAsleep": "Asleep",
+  "sleepStageAwake": "Awake",
+  "averageStages": "Average night by stage",
+  "sleepSourcesNote": "From Health Connect and the nights you enter by hand. A night counts on the morning it ends. It is read on this phone and saved encrypted, like everything else."
 }

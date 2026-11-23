@@ -1,7 +1,7 @@
 name: zerotrust_fitness
 description: Zero-Trust Fitness, end-to-end encrypted activity and health tracking.
 publish_to: none
-version: 0.8.3+19
+version: 0.11.0+25
 environment:
   sdk: ^3.8.0
 
@@ -24,11 +24,7 @@ dependencies:
     git:
       url: https://github.com/EdoSag/Zero-Trust-Core.git
       path: packages/zero_trust_core
-      # Core Dev with the shared spaces trust chain fix (Core PR #35) and
-      # invite links per app (Core PR #37). Every app that shares must be on
-      # this commit or later: older ones cannot read the new member records.
-      # Switch to the release tag once one is pushed.
-      ref: 08eccf33e5989c0efceba67d351159b979ae0740
+      ref: v1.0.1
   flutter_riverpod: ^3.5.0
   supabase_flutter: ^2.10.0
   # Reset links from account emails (EmailLinks).
@@ -49,6 +45,9 @@ dependencies:
   share_plus: ^13.3.0
   file_picker: ^13.3.2
   flutter_local_notifications: ^18.0.0
+  # Already in the build through other packages: sets the time the hourly
+  # hydration reminder counts from (the last water logged).
+  clock: ^1.1.1
   timezone: ^0.9.4
   intl: ^0.20.1
   archive: ^4.6.0
@@ -71,7 +70,7 @@ dev_dependencies:
     git:
       url: https://github.com/EdoSag/Zero-Trust-Core.git
       path: packages/zt_release_checks
-      ref: b43fcd045722bc364ef2eaa739db181f9dac144f
+      ref: v1.0.1
   flutter_test:
     sdk: flutter
   flutter_lints: 5.0.0

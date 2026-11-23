@@ -7,14 +7,27 @@ import 'package:zerotrust_fitness/features/gpx/gpx.dart';
 import 'package:zerotrust_fitness/features/health/data/gps_tracking_service.dart';
 import 'package:zerotrust_fitness/features/import/google_fit_takeout.dart';
 
-/// Turning GPX tracks into workouts, and workouts into GPX files.
+/// Turning GPX, TCX and FIT tracks into workouts, and workouts into GPX
+/// files.
 class GpxWorkouts {
   const GpxWorkouts(this.vault);
 
   final FitnessVault vault;
 
   /// The same id for the same track however often the file is imported.
+  /// A TCX and a FIT export of one workout share it (same start), so the
+  /// second only updates the first.
   Future<String> idFor(GpxTrack track) {
+    if (track.format != 'gpx') {
+      final start = track.start;
+      final first = track.points.firstOrNull;
+      final key = start != null
+          ? start.toUtc().toIso8601String()
+          : '${first?.latitude.toStringAsFixed(5)},'
+                '${first?.longitude.toStringAsFixed(5)}|${track.name ?? ''}|'
+                '${track.points.length}';
+      return vault.idFor('workout:file|$key');
+    }
     final first = track.points.first;
     final key = track.start != null
         ? track.start!.toIso8601String()
@@ -48,11 +61,15 @@ class GpxWorkouts {
         ),
       'timestamp': start.toLocal().toIso8601String(),
       if (track.name != null) 'name': track.name,
-      'route': [for (final p in Gpx.thin(track.points)) p.toJson()],
+      if (track.hasRoute)
+        'route': [for (final p in Gpx.thin(track.points)) p.toJson()],
+      if (track.avgHeartRate case final hr?) 'avg_hr': hr,
+      if (track.maxHeartRate case final hr?) 'max_hr': hr,
+      if (track.calories case final kcal?) 'calories': kcal,
       // Both keys are always written, so importing a track again with the
       // other choice replaces the earlier one (logWorkout merges fields).
-      'imported_from': countHeartPoints ? 'gpx' : null,
-      'source': countHeartPoints ? null : 'gpx',
+      'imported_from': countHeartPoints ? track.format : null,
+      'source': countHeartPoints ? null : track.format,
     };
   }
 
