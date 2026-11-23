@@ -1,7 +1,7 @@
 name: zerotrust_fitness
 description: Zero-Trust Fitness, end-to-end encrypted activity and health tracking.
 publish_to: none
-version: 0.10.0+23
+version: 0.10.1+24
 environment:
   sdk: ^3.8.0
 
@@ -28,7 +28,11 @@ dependencies:
       # invite links per app (Core PR #37). Every app that shares must be on
       # this commit or later: older ones cannot read the new member records.
       # Switch to the release tag once one is pushed.
-      ref: 08eccf33e5989c0efceba67d351159b979ae0740
+      # The core commit this app used before, plus the import-freeze fix of
+      # Core PR #89 and #90. It lives on the Core branch
+      # backport/import-freeze-fix-on-core-08eccf3: keep that branch until
+      # this pin moves to a core that has the fix.
+      ref: 323528666f3b3b0047a7a69202a39d769a494594
   flutter_riverpod: ^3.5.0
   supabase_flutter: ^2.10.0
   # Reset links from account emails (EmailLinks).
