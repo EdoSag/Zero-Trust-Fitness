@@ -60,7 +60,10 @@ forget the password. How the keys work:
 - Workouts, daily metrics, meals, goals and templates are items in the
   shared `vault_items` table, encrypted on the device with the Fitness app
   key (`app = 'fitness'`). On the phone they sit in the core's encrypted
-  store; nothing readable is written to disk.
+  store.
+- One exception on the phone: for the home screen widget, Android keeps
+  today's steps, Heart Points and momentum in a small unencrypted file
+  while the app is unlocked. The app blanks them when the vault locks.
 - Health Connect data is read on the phone and never sent anywhere
   unencrypted. Deleting your Fitness data does not touch Health Connect.
 - A challenge is a Zero-Trust shared space: friends see only your total for
@@ -114,12 +117,18 @@ Settings > Appearance > Language.
 Flutter 3.47.9, the version CI pins (3.50 deprecates `material.dart` and
 fails analyze).
 
-```bash
-# .env (not committed; CI writes its own). Public client values only:
-# never a service-role key, because .env is bundled into the APK.
+First create a file named `.env` in the project folder. It is not committed
+(CI writes its own) and it is bundled into the APK, so it holds public client
+values only, never a service-role key:
+
+```
 SUPABASE_URL=https://<project>.supabase.co
 SUPABASE_ANON_KEY=<publishable key>
+```
 
+Then:
+
+```bash
 flutter pub get
 dart run zt_release_checks --app fitness   # shared release checks
 flutter analyze && flutter test
